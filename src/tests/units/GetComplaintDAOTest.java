@@ -6,7 +6,6 @@ import models.ComplaintDetail;
 import models.ComplaintHistoryDetail;
 import models.ComplaintAction;
 
-import java.io.File;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.Statement;

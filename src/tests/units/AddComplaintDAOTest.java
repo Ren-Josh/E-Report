@@ -28,12 +28,10 @@ public class AddComplaintDAOTest {
             return;
         }
 
-        AddComplaintDAO dao = new AddComplaintDAO();
-
         // Run the tests
-        testAddComplaint(con, dao);
-        testAddComplaintHistory(con, dao);
-        testAddComplaintAction(con, dao);
+        testAddComplaint(con);
+        testAddComplaintHistory(con);
+        testAddComplaintAction(con);
 
         try {
             con.close();
@@ -51,7 +49,7 @@ public class AddComplaintDAOTest {
     // ==========================================
     // TEST: Add Complaint
     // ==========================================
-    public static void testAddComplaint(Connection con, AddComplaintDAO dao) {
+    public static void testAddComplaint(Connection con) {
         System.out.println("[TEST] Add Complaint");
 
         File mockFile = null;
@@ -87,7 +85,7 @@ public class AddComplaintDAOTest {
             int dummyUserId = 1;
 
             // 5. Run the target code
-            dao.addComplaint(con, dummyUserId, cd);
+            AddComplaintDAO.addComplaint(con, dummyUserId, cd);
 
             // 6. Check the row count again
             int afterCount = getTableRowCount(con, "COMPLAINT_DETAIL");
@@ -115,7 +113,7 @@ public class AddComplaintDAOTest {
     // ==========================================
     // TEST: Add Complaint History
     // ==========================================
-    public static void testAddComplaintHistory(Connection con, AddComplaintDAO dao) {
+    public static void testAddComplaintHistory(Connection con) {
         System.out.println("[TEST] Add Complaint History");
 
         try {
@@ -129,7 +127,7 @@ public class AddComplaintDAOTest {
 
             int dummyComplaintId = 1;
 
-            dao.addComplaintHistory(con, dummyComplaintId, chd);
+            AddComplaintDAO.addComplaintHistory(con, dummyComplaintId, chd);
 
             int afterCount = getTableRowCount(con, "Complaint_History_Detail");
 
@@ -150,7 +148,7 @@ public class AddComplaintDAOTest {
     // ==========================================
     // TEST: Add Complaint Action
     // ==========================================
-    public static void testAddComplaintAction(Connection con, AddComplaintDAO dao) {
+    public static void testAddComplaintAction(Connection con) {
         System.out.println("[TEST] Add Complaint Action");
 
         try {
@@ -164,7 +162,7 @@ public class AddComplaintDAOTest {
 
             int dummyComplaintId = 1;
 
-            dao.addComplaintAction(con, dummyComplaintId, ca);
+            AddComplaintDAO.addComplaintAction(con, dummyComplaintId, ca);
 
             int afterCount = getTableRowCount(con, "Complaint_Action");
 
