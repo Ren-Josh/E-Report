@@ -97,6 +97,8 @@ Controllers
 
          public static void main(String[] args) {
              int userID = 101; // Logged-in user ID
+             OR
+             int userID = session.getUserID();
              ComplaintDetail complaint = new ComplaintDetail();
 
              // Fill complaint details
