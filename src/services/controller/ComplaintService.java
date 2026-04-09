@@ -62,27 +62,16 @@ public class ComplaintService {
 
     public void processAndAttachImage(ComplaintDetail cd, File droppedFile) {
         try {
-            // 1. Define folder and safe unique file name
-            String directory = "C:/Users/Ren Josh/OneDrive - DEPED REGION 3-1/Documents/BSIT 2A/E-Report/images/";
-            String newFileName = System.currentTimeMillis() + "_" + droppedFile.getName();
-            File destination = new File(directory + newFileName);
+            // Read the file into a byte array
+            byte[] fileBytes = Files.readAllBytes(droppedFile.toPath());
 
-            // 2. Ensure the directory physically exists on the computer
-            File dir = new File(directory);
-            if (!dir.exists()) {
-                dir.mkdirs(); // Creates the folder if it's missing
-            }
+            // Attach the byte array to the ComplaintDetail model
+            cd.setPhotoAttachmentBytes(fileBytes); // You need to add this field in your model
 
-            // 3. Physically copy the file to your hard drive
-            Files.copy(droppedFile.toPath(), destination.toPath());
-
-            // 4. Save the string PATH into your model
-            cd.setPhotoAttachment(destination.getAbsolutePath());
-
-            System.out.println("Image successfully attached and saved to: " + destination.getAbsolutePath());
+            System.out.println("Image successfully read and attached as BLOB: " + droppedFile.getName());
 
         } catch (IOException e) {
-            System.err.println("Failed to save the dropped image!");
+            System.err.println("Failed to read the image file!");
             e.printStackTrace();
         }
     }

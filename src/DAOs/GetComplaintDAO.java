@@ -27,7 +27,7 @@ public class GetComplaintDAO {
         cd.setLatitude(rs.getDouble("latitude"));
         cd.setPersonsInvolved(rs.getString("persons_involved"));
         cd.setDetails(rs.getString("details"));
-        cd.setPhotoAttachment(rs.getString("photo_attachment"));
+        cd.setPhotoAttachmentBytes(rs.getBytes("photo_attachment"));
         return cd;
     }
 

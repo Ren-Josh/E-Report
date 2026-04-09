@@ -42,7 +42,7 @@ public class AddComplaintDAO {
             stmtDetail.setDouble(8, cd.getLatitude());
             stmtDetail.setString(9, cd.getPersonsInvolved());
             stmtDetail.setString(10, cd.getDetails());
-            stmtDetail.setString(11, cd.getPhotoAttachment());
+            stmtDetail.setBytes(11, cd.getPhotoAttachmentBytes());
 
             int rows = stmtDetail.executeUpdate();
             if (rows == 0)
