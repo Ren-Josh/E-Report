@@ -38,6 +38,47 @@
    | LG   | 40px    |
    | XL   | 50–60px |
 
+========
 
+Button Presets
+1. Primary Button
+   UIButton btn = new UIButton(
+    "Login",
+    UIConfig.PRIMARY,
+    UIConfig.BTN_PRIMARY,
+    UIConfig.BTN_PRIMARY_FONT,
+    UIConfig.RADIUS_PRIMARY,
+    UIButton.ButtonType.PRIMARY
+   );
 
+2. Outlined Button
+   UIButton btn = new UIButton(
+    "Cancel",
+    UIConfig.PRIMARY,
+    UIConfig.BTN_SECONDARY,
+    UIConfig.BTN_SECONDARY_FONT,
+    UIConfig.RADIUS_SECONDARY,
+    UIButton.ButtonType.OUTLINED
+   );
+
+3. Disabled Button
+   UIButton btn = new UIButton(
+    "Submit",
+    UIConfig.PRIMARY,
+    UIConfig.BTN_PRIMARY,
+    UIConfig.BTN_PRIMARY_FONT,
+    UIConfig.RADIUS_PRIMARY,
+    UIButton.ButtonType.DISABLED
+   );
+   btn.setEnabled(false);
+
+4. Elevated Button
+   UIButton btn = new UIButton(
+    "Proceed",
+    UIConfig.PRIMARY,
+    UIConfig.BTN_PRIMARY,
+    UIConfig.BTN_PRIMARY_FONT,
+    UIConfig.RADIUS_PRIMARY,
+    UIButton.ButtonType.ELEVATED
+   );
 

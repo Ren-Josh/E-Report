@@ -60,10 +60,34 @@ public class UIConfig {
     // COLORS
     // =========================
     public static final Color PRIMARY = new Color(25, 87, 191);
-    public static final Color SUCCESS = new Color(67, 181, 67);
+    public static final Color SECONDARY = new Color(53, 131, 234);
+    public static final Color SUCCESS = new Color(60, 191, 42);
 
     public static final Color TEXT_PRIMARY = new Color(25, 25, 25);
     public static final Color TEXT_SECONDARY = new Color(60, 60, 60);
 
     public static final Color BG_LIGHT = new Color(245, 247, 250);
+
+    // =========================
+    // OUTLINED BUTTON CONFIG
+    // =========================
+    public static final Color OUTLINE_PRIMARY = PRIMARY;
+    public static final Color OUTLINE_TEXT = PRIMARY;
+    public static final Color OUTLINE_BG = new Color(0, 0, 0, 0); // transparent
+    public static final int OUTLINE_THICKNESS = 2;
+
+    // =========================
+    // DISABLED STATE
+    // =========================
+    public static final Color DISABLED_BG = new Color(200, 200, 200);
+    public static final Color DISABLED_TEXT = new Color(150, 150, 150);
+
+    // =========================
+    // ELEVATION (SHADOW)
+    // =========================
+    public static final Color SHADOW_COLOR = new Color(0, 0, 0, 60);
+    public static final int SHADOW_OFFSET_X = 3;
+    public static final int SHADOW_OFFSET_Y = 4;
+    public static final int SHADOW_BLUR = 8; // conceptual (used in rendering style)
+
 }

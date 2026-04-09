@@ -1,40 +1,105 @@
 package features.components;
 
 import javax.swing.JButton;
-import java.awt.Color;
-import java.awt.Dimension;
-import java.awt.Font;
-import java.awt.Cursor;
-import java.awt.Graphics;
-import java.awt.Graphics2D;
-import java.awt.RenderingHints;
+import java.awt.*;
+import config.UIConfig;
 
-class UIButton extends JButton {
+public class UIButton extends JButton {
+
+    public enum ButtonType {
+        PRIMARY,
+        OUTLINED,
+        DISABLED,
+        ELEVATED
+    }
+
     private Color bg;
     private int radius;
+    private ButtonType type;
 
-    public UIButton(String text, Color bg, Dimension size, Font font, int radius) {
+    public UIButton(String text, Color bg, Dimension size, Font font, int radius, ButtonType type) {
         super(text);
         this.bg = bg;
         this.radius = radius;
+        this.type = type;
 
         setPreferredSize(size);
         setFont(font);
-        setForeground(Color.WHITE);
 
         setContentAreaFilled(false);
         setBorderPainted(false);
         setFocusPainted(false);
         setCursor(new Cursor(Cursor.HAND_CURSOR));
+
+        applyTextStyle();
+    }
+
+    private void applyTextStyle() {
+        switch (type) {
+            case OUTLINED -> setForeground(UIConfig.OUTLINE_TEXT);
+            case DISABLED -> setForeground(UIConfig.DISABLED_TEXT);
+            default -> setForeground(Color.WHITE);
+        }
     }
 
     @Override
     protected void paintComponent(Graphics g) {
         Graphics2D g2 = (Graphics2D) g.create();
+
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-        g2.setColor(bg);
-        g2.fillRoundRect(0, 0, getWidth(), getHeight(), radius, radius);
+        // =========================
+        // DISABLED STATE
+        // =========================
+        if (!isEnabled() || type == ButtonType.DISABLED) {
+            g2.setColor(UIConfig.DISABLED_BG);
+            g2.fillRoundRect(0, 0, getWidth(), getHeight(), radius, radius);
+
+            setForeground(UIConfig.DISABLED_TEXT);
+        }
+
+        // =========================
+        // ELEVATED BUTTON
+        // =========================
+        else if (type == ButtonType.ELEVATED) {
+
+            // Shadow
+            g2.setColor(UIConfig.SHADOW_COLOR);
+            g2.fillRoundRect(
+                    UIConfig.SHADOW_OFFSET_X,
+                    UIConfig.SHADOW_OFFSET_Y,
+                    getWidth(),
+                    getHeight(),
+                    radius,
+                    radius);
+
+            // Button
+            g2.setColor(bg);
+            g2.fillRoundRect(0, 0, getWidth(), getHeight(), radius, radius);
+        }
+
+        // =========================
+        // OUTLINED BUTTON
+        // =========================
+        else if (type == ButtonType.OUTLINED) {
+
+            // Transparent fill (optional)
+            g2.setColor(new Color(0, 0, 0, 0));
+            g2.fillRoundRect(0, 0, getWidth(), getHeight(), radius, radius);
+
+            // Border
+            g2.setColor(UIConfig.OUTLINE_PRIMARY);
+            g2.setStroke(new BasicStroke(UIConfig.OUTLINE_THICKNESS));
+            g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, radius, radius);
+        }
+
+        // =========================
+        // PRIMARY BUTTON
+        // =========================
+        else {
+            g2.setColor(bg);
+            g2.fillRoundRect(0, 0, getWidth(), getHeight(), radius, radius);
+        }
 
         super.paintComponent(g);
         g2.dispose();
