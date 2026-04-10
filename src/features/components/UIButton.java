@@ -5,25 +5,28 @@ import java.awt.*;
 import config.UIConfig;
 
 public class UIButton extends JButton {
-
     public enum ButtonType {
         PRIMARY,
         OUTLINED,
         DISABLED,
         ELEVATED
     }
-
+    
+    private Dimension customSize;
     private Color bg;
     private int radius;
     private ButtonType type;
 
     public UIButton(String text, Color bg, Dimension size, Font font, int radius, ButtonType type) {
         super(text);
+        this.customSize = size;
         this.bg = bg;
         this.radius = radius;
         this.type = type;
 
         setPreferredSize(size);
+        setMinimumSize(size);
+        setMaximumSize(size);
         setFont(font);
 
         setContentAreaFilled(false);
@@ -40,6 +43,11 @@ public class UIButton extends JButton {
             case DISABLED -> setForeground(UIConfig.DISABLED_TEXT);
             default -> setForeground(Color.WHITE);
         }
+    }
+
+    @Override
+    public Dimension getPreferredSize() {
+        return customSize;
     }
 
     @Override

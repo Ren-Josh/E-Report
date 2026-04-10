@@ -82,3 +82,29 @@ Button Presets
     UIButton.ButtonType.ELEVATED
    );
 
+
+class RoundedButton extends JButton {
+        private Color bgColor;
+
+        public RoundedButton(String text, Color bg) {
+            super(text);
+            this.bgColor = bg;
+            setPreferredSize(new Dimension(220, 65));
+            setContentAreaFilled(false);
+            setBorderPainted(false);
+            setFocusPainted(false);
+            setForeground(Color.WHITE);
+            setFont(new Font("SansSerif", Font.BOLD, 22));
+            setCursor(new Cursor(Cursor.HAND_CURSOR));
+        }
+
+        @Override
+        protected void paintComponent(Graphics g) {
+            Graphics2D g2 = (Graphics2D) g.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g2.setColor(bgColor);
+            g2.fill(new RoundRectangle2D.Double(0, 0, getWidth(), getHeight(), 45, 45));
+            super.paintComponent(g); // Call super last to draw text over the shape
+            g2.dispose();
+        }
+    }

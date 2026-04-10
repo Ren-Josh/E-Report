@@ -22,15 +22,25 @@ public class UIConfig {
     public static final int LOGO_SIZE = 280;
 
     // =========================
+    // ICONS
+    // =========================
+    public static final String USER_ICON_PATH = "src/assets/circle-user.png";
+    public static final String LOCK_ICON_PATH = "src/assets/lock.png";
+    public static final String EYE_ICON_PATH = "src/assets/eye.png";
+    public static final String EYE_OFF_ICON_PATH = "src/assets/eye-off.png";
+
+    // =========================
     // FONTS
     // =========================
-    public static final Font H1 = new Font("SansSerif", Font.BOLD, 56);
-    public static final Font H2 = new Font("SansSerif", Font.BOLD, 32);
-    public static final Font H3 = new Font("SansSerif", Font.BOLD, 24);
+    public static final Font H1 = new Font("Helvetica", Font.BOLD, 56);
+    public static final Font H2 = new Font("Helvetica", Font.BOLD, 32);
+    public static final Font H3 = new Font("Helvetica", Font.BOLD, 24);
 
-    public static final Font BODY_LARGE = new Font("SansSerif", Font.PLAIN, 22);
-    public static final Font BODY = new Font("SansSerif", Font.PLAIN, 16);
-    public static final Font CAPTION = new Font("SansSerif", Font.PLAIN, 13);
+    public static final Font BODY_LARGE = new Font("Helvetica", Font.PLAIN, 22);
+    public static final Font BODY = new Font("Helvetica", Font.PLAIN, 16);
+    public static final Font CAPTION = new Font("Helvetica", Font.PLAIN, 13);
+
+    public static final Font INPUT_TITLE = new Font("Helvetica", Font.BOLD, 16);
 
     // =========================
     // BUTTON SIZES
@@ -39,9 +49,9 @@ public class UIConfig {
     public static final Dimension BTN_SECONDARY = new Dimension(180, 55);
     public static final Dimension BTN_SMALL = new Dimension(140, 45);
 
-    public static final Font BTN_PRIMARY_FONT = new Font("SansSerif", Font.BOLD, 22);
-    public static final Font BTN_SECONDARY_FONT = new Font("SansSerif", Font.BOLD, 18);
-    public static final Font BTN_SMALL_FONT = new Font("SansSerif", Font.PLAIN, 16);
+    public static final Font BTN_PRIMARY_FONT = new Font("Helvetica", Font.BOLD, 22);
+    public static final Font BTN_SECONDARY_FONT = new Font("Helvetica", Font.BOLD, 18);
+    public static final Font BTN_SMALL_FONT = new Font("Helvetica", Font.PLAIN, 16);
 
     public static final int RADIUS_PRIMARY = 45;
     public static final int RADIUS_SECONDARY = 35;
