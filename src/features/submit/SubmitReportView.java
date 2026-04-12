@@ -2,16 +2,12 @@ package features.submit;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
-import java.awt.Component;
-import java.awt.Container;
 import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.GridLayout;
 import java.awt.Image;
-import java.awt.event.FocusAdapter;
-import java.awt.event.FocusEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.File;
@@ -20,6 +16,8 @@ import java.net.URI;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.List;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
@@ -37,6 +35,9 @@ import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
 import javax.swing.border.EmptyBorder;
+import features.ui.DashboardFormUtils;
+import features.ui.DashboardHeaderPanel;
+import features.ui.DashboardSidebarPanel;
 import models.ComplaintDetail;
 import models.UserSession;
 import services.controller.ComplaintService;
@@ -81,8 +82,12 @@ public class SubmitReportView extends JFrame {
         getContentPane().setLayout(new BorderLayout());
 
         subjectField = new JTextField();
-        categoryCombo = createComboWithPlaceholder(SubmitReportConstants.CATEGORY_OPTIONS, CATEGORY_PLACEHOLDER);
-        purokCombo = createComboWithPlaceholder(SubmitReportConstants.PUROK_OPTIONS, PUROK_PLACEHOLDER);
+        categoryCombo = DashboardFormUtils.createComboWithPlaceholder(
+            SubmitReportConstants.CATEGORY_OPTIONS,
+            CATEGORY_PLACEHOLDER);
+        purokCombo = DashboardFormUtils.createComboWithPlaceholder(
+            SubmitReportConstants.PUROK_OPTIONS,
+            PUROK_PLACEHOLDER);
         locationField = new JTextField();
         latitudeField = new JTextField();
         longitudeField = new JTextField();
@@ -111,7 +116,7 @@ public class SubmitReportView extends JFrame {
         longitudeField.setEditable(false);
         detailsArea.setLineWrap(true);
         detailsArea.setWrapStyleWord(true);
-        installPlaceholder(locationField, LOCATION_PLACEHOLDER);
+        DashboardFormUtils.installPlaceholder(locationField, LOCATION_PLACEHOLDER);
 
         JPanel root = new JPanel(new BorderLayout(14, 14));
         root.setOpaque(false);
@@ -126,7 +131,7 @@ public class SubmitReportView extends JFrame {
         root.add(body, BorderLayout.CENTER);
         getContentPane().add(root, BorderLayout.CENTER);
 
-        applyPoppinsFont(root);
+        DashboardFormUtils.applyPoppinsFontRecursively(root);
 
         addWindowListener(new WindowAdapter() {
             @Override
@@ -137,95 +142,53 @@ public class SubmitReportView extends JFrame {
     }
 
     private JPanel createHeaderPanel() {
-        JPanel header = new JPanel(new BorderLayout());
-        header.setOpaque(true);
-        header.setBackground(new Color(255, 255, 255, 215));
-        header.setBorder(new EmptyBorder(10, 18, 10, 18));
-
-        JPanel brand = new JPanel(new FlowLayout(FlowLayout.LEFT, 12, 0));
-        brand.setOpaque(false);
-
-        JLabel logo = createLogoLabel();
-
-        JLabel title = new JLabel("E-Reporting System");
-        title.setFont(new Font("Poppins", Font.BOLD, 20));
-
-        JLabel user = new JLabel(currentRole);
-        user.setFont(new Font("Poppins", Font.BOLD, 14));
-
-        brand.add(logo);
-        brand.add(title);
-        header.add(brand, BorderLayout.WEST);
-        header.add(user, BorderLayout.EAST);
-        return header;
-    }
-
-    private JLabel createLogoLabel() {
-        JLabel logo = new JLabel("E", JLabel.CENTER);
-        logo.setPreferredSize(new Dimension(58, 58));
-        logo.setOpaque(false);
-        logo.setFont(new Font("Poppins", Font.BOLD, 22));
-
-        File logoFile = new File(System.getProperty("user.dir") + File.separator + "images" + File.separator + "Logo.png");
-        if (logoFile.exists()) {
-            ImageIcon icon = new ImageIcon(logoFile.getAbsolutePath());
-            Image scaled = icon.getImage().getScaledInstance(58, 58, Image.SCALE_SMOOTH);
-            logo.setIcon(new ImageIcon(scaled));
-            logo.setText("");
-        }
-
-        return logo;
+        return new DashboardHeaderPanel(
+                "E-Reporting System",
+                currentRole,
+                loadScaledImageIcon("Logo.png", 58, 58));
     }
 
     private JPanel createSidebarPanel() {
-        JPanel sidebar = new JPanel(new GridLayout(0, 1, 0, 8));
-        sidebar.setPreferredSize(new Dimension(205, 0));
-        sidebar.setOpaque(true);
-        sidebar.setBackground(new Color(241, 245, 249));
-        sidebar.setBorder(new EmptyBorder(12, 10, 12, 10));
-
         boolean isResident = ROLE_RESIDENT.equalsIgnoreCase(currentRole);
+        List<DashboardSidebarPanel.NavItem> items = new ArrayList<>();
 
-        sidebar.add(sidebarItem("Dashboard", "Dashboard.png", false, this::openDashboard));
-        sidebar.add(sidebarItem(isResident ? "My Reports" : "Reports", "ViewReport.png", false, this::openMyReports));
-        sidebar.add(sidebarItem("Submit Report", "SubmitReport.png", true, () -> {
-        }));
+        items.add(new DashboardSidebarPanel.NavItem(
+                "Dashboard",
+                loadScaledImageIcon("Dashboard.png", 22, 22),
+                false,
+                this::openDashboard));
+        items.add(new DashboardSidebarPanel.NavItem(
+                isResident ? "My Reports" : "Reports",
+                loadScaledImageIcon("ViewReport.png", 22, 22),
+                false,
+                this::openMyReports));
+        items.add(new DashboardSidebarPanel.NavItem(
+                "Submit Report",
+                loadScaledImageIcon("SubmitReport.png", 22, 22),
+                true,
+                () -> {
+                }));
 
         if (!isResident) {
-            sidebar.add(sidebarItem("Users", "Users.png", false, this::openUsers));
+            items.add(new DashboardSidebarPanel.NavItem(
+                    "Users",
+                    loadScaledImageIcon("Users.png", 22, 22),
+                    false,
+                    this::openUsers));
         }
 
-        sidebar.add(sidebarItem("Profile", "Profile.png", false, this::openProfile));
-        sidebar.add(sidebarItem("Logout", "Logout.png", false, this::logout));
-        return sidebar;
-    }
+        items.add(new DashboardSidebarPanel.NavItem(
+                "Profile",
+                loadScaledImageIcon("Profile.png", 22, 22),
+                false,
+                this::openProfile));
+        items.add(new DashboardSidebarPanel.NavItem(
+                "Logout",
+                loadScaledImageIcon("Logout.png", 22, 22),
+                false,
+                this::logout));
 
-    private JButton sidebarItem(String text, String iconFileName, boolean active, Runnable onClickHandler) {
-        JButton item = new JButton(text);
-        item.setOpaque(true);
-        item.setFont(new Font("Poppins", Font.BOLD, 18));
-        item.setHorizontalAlignment(JLabel.LEFT);
-        item.setIconTextGap(10);
-        item.setBorder(new EmptyBorder(8, 10, 8, 10));
-        item.setBackground(active ? new Color(124, 167, 234) : Color.WHITE);
-        item.setForeground(active ? Color.WHITE : Color.BLACK);
-        item.setContentAreaFilled(true);
-        item.setBorderPainted(false);
-        item.setFocusPainted(false);
-        item.setRolloverEnabled(false);
-        item.setFocusable(false);
-        item.setRequestFocusEnabled(false);
-        item.setCursor(new Cursor(Cursor.HAND_CURSOR));
-
-        File iconFile = new File(System.getProperty("user.dir") + File.separator + "images" + File.separator + iconFileName);
-        if (iconFile.exists()) {
-            ImageIcon icon = new ImageIcon(iconFile.getAbsolutePath());
-            Image scaled = icon.getImage().getScaledInstance(22, 22, Image.SCALE_SMOOTH);
-            item.setIcon(new ImageIcon(scaled));
-        }
-
-        item.addActionListener(e -> onClickHandler.run());
-        return item;
+        return new DashboardSidebarPanel(items);
     }
 
     private JPanel createFormPanel() {
@@ -246,15 +209,15 @@ public class SubmitReportView extends JFrame {
 
         JPanel topRow = new JPanel(new GridLayout(1, 1));
         topRow.setOpaque(false);
-        topRow.add(fieldBlock("Title", subjectField));
+        topRow.add(DashboardFormUtils.createLabeledField("Title", subjectField));
 
         JPanel midGrid = new JPanel(new GridLayout(1, 2, 12, 0));
         midGrid.setOpaque(false);
 
         JPanel leftColumn = new JPanel(new GridLayout(3, 1, 0, 10));
         leftColumn.setOpaque(false);
-        leftColumn.add(fieldBlock("Category", categoryCombo));
-        leftColumn.add(fieldBlock("Purok", purokCombo));
+        leftColumn.add(DashboardFormUtils.createLabeledField("Category", categoryCombo));
+        leftColumn.add(DashboardFormUtils.createLabeledField("Purok", purokCombo));
         leftColumn.add(buildLocationBlock());
 
         midGrid.add(leftColumn);
@@ -387,15 +350,14 @@ public class SubmitReportView extends JFrame {
         }
     }
 
-    private JPanel fieldBlock(String labelText, JComponent component) {
-        JPanel block = new JPanel(new BorderLayout(6, 6));
-        block.setOpaque(false);
-        JLabel label = new JLabel(labelText);
-        label.setFont(new Font("Poppins", Font.BOLD, 14));
-        component.setPreferredSize(new Dimension(220, 30));
-        block.add(label, BorderLayout.NORTH);
-        block.add(component, BorderLayout.CENTER);
-        return block;
+    private ImageIcon loadScaledImageIcon(String fileName, int width, int height) {
+        File iconFile = new File(System.getProperty("user.dir") + File.separator + "images" + File.separator + fileName);
+        if (!iconFile.exists()) {
+            return null;
+        }
+        ImageIcon icon = new ImageIcon(iconFile.getAbsolutePath());
+        Image scaled = icon.getImage().getScaledInstance(width, height, Image.SCALE_SMOOTH);
+        return new ImageIcon(scaled);
     }
 
     private void choosePhoto() {
@@ -578,13 +540,6 @@ public class SubmitReportView extends JFrame {
         return json.substring(start, end);
     }
 
-    private JComboBox<String> createComboWithPlaceholder(String[] options, String placeholder) {
-        String[] values = new String[options.length + 1];
-        values[0] = placeholder;
-        System.arraycopy(options, 0, values, 1, options.length);
-        return new JComboBox<>(values);
-    }
-
     private String getSelectedComboValue(JComboBox<String> combo, String placeholder) {
         Object selected = combo.getSelectedItem();
         if (selected == null) {
@@ -592,45 +547,6 @@ public class SubmitReportView extends JFrame {
         }
         String value = selected.toString().trim();
         return placeholder.equals(value) ? "" : value;
-    }
-
-    private void installPlaceholder(JTextField field, String placeholder) {
-        field.setText(placeholder);
-        field.setForeground(Color.GRAY);
-        field.addFocusListener(new FocusAdapter() {
-            @Override
-            public void focusGained(FocusEvent e) {
-                if (placeholder.equals(field.getText())) {
-                    field.setText("");
-                    field.setForeground(Color.BLACK);
-                }
-            }
-
-            @Override
-            public void focusLost(FocusEvent e) {
-                if (field.getText().trim().isEmpty()) {
-                    field.setText(placeholder);
-                    field.setForeground(Color.GRAY);
-                }
-            }
-        });
-    }
-
-    private void applyPoppinsFont(Component component) {
-        if (component == null) {
-            return;
-        }
-
-        Font current = component.getFont();
-        int style = current == null ? Font.PLAIN : current.getStyle();
-        int size = current == null ? 13 : current.getSize();
-        component.setFont(new Font("Poppins", style, size));
-
-        if (component instanceof Container container) {
-            for (Component child : container.getComponents()) {
-                applyPoppinsFont(child);
-            }
-        }
     }
 
     private int getCurrentUserId() {
