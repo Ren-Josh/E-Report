@@ -25,7 +25,7 @@ public class AppConfig {
                 sex VARCHAR(10) NOT NULL,
                 contact_number VARCHAR(11) UNIQUE NOT NULL,
                 email_address VARCHAR(50) UNIQUE NOT NULL,
-                house_number VARCHAR NOT NULL,
+                house_number VARCHAR(10) NOT NULL,
                 street VARCHAR(50) NOT NULL,
                 purok VARCHAR(50) NOT NULL
             );
@@ -35,8 +35,8 @@ public class AppConfig {
             CREATE TABLE IF NOT EXISTS Credential(
                 Cred_ID INT AUTO_INCREMENT PRIMARY KEY NOT NULL,
                 UI_ID INT NOT NULL,
-                username VARCHAR(50) UNIQUE NOT NULL,
-                password VARCHAR(50) NOT NULL,
+                username VARCHAR(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin UNIQUE NOT NULL,
+                password VARCHAR(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,
                 role VARCHAR(20) NOT NULL,
                 is_verified BOOLEAN NOT NULL,
                 date_created TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
