@@ -15,6 +15,17 @@ public class Credential {
         this.dateCreated = dateCreated;
     }
 
+    public Credential(String username, String password, String role) {        
+        this.username = username;
+        this.password = password;
+        this.role = role;
+    }
+
+    public Credential(String username, String password) {        
+        this.username = username;
+        this.password = password;        
+    }
+
     public Credential() {
     };
 

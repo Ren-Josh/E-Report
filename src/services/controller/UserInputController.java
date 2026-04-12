@@ -1,22 +1,23 @@
 package services.controller;
 
-import services.middleware.checkValidation;
 import javax.swing.*;
+
+import services.middleware.ValidationUtil;
 
 public class UserInputController {
 
     public static boolean validateAndSubmit(String email, String contact, int age) {
-        if (!checkValidation.isValidEmail(email)) {
+        if (!ValidationUtil.isValidEmail(email)) {
             JOptionPane.showMessageDialog(null, "Invalid email format!");
             return false;
         }
 
-        if (!checkValidation.isValidContact(contact)) {
+        if (!ValidationUtil.isValidContact(contact)) {
             JOptionPane.showMessageDialog(null, "Invalid contact number!");
             return false;
         }
 
-        if (!checkValidation.isValidAge(age)) {
+        if (!ValidationUtil.isValidAge(age)) {
             JOptionPane.showMessageDialog(null, "Invalid age!");
             return false;
         }

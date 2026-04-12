@@ -7,6 +7,21 @@ public class UserInfo {
     public UserInfo(int UI_ID, String fName, String mName, String lName, String sex, String contact, String email,
             String houseNum,
             String street, String purok) {
+        this.UI_ID = UI_ID;
+        this.fName = fName;
+        this.mName = mName;
+        this.lName = lName;
+        this.sex = sex;
+        this.contact = contact;
+        this.email = email;
+        this.street = street;
+        this.purok = purok;
+        this.houseNum = houseNum;
+    }
+
+    public UserInfo(String fName, String mName, String lName, String sex, String contact, String email,
+            String houseNum,
+            String street, String purok) {
         this.fName = fName;
         this.mName = mName;
         this.lName = lName;

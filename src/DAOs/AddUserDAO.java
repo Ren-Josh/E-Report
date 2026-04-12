@@ -1,30 +1,17 @@
 package DAOs;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.sql.ResultSet;
-
+import java.sql.*;
 import config.AppConfig;
+import config.DBConnection;
 import models.UserInfo;
 import models.Credential;
 
-/**
- * DAO responsible for inserting users and their credentials.
- * Workflow: addUser() -> addCredential()
- */
 public class AddUserDAO {
 
     /**
-     * Inserts a new user into the User_Info table and returns the generated user
-     * ID.
-     *
-     * @param con DB connection
-     * @param ui  UserInfo object
-     * @return auto-generated user ID, or -1 if insertion failed
+     * Inserts user and returns generated ID. Uses the provided connection.
      */
-    public int addUser(Connection con, UserInfo ui) {
+    public static int addUser(Connection con, UserInfo ui) throws SQLException {
         String query = """
                 INSERT INTO %s(first_name, middle_name, last_name, sex,
                                 contact_number, email_address, house_number,
@@ -43,32 +30,21 @@ public class AddUserDAO {
             stmt.setString(8, ui.getStreet());
             stmt.setString(9, ui.getPurok());
 
-            int rows = stmt.executeUpdate();
-            System.out.println(rows + " row(s) inserted into " + AppConfig.TABLE_USER_INFO);
+            stmt.executeUpdate();
 
             try (ResultSet generatedKeys = stmt.getGeneratedKeys()) {
                 if (generatedKeys.next()) {
                     return generatedKeys.getInt(1);
                 }
             }
-
-        } catch (SQLException e) {
-            System.err.println("Failed to insert user into " + AppConfig.TABLE_USER_INFO);
-            System.err.println("SQL State: " + e.getSQLState() + " - " + e.getMessage());
         }
-
         return -1;
     }
 
     /**
-     * Inserts a credential for a specific user into the Credential table.
-     *
-     * @param con    DB connection
-     * @param userID user ID from User_Info table
-     * @param c      Credential object
-     * @return true if insertion succeeded, false otherwise
+     * Inserts credentials. Uses the provided connection.
      */
-    public boolean addCredential(Connection con, int userID, Credential c) {
+    public static boolean addCredential(Connection con, int userID, Credential c) throws SQLException {
         String query = """
                 INSERT INTO %s(UI_ID, username, password, role, is_verified)
                 VALUES (?, ?, ?, ?, ?);
@@ -81,14 +57,46 @@ public class AddUserDAO {
             stmt.setString(4, c.getRole());
             stmt.setBoolean(5, c.getIsVerified());
 
-            int rows = stmt.executeUpdate();
-            System.out.println(rows + " row(s) inserted into " + AppConfig.TABLE_CREDENTIAL);
-            return rows > 0;
-
-        } catch (SQLException e) {
-            System.err.println("Failed to insert credential for user ID " + userID);
-            System.err.println("SQL State: " + e.getSQLState() + " - " + e.getMessage());
-            return false;
+            return stmt.executeUpdate() > 0;
         }
+    }
+
+    public static boolean isUsernameTaken(String username) {
+        String query = "SELECT COUNT(*) FROM %s WHERE username = ?".formatted(AppConfig.TABLE_CREDENTIAL);
+
+        try (Connection con = DBConnection.connect();
+                PreparedStatement stmt = con.prepareStatement(query)) {
+
+            stmt.setString(1, username);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1) > 0; // Returns true if count > 0
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    /**
+     * Checks the total number of credentials in the database.
+     * 
+     * @return the number of registered accounts.
+     */
+    public static int getUserCount() {
+        String query = "SELECT COUNT(*) FROM %s".formatted(AppConfig.TABLE_CREDENTIAL);
+
+        try (Connection con = DBConnection.connect();
+                PreparedStatement stmt = con.prepareStatement(query);
+                ResultSet rs = stmt.executeQuery()) {
+
+            if (rs.next()) {
+                return rs.getInt(1);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return 0;
     }
 }
