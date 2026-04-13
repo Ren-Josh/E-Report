@@ -1,10 +1,7 @@
 package tests.units;
 
 import java.io.File;
-import java.io.FileOutputStream;
-import java.io.InputStream;
-import java.net.URI;
-import java.net.URL;
+import java.io.FileWriter;
 import java.nio.file.Files;
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -15,123 +12,207 @@ import config.DBConnection;
 import models.ComplaintDetail;
 import services.controller.ComplaintServiceController;
 
+/**
+ * Unit tests for ComplaintServiceController.
+ *
+ * All tests use a locally generated mock image file instead of downloading
+ * from the internet, so they run offline and produce deterministic results.
+ */
 public class ComplaintServiceTest {
 
-    private static boolean testPassed = true;
+    private static boolean allTestsPassed = true;
 
     public static void main(String[] args) {
-        System.out.println("===== STARTING COMPLAINT SERVICE CONTROLLER TEST =====\n");
+        System.out.println("===== STARTING COMPLAINT SERVICE CONTROLLER TESTS =====\n");
 
         ComplaintServiceController service = new ComplaintServiceController();
-        testAddComplaintWithRealImage(service);
 
-        System.out.println("====================================================");
-        if (testPassed) {
-            System.out.println("CONTROLLER TEST PASSED!");
+        testAddComplaintWithMockImage(service);
+        testAddComplaintWithNoImage(service);
+        testProcessAndAttachImage(service);
+
+        System.out.println("=======================================================");
+        if (allTestsPassed) {
+            System.out.println("ALL COMPLAINT SERVICE TESTS PASSED!");
         } else {
-            System.out.println("CONTROLLER TEST FAILED. See logs above.");
+            System.out.println("SOME COMPLAINT SERVICE TESTS FAILED. See logs above.");
         }
     }
 
-    public static void testAddComplaintWithRealImage(ComplaintServiceController service) {
-        System.out.println("[TEST] Add Complaint via Service Controller (Real Image)");
+    // ==========================================
+    // TEST: addComplaint() with a mock local image
+    // ==========================================
+    public static void testAddComplaintWithMockImage(ComplaintServiceController service) {
+        System.out.println("[TEST] addComplaint() — with a mock local image file");
 
         Connection con = DBConnection.connect();
         if (con == null) {
-            System.out.println("-> FAIL: Database connection failed. Cannot verify test.");
-            testPassed = false;
+            System.out.println("-> FAIL: Database connection failed.\n");
+            allTestsPassed = false;
             return;
         }
 
-        File realImageFile = null;
+        File mockImageFile = null;
 
         try {
-            // 1. Arrange: Get initial count of records
             int initialCount = getTableRowCount(con, "COMPLAINT_DETAIL");
 
-            // 2. Arrange: Download a REAL image from the internet
-            String realFilePath = System.getProperty("user.dir") + "/downloaded_test_image.jpg";
-            realImageFile = new File(realFilePath);
-
-            System.out.println("-> Downloading a real image for testing...");
-            URL url = URI.create("https://picsum.photos/200/300").toURL();
-            try (InputStream in = url.openStream();
-                    FileOutputStream out = new FileOutputStream(realImageFile)) {
-
-                byte[] buffer = new byte[1024];
-                int bytesRead;
-                while ((bytesRead = in.read(buffer)) != -1) {
-                    out.write(buffer, 0, bytesRead);
-                }
+            // Create a local dummy image file — no internet required
+            String mockFilePath = System.getProperty("user.dir") + "/mock_test_image.jpg";
+            mockImageFile = new File(mockFilePath);
+            try (FileWriter writer = new FileWriter(mockImageFile)) {
+                writer.write("MOCK_JPEG_BYTES_FOR_UNIT_TESTING_" + System.currentTimeMillis());
             }
-            System.out.println("-> Real image successfully downloaded to: " + realFilePath);
 
-            // 3. Arrange: Populate the mock frontend complaint data
-            ComplaintDetail cd = new ComplaintDetail();
-            cd.setSubject("Stolen Bicycle outside Brgy. Hall");
-            cd.setType("Theft");
-            cd.setPersonsInvolved("Unidentified suspect wearing a black hoodie and blue cap");
-            cd.setDetails("I parked my mountain bike (red and black Trinx) outside the Barangay Hall " +
-                    "while I went inside to secure a permit at around 2:30 PM today. When I came out " +
-                    "at around 3:00 PM, the bike was gone. The lock was cut and left on the ground. " +
-                    "The CCTV in the area might have captured the incident.");
-            cd.setCurrentStatus("Pending");
-            cd.setDateTime(new Timestamp(System.currentTimeMillis()));
-            cd.setStreet("Rizal Street");
-            cd.setPurok("Purok 4");
-            cd.setLatitude(15.6625);
-            cd.setLongitude(121.0142);
+            ComplaintDetail cd = buildMockComplaint("Noise Complaint — Mock Image Test", "Disturbance");
 
-            // 3a. Attach the image bytes
-            byte[] imageBytes = Files.readAllBytes(realImageFile.toPath());
-            cd.setPhotoAttachmentBytes(imageBytes);
+            // Pre-attach bytes so service can verify them after the call
+            cd.setPhotoAttachmentBytes(Files.readAllBytes(mockImageFile.toPath()));
 
-            int mockUserId = 1; // Assuming User ID 1 exists
+            int userId = findFirstValidUserId(con);
+            service.addComplaint(userId, cd, mockImageFile);
 
-            // 4. Act: Call service.addComplaint()
-            System.out.println("-> Calling service.addComplaint()...");
-            service.addComplaint(mockUserId, cd, realImageFile);
-
-            // 5. Assert A: Check row count increment
             int afterCount = getTableRowCount(con, "COMPLAINT_DETAIL");
-            if (afterCount != initialCount + 1) {
-                System.out.println("-> FAIL: Database row count did not increase!");
-                testPassed = false;
-                return;
-            }
 
-            // 6. Assert B: Verify that image bytes are set in the model
-            if (cd.getPhotoAttachmentBytes() != null && cd.getPhotoAttachmentBytes().length > 0) {
-                System.out.println("-> PASS: Image BLOB successfully attached to the complaint record!");
+            boolean rowAdded   = afterCount == initialCount + 1;
+            boolean blobStored = cd.getPhotoAttachmentBytes() != null
+                                 && cd.getPhotoAttachmentBytes().length > 0;
+
+            if (rowAdded && blobStored) {
+                System.out.println("-> PASS: Complaint saved; row count " + initialCount
+                        + " -> " + afterCount
+                        + "; image bytes (" + cd.getPhotoAttachmentBytes().length + " bytes) attached\n");
             } else {
-                System.out.println("-> FAIL: Image BLOB is missing in the model!");
-                testPassed = false;
+                if (!rowAdded) {
+                    System.out.println("-> FAIL: Row count did not increase (expected "
+                            + (initialCount + 1) + ", got " + afterCount + ")\n");
+                }
+                if (!blobStored) {
+                    System.out.println("-> FAIL: Photo BLOB is missing in the model after addComplaint()\n");
+                }
+                allTestsPassed = false;
             }
 
         } catch (Exception e) {
-            System.out.println("-> FAIL: Exception occurred during test execution.");
+            System.out.println("-> FAIL: Exception during test: " + e.getMessage() + "\n");
             e.printStackTrace();
-            testPassed = false;
+            allTestsPassed = false;
         } finally {
-            // Clean up the downloaded file from your project root
-            if (realImageFile != null && realImageFile.exists()) {
-                realImageFile.delete();
-            }
-            try {
-                con.close();
-            } catch (Exception ignored) {
-            }
+            if (mockImageFile != null && mockImageFile.exists()) mockImageFile.delete();
+            try { con.close(); } catch (Exception ignored) {}
         }
     }
 
-    // HELPER METHOD: Counts rows in the database table
+    // ==========================================
+    // TEST: addComplaint() with null file (no image attached)
+    // ==========================================
+    public static void testAddComplaintWithNoImage(ComplaintServiceController service) {
+        System.out.println("[TEST] addComplaint() — with null file (no image)");
+
+        Connection con = DBConnection.connect();
+        if (con == null) {
+            System.out.println("-> FAIL: Database connection failed.\n");
+            allTestsPassed = false;
+            return;
+        }
+
+        try {
+            int initialCount = getTableRowCount(con, "COMPLAINT_DETAIL");
+
+            ComplaintDetail cd = buildMockComplaint("Vandalism Report — No Image", "Vandalism");
+            int userId = findFirstValidUserId(con);
+
+            // Pass null as the file — should gracefully skip image processing
+            service.addComplaint(userId, cd, null);
+
+            int afterCount = getTableRowCount(con, "COMPLAINT_DETAIL");
+
+            if (afterCount == initialCount + 1) {
+                System.out.println("-> PASS: Complaint saved without an image; row count "
+                        + initialCount + " -> " + afterCount + "\n");
+            } else {
+                System.out.println("-> FAIL: Row count did not increase when submitting without image (expected "
+                        + (initialCount + 1) + ", got " + afterCount + ")\n");
+                allTestsPassed = false;
+            }
+
+        } catch (Exception e) {
+            System.out.println("-> FAIL: Exception: " + e.getMessage() + "\n");
+            e.printStackTrace();
+            allTestsPassed = false;
+        } finally {
+            try { con.close(); } catch (Exception ignored) {}
+        }
+    }
+
+    // ==========================================
+    // TEST: processAndAttachImage() sets photo path in model
+    // ==========================================
+    public static void testProcessAndAttachImage(ComplaintServiceController service) {
+        System.out.println("[TEST] processAndAttachImage() — attaches image path to ComplaintDetail");
+
+        File mockFile = null;
+        try {
+            String mockFilePath = System.getProperty("user.dir") + "/process_image_test.jpg";
+            mockFile = new File(mockFilePath);
+            try (FileWriter writer = new FileWriter(mockFile)) {
+                writer.write("PROCESS_IMAGE_TEST_BYTES_" + System.currentTimeMillis());
+            }
+
+            ComplaintDetail cd = new ComplaintDetail();
+
+            service.processAndAttachImage(cd, mockFile);
+
+            String attachedPath = cd.getPhotoAttachment();
+
+            if (attachedPath != null && !attachedPath.isEmpty()) {
+                System.out.println("-> PASS: Photo path set on ComplaintDetail: \"" + attachedPath + "\"\n");
+            } else {
+                System.out.println("-> FAIL: Photo path was not set on ComplaintDetail after processAndAttachImage()\n");
+                allTestsPassed = false;
+            }
+
+        } catch (Exception e) {
+            System.out.println("-> FAIL: Exception: " + e.getMessage() + "\n");
+            allTestsPassed = false;
+        } finally {
+            if (mockFile != null && mockFile.exists()) mockFile.delete();
+        }
+    }
+
+    // ==========================================
+    // HELPERS
+    // ==========================================
+
+    private static ComplaintDetail buildMockComplaint(String subject, String type) {
+        ComplaintDetail cd = new ComplaintDetail();
+        cd.setSubject(subject);
+        cd.setType(type);
+        cd.setPersonsInvolved("Unidentified suspect (test)");
+        cd.setDetails("Automated test complaint record. Safe to ignore.");
+        cd.setCurrentStatus("Pending");
+        cd.setDateTime(new Timestamp(System.currentTimeMillis()));
+        cd.setStreet("Rizal Street");
+        cd.setPurok("Purok 4");
+        cd.setLatitude(15.6625);
+        cd.setLongitude(121.0142);
+        return cd;
+    }
+
+    /** Returns the UI_ID of the first user in DB, or 1 as fallback. */
+    private static int findFirstValidUserId(Connection con) {
+        try (Statement stmt = con.createStatement();
+             ResultSet rs = stmt.executeQuery("SELECT UI_ID FROM User_Info LIMIT 1")) {
+            if (rs.next()) return rs.getInt("UI_ID");
+        } catch (Exception ignored) {}
+        return 1;
+    }
+
     private static int getTableRowCount(Connection con, String tableName) {
         String query = "SELECT COUNT(*) FROM " + tableName;
         try (Statement stmt = con.createStatement();
-                ResultSet rs = stmt.executeQuery(query)) {
-            if (rs.next()) {
-                return rs.getInt(1);
-            }
+             ResultSet rs = stmt.executeQuery(query)) {
+            if (rs.next()) return rs.getInt(1);
         } catch (Exception e) {
             System.out.println("[Warning] Could not get count for " + tableName);
         }

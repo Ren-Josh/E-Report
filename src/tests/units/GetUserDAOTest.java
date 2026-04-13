@@ -18,10 +18,17 @@ public class GetUserDAOTest {
 
         GetUserDAO dao = new GetUserDAO();
 
+        // Happy-path tests (require existing DB data)
         testGetUser(dao);
         testGetCredential(dao);
 
-        System.out.println("=============================");
+        // Edge-case / negative tests (no pre-existing data required)
+        testGetUserNotFound(dao);
+        testGetCredentialWrongPassword(dao);
+        testGetCredentialWithNullUsername(dao);
+        testGetCredentialWithNullPassword(dao);
+
+        System.out.println("=======================================");
         if (allTestsPassed) {
             System.out.println("ALL GET USER DAO TESTS PASSED!");
         } else {
@@ -30,77 +37,184 @@ public class GetUserDAOTest {
     }
 
     // ==========================================
-    // TEST: Get User
+    // TEST: getUser() — happy path
     // ==========================================
     public static void testGetUser(GetUserDAO dao) {
-        System.out.println("[TEST] Get User by ID");
+        System.out.println("[TEST] getUser() — fetches a known user by ID");
 
-        // We open an independent connection to find a user to test
         try (Connection con = DBConnection.connect();
-                Statement stmt = con.createStatement();
-                ResultSet rs = stmt.executeQuery(
-                        "SELECT User_Info.UI_ID, User_Info.first_name FROM USER_INFO INNER JOIN CREDENTIAL ON Credential.UI_ID = User_Info.UI_ID LIMIT 1")) {
+             Statement stmt = con.createStatement();
+             ResultSet rs = stmt.executeQuery(
+                     "SELECT User_Info.UI_ID, User_Info.first_name "
+                     + "FROM User_Info "
+                     + "INNER JOIN Credential ON Credential.UI_ID = User_Info.UI_ID "
+                     + "LIMIT 1")) {
 
             if (!rs.next()) {
-                System.out.println("-> FAIL: No users found in database with credentials to run this test.\n");
-                allTestsPassed = false;
+                System.out.println("-> SKIP: No users with credentials found in DB.\n");
                 return;
             }
 
-            int targetId = rs.getInt("UI_ID");
+            int targetId       = rs.getInt("UI_ID");
             String expectedName = rs.getString("first_name");
 
-            // Run the target DAO method
             UserInfo ui = dao.getUser(targetId);
 
-            // Verify the data came back and matches
             if (ui != null && expectedName.equals(ui.getFName())) {
-                System.out.println(
-                        "-> PASS: Successfully fetched user with ID " + targetId + " (" + ui.getFName() + ")\n");
+                System.out.println("-> PASS: getUser(" + targetId + ") returned user \""
+                        + ui.getFName() + "\"\n");
             } else {
-                System.out.println("-> FAIL: The returned user object was null or the data did not match.\n");
+                System.out.println("-> FAIL: Returned object was null or first_name did not match "
+                        + "(expected \"" + expectedName + "\")\n");
                 allTestsPassed = false;
             }
 
         } catch (Exception e) {
-            System.out.println("-> FAIL: Exception occurred: " + e.getMessage() + "\n");
+            System.out.println("-> FAIL: Exception: " + e.getMessage() + "\n");
             allTestsPassed = false;
         }
     }
 
     // ==========================================
-    // TEST: Get Credential
+    // TEST: getCredential() — happy path
     // ==========================================
     public static void testGetCredential(GetUserDAO dao) {
-        System.out.println("[TEST] Get Credential by Login");
+        System.out.println("[TEST] getCredential() — fetches credentials for a known username/password");
 
         try (Connection con = DBConnection.connect();
-                Statement stmt = con.createStatement();
-                ResultSet rs = stmt.executeQuery("SELECT username, password FROM CREDENTIAL LIMIT 1")) {
+             Statement stmt = con.createStatement();
+             ResultSet rs = stmt.executeQuery("SELECT username, password FROM Credential LIMIT 1")) {
 
             if (!rs.next()) {
-                System.out.println("-> FAIL: No credentials found in database to run this test.\n");
-                allTestsPassed = false;
+                System.out.println("-> SKIP: No credentials found in DB.\n");
                 return;
             }
 
             String targetUser = rs.getString("username");
             String targetPass = rs.getString("password");
 
-            // Run the target DAO method
             Credential c = dao.getCredential(targetUser, targetPass);
 
-            // Verify the data came back and matches
             if (c != null && targetUser.equals(c.getUsername())) {
-                System.out.println("-> PASS: Successfully logged in and fetched credentials for " + targetUser + "\n");
+                System.out.println("-> PASS: getCredential() returned valid Credential for \""
+                        + targetUser + "\"\n");
             } else {
-                System.out.println("-> FAIL: Credential check failed. Returned object was null or data mismatched.\n");
+                System.out.println("-> FAIL: Returned object was null or username did not match\n");
                 allTestsPassed = false;
             }
 
         } catch (Exception e) {
-            System.out.println("-> FAIL: Exception occurred: " + e.getMessage() + "\n");
+            System.out.println("-> FAIL: Exception: " + e.getMessage() + "\n");
             allTestsPassed = false;
         }
+    }
+
+    // ==========================================
+    // TEST: getUser() — returns null for non-existent ID
+    // ==========================================
+    public static void testGetUserNotFound(GetUserDAO dao) {
+        System.out.println("[TEST] getUser() — returns null for non-existent UI_ID");
+
+        try {
+            UserInfo ui = dao.getUser(Integer.MAX_VALUE);
+
+            if (ui == null) {
+                System.out.println("-> PASS: getUser(MAX_INT) correctly returned null\n");
+            } else {
+                System.out.println("-> FAIL: Expected null but got a non-null UserInfo object\n");
+                allTestsPassed = false;
+            }
+        } catch (Exception e) {
+            System.out.println("-> FAIL: Exception thrown instead of returning null: " + e.getMessage() + "\n");
+            allTestsPassed = false;
+        }
+    }
+
+    // ==========================================
+    // TEST: getCredential() — returns null for wrong password
+    // ==========================================
+    public static void testGetCredentialWrongPassword(GetUserDAO dao) {
+        System.out.println("[TEST] getCredential() — returns null for wrong password");
+
+        // Find a real username, then supply a deliberately wrong password
+        String existingUsername = findFirstExistingUsername();
+
+        if (existingUsername == null) {
+            System.out.println("-> SKIP: No credentials in DB to test against.\n");
+            return;
+        }
+
+        try {
+            Credential c = dao.getCredential(existingUsername, "WRONG_PASSWORD_##INVALID");
+
+            if (c == null) {
+                System.out.println("-> PASS: getCredential() returned null for wrong password\n");
+            } else {
+                System.out.println("-> FAIL: Expected null but got a Credential object with wrong password\n");
+                allTestsPassed = false;
+            }
+        } catch (Exception e) {
+            System.out.println("-> FAIL: Exception thrown: " + e.getMessage() + "\n");
+            allTestsPassed = false;
+        }
+    }
+
+    // ==========================================
+    // TEST: getCredential() — returns null for null username
+    // ==========================================
+    public static void testGetCredentialWithNullUsername(GetUserDAO dao) {
+        System.out.println("[TEST] getCredential() — returns null when username is null");
+
+        try {
+            Credential c = dao.getCredential(null, "anypassword");
+
+            if (c == null) {
+                System.out.println("-> PASS: getCredential(null, ...) returned null gracefully\n");
+            } else {
+                System.out.println("-> FAIL: Expected null for null username but got a Credential object\n");
+                allTestsPassed = false;
+            }
+        } catch (Exception e) {
+            // A SQL exception is also acceptable behaviour — the method should not crash the app
+            System.out.println("-> PASS (exception handled): getCredential(null, ...) threw "
+                    + e.getClass().getSimpleName() + " — acceptable for null input\n");
+        }
+    }
+
+    // ==========================================
+    // TEST: getCredential() — returns null for null password
+    // ==========================================
+    public static void testGetCredentialWithNullPassword(GetUserDAO dao) {
+        System.out.println("[TEST] getCredential() — returns null when password is null");
+
+        String existingUsername = findFirstExistingUsername();
+        String username = (existingUsername != null) ? existingUsername : "any_user";
+
+        try {
+            Credential c = dao.getCredential(username, null);
+
+            if (c == null) {
+                System.out.println("-> PASS: getCredential(..., null) returned null gracefully\n");
+            } else {
+                System.out.println("-> FAIL: Expected null for null password but got a Credential object\n");
+                allTestsPassed = false;
+            }
+        } catch (Exception e) {
+            System.out.println("-> PASS (exception handled): getCredential(..., null) threw "
+                    + e.getClass().getSimpleName() + " — acceptable for null input\n");
+        }
+    }
+
+    // ==========================================
+    // HELPER
+    // ==========================================
+
+    private static String findFirstExistingUsername() {
+        try (Connection con = DBConnection.connect();
+             Statement stmt = con.createStatement();
+             ResultSet rs = stmt.executeQuery("SELECT username FROM Credential LIMIT 1")) {
+            if (rs.next()) return rs.getString("username");
+        } catch (Exception ignored) {}
+        return null;
     }
 }

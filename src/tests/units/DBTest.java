@@ -2,42 +2,52 @@ package tests.units;
 
 import config.*;
 import java.sql.Connection;
+import java.sql.DatabaseMetaData;
+import java.sql.ResultSet;
 
 public class DBTest {
 
-    // This variable keeps track of whether any test has failed.
     private static boolean allTestsPassed = true;
+
+    // Canonical list of expected tables — single source of truth used by all tests
+    private static final String[] EXPECTED_TABLES = {
+        "Complaint",
+        "Complaint_Action",
+        "Complaint_Detail",
+        "Complaint_History",
+        "Complaint_History_Detail",
+        "Credential",
+        "User_Info"
+    };
 
     public static void main(String[] args) {
 
-        System.out.println("===== STARTING TESTS =====\n");
+        System.out.println("===== STARTING DB TESTS =====\n");
 
-        String dbUser = "root";
-        String dbPass = "";
-
-        testCreateDatabase(dbUser, dbPass);
+        testCreateDatabase();
         testConnectionSuccess();
         testTableCreation();
         testTableRecreation();
+        testAllExpectedTablesExist();
 
-        System.out.println("==========================");
+        System.out.println("==============================");
         if (allTestsPassed) {
-            System.out.println("🎉 ALL TESTS PASSED! 🎉");
+            System.out.println("ALL DB TESTS PASSED!");
         } else {
-            System.out.println("❌ SOME TESTS FAILED. See the logs above. ❌");
+            System.out.println("SOME DB TESTS FAILED. See the logs above.");
         }
     }
 
     // =========================
-    // DBCreate TEST
+    // TEST: DBCreate
     // =========================
 
-    public static void testCreateDatabase(String user, String pass) {
+    public static void testCreateDatabase() {
         System.out.println("[TEST] Database Creation");
 
         try {
             DBCreate.createDatabase();
-            System.out.println("-> PASS: Database creation handled properly\n");
+            System.out.println("-> PASS: Database creation handled without exception\n");
         } catch (Exception e) {
             System.out.println("-> FAIL: Exception during database creation: " + e.getMessage() + "\n");
             allTestsPassed = false;
@@ -45,7 +55,7 @@ public class DBTest {
     }
 
     // =========================
-    // DBConnection TESTS
+    // TEST: DBConnection
     // =========================
 
     public static void testConnectionSuccess() {
@@ -54,20 +64,16 @@ public class DBTest {
         Connection con = DBConnection.connect();
 
         if (con != null) {
-            System.out.println("-> PASS: Connection successful\n");
-            // Always close connections when you're done with them!
-            try {
-                con.close();
-            } catch (Exception ignored) {
-            }
+            System.out.println("-> PASS: Connection returned a non-null Connection object\n");
+            try { con.close(); } catch (Exception ignored) {}
         } else {
-            System.out.println("-> FAIL: Connection should have succeeded but returned null\n");
+            System.out.println("-> FAIL: DBConnection.connect() returned null\n");
             allTestsPassed = false;
         }
     }
 
     // =========================
-    // TBCreate TESTS
+    // TEST: TBCreate (first run)
     // =========================
 
     public static void testTableCreation() {
@@ -76,70 +82,104 @@ public class DBTest {
         Connection con = DBConnection.connect();
 
         if (con == null) {
-            System.out.println("-> FAIL: Cannot test tables because DB connection failed\n");
+            System.out.println("-> FAIL: Cannot test table creation — DB connection failed\n");
             allTestsPassed = false;
             return;
         }
 
         try {
             TBCreate.createTables(con);
-
-            // If the table doesn't exist, this will throw an exception!
-            con.createStatement().executeQuery("SELECT * FROM Complaint LIMIT 1");
-            con.createStatement().executeQuery("SELECT * FROM Complaint_Action LIMIT 1");
-            con.createStatement().executeQuery("SELECT * FROM Complaint_Detail LIMIT 1");
-            con.createStatement().executeQuery("SELECT * FROM Complaint_History LIMIT 1");
-            con.createStatement().executeQuery("SELECT * FROM Complaint_History_Detail LIMIT 1");
-            con.createStatement().executeQuery("SELECT * FROM Credential LIMIT 1");
-            con.createStatement().executeQuery("SELECT * FROM User_Info LIMIT 1");
-
-            System.out.println("-> PASS: Tables created successfully\n");
-
+            verifyTablesExist(con);
+            System.out.println("-> PASS: All expected tables exist after first run\n");
         } catch (Exception e) {
-            System.out.println("-> FAIL: Tables were NOT created! \nError: " + e.getMessage() + "\n");
+            System.out.println("-> FAIL: " + e.getMessage() + "\n");
             allTestsPassed = false;
         } finally {
-            try {
-                con.close();
-            } catch (Exception ignored) {
-            }
+            try { con.close(); } catch (Exception ignored) {}
         }
     }
 
+    // =========================
+    // TEST: TBCreate (second run — idempotency)
+    // =========================
+
     public static void testTableRecreation() {
-        System.out.println("[TEST] Table Creation (Second Run)");
+        System.out.println("[TEST] Table Creation (Second Run — Idempotency)");
 
         Connection con = DBConnection.connect();
 
         if (con == null) {
-            System.out.println("-> FAIL: Cannot test table recreation because DB connection failed\n");
+            System.out.println("-> FAIL: Cannot test table recreation — DB connection failed\n");
             allTestsPassed = false;
             return;
         }
 
         try {
+            // Running createTables() a second time must not throw or drop tables
             TBCreate.createTables(con);
-
-            // If the table doesn't exist, this line will crash and trigger the catch block
-            // below!
-            con.createStatement().executeQuery("SELECT * FROM Complaint LIMIT 1");
-            con.createStatement().executeQuery("SELECT * FROM Complaint_Action LIMIT 1");
-            con.createStatement().executeQuery("SELECT * FROM Complaint_Detail LIMIT 1");
-            con.createStatement().executeQuery("SELECT * FROM Complaint_History LIMIT 1");
-            con.createStatement().executeQuery("SELECT * FROM Complaint_History_Detail LIMIT 1");
-            con.createStatement().executeQuery("SELECT * FROM Credential LIMIT 1");
-            con.createStatement().executeQuery("SELECT * FROM User_Info LIMIT 1");
-
-            System.out.println("-> PASS: Tables handled existing state correctly\n");
-
+            verifyTablesExist(con);
+            System.out.println("-> PASS: All expected tables still exist after second run (idempotent)\n");
         } catch (Exception e) {
-            System.out.println("-> FAIL: Tables do not exist after recreation run! \nError: " + e.getMessage() + "\n");
+            System.out.println("-> FAIL: " + e.getMessage() + "\n");
             allTestsPassed = false;
         } finally {
-            try {
-                con.close();
-            } catch (Exception ignored) {
+            try { con.close(); } catch (Exception ignored) {}
+        }
+    }
+
+    // =========================
+    // TEST: Verify expected table count via DatabaseMetaData
+    // =========================
+
+    public static void testAllExpectedTablesExist() {
+        System.out.println("[TEST] Expected Table Count via DatabaseMetaData");
+
+        Connection con = DBConnection.connect();
+
+        if (con == null) {
+            System.out.println("-> FAIL: Cannot verify table count — DB connection failed\n");
+            allTestsPassed = false;
+            return;
+        }
+
+        try {
+            DatabaseMetaData meta = con.getMetaData();
+            int foundCount = 0;
+
+            for (String table : EXPECTED_TABLES) {
+                try (ResultSet rs = meta.getTables(null, null, table, new String[]{"TABLE"})) {
+                    if (rs.next()) {
+                        foundCount++;
+                    } else {
+                        System.out.println("   [MISSING] Table not found in metadata: " + table);
+                    }
+                }
             }
+
+            if (foundCount == EXPECTED_TABLES.length) {
+                System.out.println("-> PASS: All " + EXPECTED_TABLES.length
+                        + " expected tables confirmed via DatabaseMetaData\n");
+            } else {
+                System.out.println("-> FAIL: Only " + foundCount + " of " + EXPECTED_TABLES.length
+                        + " expected tables found\n");
+                allTestsPassed = false;
+            }
+
+        } catch (Exception e) {
+            System.out.println("-> FAIL: Exception during metadata check: " + e.getMessage() + "\n");
+            allTestsPassed = false;
+        } finally {
+            try { con.close(); } catch (Exception ignored) {}
+        }
+    }
+
+    // =========================
+    // HELPER: Queries each expected table — throws if any is missing
+    // =========================
+
+    private static void verifyTablesExist(Connection con) throws Exception {
+        for (String table : EXPECTED_TABLES) {
+            con.createStatement().executeQuery("SELECT 1 FROM " + table + " LIMIT 1");
         }
     }
 }

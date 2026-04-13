@@ -5,6 +5,7 @@ import java.sql.Timestamp;
 public class ComplaintDetail {
     private String currentStatus, subject, type, street, purok, personsInvolved, details;
     private String photoAttachment;
+    private byte[] photoAttachmentBytes;
     private Timestamp dateTime;
     private double longitude, latitude;
 
@@ -114,6 +115,14 @@ public class ComplaintDetail {
 
     public void setPhotoAttachment(String photoAttachment) {
         this.photoAttachment = photoAttachment;
+    }
+
+    public byte[] getPhotoAttachmentBytes() {
+        return photoAttachmentBytes;
+    }
+
+    public void setPhotoAttachmentBytes(byte[] photoAttachmentBytes) {
+        this.photoAttachmentBytes = photoAttachmentBytes;
     }
 
 }
