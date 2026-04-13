@@ -7,8 +7,6 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.naming.spi.DirStateFactory.Result;
-
 import config.DBConnection;
 import models.ComplaintAction;
 import models.ComplaintDetail;
@@ -184,6 +182,29 @@ public class GetComplaintDAO {
 
         } catch (SQLException e) {
             System.err.println("Error retrieving report count for UI_ID: " + UI_ID);
+            e.printStackTrace();
+        }
+
+        return 0;
+    }
+
+    public int getTotalReportCount() {
+        String query = """
+            SELECT COUNT(C_ID) AS Total
+            FROM Complaint
+        """;
+
+        try (Connection con = DBConnection.connect();
+                PreparedStatement statement = con.prepareStatement(query)) {
+
+            try(ResultSet rs = statement.executeQuery()){
+                if(rs.next()){
+                    return rs.getInt("Total");
+                }
+            }
+
+        } catch (SQLException e) {
+            System.err.println("Error retrieving report count");
             e.printStackTrace();
         }
 
