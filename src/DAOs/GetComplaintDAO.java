@@ -12,62 +12,62 @@ import models.ComplaintDetail;
 import models.ComplaintHistoryDetail;
 
 public class GetComplaintDAO {
-	
+
 	// ===== SQL STRINGS =====
 	private String queryComplaint, queryAllComplaints, queryHistory, queryAction;
 	private String queryUserCount, queryTotalCount, queryStatusCount;
-	
-	public GetComplaintDAO(){
+
+	public GetComplaintDAO() {
 		// ===== INIT SQL =====
 		queryComplaint = """
-			SELECT cd.CD_ID, cd.current_status, cd.subject, cd.type,
-				cd.date_time, cd.street, cd.purok, cd.longitude, cd.latitude,
-				cd.persons_involved, cd.details, cd.photo_attachment
-			FROM Complaint c
-			INNER JOIN Complaint_Detail cd ON cd.CD_ID = c.CD_ID
-			WHERE c.UI_ID = ? AND cd.CD_ID = ?;
-			""";
-			
+				SELECT cd.CD_ID, cd.current_status, cd.subject, cd.type,
+					cd.date_time, cd.street, cd.purok, cd.longitude, cd.latitude,
+					cd.persons_involved, cd.details, cd.photo_attachment
+				FROM Complaint c
+				INNER JOIN Complaint_Detail cd ON cd.CD_ID = c.CD_ID
+				WHERE c.UI_ID = ? AND cd.CD_ID = ?;
+				""";
+
 		queryAllComplaints = """
-			SELECT cd.CD_ID, cd.current_status, cd.subject, cd.type,
-				cd.date_time, cd.street, cd.purok, cd.longitude, cd.latitude,
-				cd.persons_involved, cd.details, cd.photo_attachment
-			FROM Complaint_Detail cd
-			INNER JOIN Complaint c ON c.CD_ID = cd.CD_ID
-			WHERE c.UI_ID = ?;
-			""";
-			
+				SELECT cd.CD_ID, cd.current_status, cd.subject, cd.type,
+					cd.date_time, cd.street, cd.purok, cd.longitude, cd.latitude,
+					cd.persons_involved, cd.details, cd.photo_attachment
+				FROM Complaint_Detail cd
+				INNER JOIN Complaint c ON c.CD_ID = cd.CD_ID
+				WHERE c.UI_ID = ?;
+				""";
+
 		queryHistory = """
-			SELECT chd.CHD_ID, chd.status, chd.process, chd.date_time_updated, chd.updated_by
-			FROM Complaint_History_Detail chd
-			INNER JOIN Complaint_History ch ON ch.CHD_ID = chd.CHD_ID
-			WHERE ch.CD_ID = ?;
-			""";
-			
+				SELECT chd.CHD_ID, chd.status, chd.process, chd.date_time_updated, chd.updated_by
+				FROM Complaint_History_Detail chd
+				INNER JOIN Complaint_History ch ON ch.CHD_ID = chd.CHD_ID
+				WHERE ch.CD_ID = ?;
+				""";
+
 		queryAction = """
-			SELECT CD_ID, action_taken, recommendation, oic,
-				date_time_assigned, resolution_date_time
-			FROM Complaint_Action
-			WHERE CD_ID = ?;
-			""";
-			
+				SELECT CD_ID, action_taken, recommendation, oic,
+					date_time_assigned, resolution_date_time
+				FROM Complaint_Action
+				WHERE CD_ID = ?;
+				""";
+
 		queryUserCount = """
-			SELECT COUNT(C_ID) AS Total
-			FROM Complaint
-			WHERE UI_ID = ?;
-			""";
-			
+				SELECT COUNT(C_ID) AS Total
+				FROM Complaint
+				WHERE UI_ID = ?;
+				""";
+
 		queryTotalCount = """
-			SELECT COUNT(C_ID) AS Total
-			FROM Complaint;
-			""";
-			
+				SELECT COUNT(C_ID) AS Total
+				FROM Complaint;
+				""";
+
 		queryStatusCount = """
-			SELECT COUNT(*) AS Total
-			FROM Complaint_Detail cd INNER JOIN Complaint c
-			ON cd.cd_id = c.cd_id
-			WHERE c.ui_id = ? AND cd.current_status = ?;
-			""";
+				SELECT COUNT(*) AS Total
+				FROM Complaint_Detail cd INNER JOIN Complaint c
+				ON cd.cd_id = c.cd_id
+				WHERE c.ui_id = ? AND cd.current_status = ?;
+				""";
 	}
 
 	// ===== MAP RESULTSET TO COMPLAINTDETAIL =====
@@ -121,7 +121,7 @@ public class GetComplaintDAO {
 
 	public List<ComplaintDetail> getAllComplaint(Connection con, int UI_ID) {
 		List<ComplaintDetail> cdList = new ArrayList<>();
-		
+
 		// ===== GET ALL COMPLAINTS =====
 		try (PreparedStatement stmt = con.prepareStatement(queryAllComplaints)) {
 
@@ -144,7 +144,7 @@ public class GetComplaintDAO {
 
 	public List<ComplaintHistoryDetail> getComplaintHistory(Connection con, int CD_ID) {
 		List<ComplaintHistoryDetail> chdList = new ArrayList<>();
-		
+
 		// ===== GET COMPLAINT HISTORY =====
 		try (PreparedStatement stmt = con.prepareStatement(queryHistory)) {
 

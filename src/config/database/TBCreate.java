@@ -60,7 +60,6 @@ public class TBCreate {
 
             if (rs.next()) {
                 // Table exists, no action needed
-                System.out.println(tableName + " table already exists!");
             } else {
                 // Table does not exist, create it
                 stmt.executeUpdate(createQuery);

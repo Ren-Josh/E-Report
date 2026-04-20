@@ -19,9 +19,9 @@ public class E_Report extends JFrame {
     private CardLayout cardLayout;
     private JPanel container;
 
-    private UserSession us;
-    private UserInfo ui;
-    private Credential cred;
+    protected UserSession us;
+    protected UserInfo ui;
+    protected Credential cred;
     private ComplaintDetail cd;
     private List<ComplaintDetail> cdList;
 
@@ -39,14 +39,11 @@ public class E_Report extends JFrame {
         cardLayout = new CardLayout();
         container = new JPanel(cardLayout);
 
-        container.add(new HomepageView(this), "home");
-        container.add(new LoginView(this), "login");
-        container.add(new RegisterView(this), "register");
-        container.add(new DashboardView(this), "dashboard");
+        container.add(new HomepageView(this), "home");        
 
         add(container);
 
-        cardLayout.show(container, "dashboard");
+        cardLayout.show(container, "home");
         setVisible(true);
     }
 
@@ -82,7 +79,7 @@ public class E_Report extends JFrame {
         this.ui = ui;
     }
 
-    public UserInfo getUserInfo(){
+    public UserInfo getUserInfo(){        
         return ui;
     }
 

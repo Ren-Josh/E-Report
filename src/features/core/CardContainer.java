@@ -11,7 +11,7 @@ import java.awt.*;
 public class CardContainer extends JPanel {
     private CardLayout cardLayout;
     private JPanel container;
-    
+
     public CardContainer() {
         cardLayout = new CardLayout();
         container = new JPanel(cardLayout);
@@ -20,7 +20,7 @@ public class CardContainer extends JPanel {
         add(container, BorderLayout.CENTER);
         setOpaque(false);
     }
-    
+
     /**
      * Adds a panel with a name for navigation.
      */
@@ -28,14 +28,14 @@ public class CardContainer extends JPanel {
         panel.setOpaque(false);
         container.add(panel, name);
     }
-    
+
     /**
      * Shows the card with the given name.
      */
     public void showCard(String name) {
         cardLayout.show(container, name);
     }
-    
+
     /**
      * Gets the next card name (for wizard-style navigation).
      */
@@ -43,7 +43,7 @@ public class CardContainer extends JPanel {
         // CardLayout doesn't expose current card, so track externally if needed
         return null;
     }
-    
+
     public CardLayout getCardLayout() {
         return cardLayout;
     }

@@ -40,7 +40,7 @@ public class AuthCredentialController {
 
 			// ===== CHECK CREDENTIAL =====
 			if (credential != null) {
-				// ===== CREATE SESSION =====
+				// ===== CREATE SESSION =====				
 				return new UserSession(
 					credential.getUI_ID(),
 					credential.getRole(),

@@ -55,15 +55,15 @@ public class UIConfig {
     // =========================
     // FONTS
     // =========================
-    public static final Font H1 = new Font("Helvetica", Font.BOLD, 56);
-    public static final Font H2 = new Font("Helvetica", Font.BOLD, 32);
-    public static final Font H3 = new Font("Helvetica", Font.BOLD, 24);
+    public static final Font H1 = new Font("Segoe UI", Font.BOLD, 56);
+    public static final Font H2 = new Font("Segoe UI", Font.BOLD, 32);
+    public static final Font H3 = new Font("Segoe UI", Font.BOLD, 24);
 
-    public static final Font BODY_LARGE = new Font("Helvetica", Font.PLAIN, 22);
-    public static final Font BODY = new Font("Helvetica", Font.PLAIN, 16);
-    public static final Font CAPTION = new Font("Helvetica", Font.PLAIN, 13);
+    public static final Font BODY_LARGE = new Font("Segoe UI", Font.PLAIN, 22);
+    public static final Font BODY = new Font("Segoe UI", Font.PLAIN, 16);
+    public static final Font CAPTION = new Font("Segoe UI", Font.PLAIN, 13);
 
-    public static final Font INPUT_TITLE = new Font("Helvetica", Font.BOLD, 16);
+    public static final Font INPUT_TITLE = new Font("Segoe UI", Font.BOLD, 16);
 
     // =========================
     // BUTTON SIZES
@@ -72,9 +72,9 @@ public class UIConfig {
     public static final Dimension BTN_SECONDARY = new Dimension(180, 55);
     public static final Dimension BTN_SMALL = new Dimension(140, 45);
 
-    public static final Font BTN_PRIMARY_FONT = new Font("Helvetica", Font.BOLD, 22);
-    public static final Font BTN_SECONDARY_FONT = new Font("Helvetica", Font.BOLD, 18);
-    public static final Font BTN_SMALL_FONT = new Font("Helvetica", Font.PLAIN, 16);
+    public static final Font BTN_PRIMARY_FONT = new Font("Segoe UI", Font.BOLD, 22);
+    public static final Font BTN_SECONDARY_FONT = new Font("Segoe UI", Font.BOLD, 18);
+    public static final Font BTN_SMALL_FONT = new Font("Segoe UI", Font.PLAIN, 16);
 
     public static final int RADIUS_PRIMARY = 45;
     public static final int RADIUS_SECONDARY = 35;

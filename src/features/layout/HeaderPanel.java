@@ -4,6 +4,9 @@ package features.layout;
 // HEADER PANEL - Top bar with logo and user info
 // ============================================
 import javax.swing.*;
+
+import app.E_Report;
+
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import javax.imageio.ImageIO;
@@ -11,27 +14,38 @@ import java.io.File;
 import java.io.IOException;
 
 import config.UIConfig;
+import models.UserInfo;
 
 public class HeaderPanel extends JPanel {
+    protected E_Report app;
+    private UserInfo ui;
+
     private JLabel userNameLabel;
     private JLabel userIconLabel;
     private JLabel logoLabel;
     private JLabel titleLabel;
     
     // MODIFY THIS: Change the user role/name dynamically
-    private String currentUserRole = "Secretary"; // <-- CHANGE THIS VALUE
+    private String currentUserRole;
     
     // Glass effect opacity (0.0 = fully transparent, 1.0 = fully opaque)
     private float glassOpacity = 0.9f;
     private Color glassBorderColor = new Color(255, 255, 255, 180);
     private Color shadowColor = new Color(0, 0, 0, 30);
     
-    public HeaderPanel() {
+    public HeaderPanel(E_Report app) {
+        this.app = app;
+        this.ui = app.getUserInfo();
         setOpaque(false);
         setLayout(new BorderLayout());
         setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
         setPreferredSize(new Dimension(720, 70));
         
+        if(ui == null){
+            currentUserRole = "Guest";
+        }else{
+            currentUserRole = ui.getFName() + "  " + ui.getLName();
+        }
         // Left side: Logo and Title
         JPanel leftPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 15, 0));
         leftPanel.setOpaque(false);
@@ -55,7 +69,7 @@ public class HeaderPanel extends JPanel {
         
         // User Icon
         userIconLabel = createResizableIconLabel(UIConfig.USER_ICON_PATH, 35, 35);
-        gbc.gridx = 0;
+        gbc.gridx = 1;
         rightPanel.add(userIconLabel, gbc);
         
         // User Name - Vertically centered with icon
@@ -63,8 +77,8 @@ public class HeaderPanel extends JPanel {
         userNameLabel.setFont(new Font("Arial", Font.BOLD, 16));
         userNameLabel.setForeground(new Color(50, 50, 50));
         userNameLabel.setVerticalAlignment(SwingConstants.CENTER);
-        gbc.gridx = 1;
-        gbc.insets = new Insets(0, 0, 0, 0); // Reset insets for last item
+        gbc.gridx = 0;
+        gbc.insets = new Insets(0, 0, 0, 10); // Reset insets for last item
         rightPanel.add(userNameLabel, gbc);
         
         add(rightPanel, BorderLayout.EAST);

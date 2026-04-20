@@ -1,6 +1,7 @@
 package services.controller;
 
 import daos.AddUserDAO;
+import daos.GetUserDAO;
 import config.database.DBConnection;
 import models.Credential;
 import models.UserInfo;
@@ -15,6 +16,24 @@ public class UserServiceController {
 	public UserServiceController(){
 		// ===== INIT DAO =====
 		addUserDAO = new AddUserDAO();
+	}
+
+	public UserInfo getUserInfo(int UI_ID){
+		UserInfo ui = null;		
+		GetUserDAO gudao = new GetUserDAO();
+
+		try(Connection con = DBConnection.connect();){
+			con.setAutoCommit(false);
+			
+			ui = gudao.getUser(con, UI_ID);
+
+			return ui;
+		}catch(SQLException e){
+			System.err.println("Error fetching user information! ");
+			e.printStackTrace();
+		}
+
+		return ui;
 	}
 
 	/**

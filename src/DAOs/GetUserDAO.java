@@ -31,9 +31,9 @@ public class GetUserDAO {
 			""";
 			
 		queryCredential = """
-			SELECT Credential.UI_ID, username, password
-			FROM Credential
-			INNER JOIN User_Info ON Credential.UI_ID = User_Info.UI_ID
+			SELECT c.UI_ID, c.username, c.password, c.role, c.is_verified
+			FROM Credential c
+			INNER JOIN User_Info ui ON c.UI_ID = ui.UI_ID
 			WHERE username = ? AND password = ?;
 			""";
 	}
@@ -58,7 +58,7 @@ public class GetUserDAO {
 			// ===== EXECUTE QUERY =====
 			try (ResultSet rs = stmt.executeQuery()) {
 				if (rs.next()) {
-					// ===== MAP TO USERINFO =====
+					// ===== MAP TO USERINFO =====					
 					UserInfo ui = new UserInfo();
 					ui.setUI_ID(rs.getInt("UI_ID"));
 					ui.setFName(rs.getString("first_name"));
@@ -103,12 +103,14 @@ public class GetUserDAO {
 
 			// ===== EXECUTE QUERY =====
 			try (ResultSet rs = stmt.executeQuery()) {
-				if (rs.next()) {
+				if (rs.next()) {					
 					// ===== MAP TO CREDENTIAL =====
 					Credential c = new Credential();
 					c.setUI_ID(rs.getInt("UI_ID"));
 					c.setUsername(rs.getString("username"));
 					c.setPassword(rs.getString("password"));
+					c.setRole(rs.getString("role"));
+					c.setIsVerified(rs.getBoolean("is_verified"));
 					return c;
 				}
 			}

@@ -46,7 +46,6 @@ public class DBCreate {
 
             // If a result is returned, database exists
             if (rs.next()) {
-                System.out.println("Database 'e_report' already exists!");
             } else {
                 // Create the database
                 statement.executeUpdate(createQuery);
