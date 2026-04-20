@@ -7,6 +7,7 @@ import features.core.BackgroundPanel;
 import features.core.FormLayoutUtils;
 import models.UserInfo;
 import models.UserSession;
+import services.RememberMeService;
 import services.controller.AuthCredentialController;
 import services.controller.UserServiceController;
 import services.validation.UIValidator;
@@ -68,13 +69,13 @@ public class LoginView extends JPanel {
         gbc.gridy = 3;
         FormLayoutUtils.addInputGroup(loginCard, "Password", txtPass, gbc, 0, 3);
 
-        // Forgot password
-        JLabel lblForgot = new JLabel("Forgot password?");
-        lblForgot.setFont(UIConfig.CAPTION);
-        lblForgot.setForeground(Color.GRAY);
+        // Remember Me
+        JCheckBox chkRemember = new JCheckBox("Remember me");
+        chkRemember.setOpaque(false);
+        chkRemember.setFont(UIConfig.CAPTION);
         gbc.gridy = 5;
-        gbc.insets = new Insets(0, 40, 25, 40);
-        loginCard.add(lblForgot, gbc);
+        gbc.insets = new Insets(5, 40, 10, 40);
+        loginCard.add(chkRemember, gbc);
 
         // Login button
         UIButton btnLogin = new UIButton("Login", UIConfig.PRIMARY,
@@ -84,18 +85,36 @@ public class LoginView extends JPanel {
         gbc.insets = new Insets(10, 40, 0, 40);
         loginCard.add(btnLogin, gbc);
 
+        // Forgot password
+        JLabel lblForgot = new JLabel("Forgot password?");
+        lblForgot.setFont(UIConfig.CAPTION);
+        lblForgot.setForeground(Color.GRAY);
+        lblForgot.setHorizontalAlignment(SwingConstants.CENTER);
+        gbc.gridy = 7;
+        gbc.insets = new Insets(10, 40, 20, 40);
+        loginCard.add(lblForgot, gbc);
+
         // Footer
         JPanel footer = FormLayoutUtils.createFooterLink(
                 "Don't have an account? ",
                 "Register here",
                 UIConfig.SUCCESS,
                 () -> app.navigate("register"));
-        gbc.gridy = 7;
+        gbc.gridy = 8;
         loginCard.add(footer, gbc);
 
         centerWrapper.add(loginCard);
         bgPanel.add(centerWrapper, BorderLayout.CENTER);
         add(bgPanel, BorderLayout.CENTER);
+
+        RememberMeService rememberService = new RememberMeService();
+
+        RememberMeService.RememberedUser remembered = rememberService.loadCredentials();
+        if (remembered != null) {
+            txtUser.setText(remembered.username);
+            txtPass.setText(remembered.password);
+            chkRemember.setSelected(true);
+        }
 
         // Action listener
         btnLogin.addActionListener(e -> {
@@ -115,7 +134,15 @@ public class LoginView extends JPanel {
                 app.setUserSession(session);
                 ui = new UserServiceController().getUserInfo(session.getUserId());
                 if (ui != null) {
-                    app.setUserInfo(ui);                    
+                    app.setUserInfo(ui);
+
+                    if (chkRemember.isSelected()) {
+                        rememberService.saveCredentials(
+                                txtUser.getValue(),
+                                txtPass.getValue());
+                    } else {
+                        rememberService.clear();
+                    }
                 } else {
                     JOptionPane.showMessageDialog(this,
                             "System Error: Cannot fetch user information",
