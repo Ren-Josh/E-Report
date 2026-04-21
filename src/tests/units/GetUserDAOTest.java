@@ -1,7 +1,7 @@
 package tests.units;
 
 import config.database.DBConnection;
-import daos.GetUserDAO;
+import daos.GetUserDao;
 import models.UserInfo;
 import models.Credential;
 
@@ -16,7 +16,7 @@ public class GetUserDAOTest {
     public static void main(String[] args) {
         System.out.println("===== STARTING GET USER DAO TESTS =====\n");
 
-        GetUserDAO dao = new GetUserDAO();
+        GetUserDao dao = new GetUserDao();
 
         testGetUser(dao);
         testGetCredential(dao);
@@ -32,7 +32,7 @@ public class GetUserDAOTest {
     // ==========================================
     // TEST: Get User
     // ==========================================
-    public static void testGetUser(GetUserDAO dao) {
+    public static void testGetUser(GetUserDao dao) {
         System.out.println("[TEST] Get User by ID");
 
         // We open an independent connection to find a user to test
@@ -71,7 +71,7 @@ public class GetUserDAOTest {
     // ==========================================
     // TEST: Get Credential
     // ==========================================
-    public static void testGetCredential(GetUserDAO dao) {
+    public static void testGetCredential(GetUserDao dao) {
         System.out.println("[TEST] Get Credential by Login");
 
         try (Connection con = DBConnection.connect();

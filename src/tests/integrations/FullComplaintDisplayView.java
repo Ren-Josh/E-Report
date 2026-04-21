@@ -22,7 +22,7 @@ import javax.swing.JTextArea;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 
-import daos.GetComplaintDAO;
+import daos.GetComplaintDao;
 import config.database.DBConnection;
 import models.ComplaintDetail;
 
@@ -102,7 +102,7 @@ public class FullComplaintDisplayView extends JFrame {
     }
 
     public void loadAllComplaintData(int userId, int complaintId) {
-        GetComplaintDAO dao = new GetComplaintDAO();
+        GetComplaintDao dao = new GetComplaintDao();
         ComplaintDetail cd = null;
 
         try {

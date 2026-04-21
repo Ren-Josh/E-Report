@@ -1,7 +1,7 @@
 package tests.units;
 
 import config.database.DBConnection;
-import daos.GetComplaintDAO;
+import daos.GetComplaintDao;
 import models.ComplaintDetail;
 import models.ComplaintHistoryDetail;
 import models.ComplaintAction;
@@ -18,7 +18,7 @@ public class GetComplaintDAOTest {
     public static void main(String[] args) {
         System.out.println("===== STARTING CONSOLIDATED GET COMPLAINT DAO TESTS =====\n");
 
-        GetComplaintDAO dao = new GetComplaintDAO();
+        GetComplaintDao dao = new GetComplaintDao();
 
         // Dynamically locate valid testing IDs from the database
         int[] complaintIds = findValidComplaintIds();
@@ -58,7 +58,7 @@ public class GetComplaintDAOTest {
     // ==========================================
     // TEST: Get Single Complaint
     // ==========================================
-    public static void testGetComplaint(GetComplaintDAO dao, int uiId, int cdId) {
+    public static void testGetComplaint(GetComplaintDao dao, int uiId, int cdId) {
         System.out.println("[TEST] Get Single Complaint");
 
         try {
@@ -91,7 +91,7 @@ public class GetComplaintDAOTest {
     // ==========================================
     // TEST: Get All Complaints
     // ==========================================
-    public static void testGetAllComplaint(GetComplaintDAO dao, int uiId) {
+    public static void testGetAllComplaint(GetComplaintDao dao, int uiId) {
         System.out.println("[TEST] Get All Complaints for User");
         try {
             List<ComplaintDetail> list = dao.getAllComplaint(DBConnection.connect(), uiId);
@@ -111,7 +111,7 @@ public class GetComplaintDAOTest {
     // ==========================================
     // TEST: Get Complaint History
     // ==========================================
-    public static void testGetComplaintHistory(GetComplaintDAO dao, int cdId, int chdId) {
+    public static void testGetComplaintHistory(GetComplaintDao dao, int cdId, int chdId) {
         System.out.println("[TEST] Get Complaint History");
         try {
             List<ComplaintHistoryDetail> historyList = dao.getComplaintHistory(DBConnection.connect(), cdId);
@@ -142,7 +142,7 @@ public class GetComplaintDAOTest {
     // ==========================================
     // TEST: Get Complaint Action
     // ==========================================
-    public static void testGetComplaintAction(GetComplaintDAO dao, int cdId) {
+    public static void testGetComplaintAction(GetComplaintDao dao, int cdId) {
         System.out.println("[TEST] Get Complaint Action");
         try {
             ComplaintAction ca = dao.getComplaintAction(DBConnection.connect(), cdId);

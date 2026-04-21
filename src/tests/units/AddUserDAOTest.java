@@ -1,7 +1,7 @@
 package tests.units;
 
 import config.database.DBConnection;
-import daos.AddUserDAO;
+import daos.AddUserDao;
 import models.UserInfo;
 import models.Credential;
 
@@ -23,7 +23,7 @@ public class AddUserDAOTest {
             return;
         }
 
-        AddUserDAO dao = new AddUserDAO();
+        AddUserDao dao = new AddUserDao();
 
         testAddUser(con, dao);
         testAddCredential(con, dao);
@@ -44,7 +44,7 @@ public class AddUserDAOTest {
     // ==========================================
     // TEST: Add User
     // ==========================================
-    public static void testAddUser(Connection con, AddUserDAO dao) {
+    public static void testAddUser(Connection con, AddUserDao dao) {
         System.out.println("[TEST] Add User");
 
         try {
@@ -82,7 +82,7 @@ public class AddUserDAOTest {
     // ==========================================
     // TEST: Add Credential
     // ==========================================
-    public static void testAddCredential(Connection con, AddUserDAO dao) {
+    public static void testAddCredential(Connection con, AddUserDao dao) {
         System.out.println("[TEST] Add Credential");
 
         try {

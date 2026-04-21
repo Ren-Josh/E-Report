@@ -1,9 +1,9 @@
 package tests.integrations;
 
-import daos.AddUserDAO;
-import daos.AddComplaintDAO;
-import daos.GetUserDAO;
-import daos.GetComplaintDAO;
+import daos.AddUserDao;
+import daos.AddComplaintDao;
+import daos.GetUserDao;
+import daos.GetComplaintDao;
 import config.database.DBConnection;
 import models.UserInfo;
 import models.Credential;
@@ -64,7 +64,7 @@ public class DAOIntegrationTest {
             ui.setStreet("Main St");
             ui.setPurok("Purok 1");
 
-            AddUserDAO addUserDAO = new AddUserDAO();
+            AddUserDao addUserDAO = new AddUserDao();
             int userID = addUserDAO.addUser(con, ui);
             if (userID <= 0) {
                 throw new Exception("User insertion failed");
@@ -84,8 +84,8 @@ public class DAOIntegrationTest {
             System.out.println("-> PASS: Credential inserted for user ID " + userID);
 
             // Retrieve and verify
-            GetUserDAO getUserDAO = new GetUserDAO();
-            UserInfo retrievedUI = getUserDAO.getUser(DBConnection.connect() ,userID);
+            GetUserDao getUserDAO = new GetUserDao();
+            UserInfo retrievedUI = getUserDAO.getUser(DBConnection.connect(), userID);
             if (retrievedUI == null || !retrievedUI.getEmail().equals("john.doe@example.com")) {
                 throw new Exception("Retrieved user does not match inserted user");
             }
@@ -122,7 +122,7 @@ public class DAOIntegrationTest {
             ui.setStreet("Second St");
             ui.setPurok("Purok 2");
 
-            AddUserDAO addUserDAO = new AddUserDAO();
+            AddUserDao addUserDAO = new AddUserDao();
             int userID = addUserDAO.addUser(con, ui);
             if (userID <= 0)
                 throw new Exception("User insertion failed for complaint workflow");
@@ -141,7 +141,7 @@ public class DAOIntegrationTest {
             cd.setDetails("Loud music every night");
             cd.setPhotoAttachmentBytes(null);
 
-            AddComplaintDAO acDao = new AddComplaintDAO();
+            AddComplaintDao acDao = new AddComplaintDao();
             int complaintID = acDao.addComplaint(con, userID, cd);
             if (complaintID <= 0)
                 throw new Exception("Complaint insertion failed");
@@ -154,7 +154,7 @@ public class DAOIntegrationTest {
             chd.setProcess("Assigned");
             chd.setDateTimeUpdated(new Timestamp(System.currentTimeMillis()));
             chd.setUpdatedBy("Admin");
-            
+
             int chdID = acDao.addComplaintHistory(con, complaintID, chd);
             if (chdID <= 0)
                 throw new Exception("Complaint history insertion failed");
@@ -173,7 +173,7 @@ public class DAOIntegrationTest {
             System.out.println("-> PASS: Complaint action inserted for complaint ID " + complaintID);
 
             // Step 5: retrieve complaint and verify
-            GetComplaintDAO getComplaintDAO = new GetComplaintDAO();
+            GetComplaintDao getComplaintDAO = new GetComplaintDao();
             ComplaintDetail retrievedCD = getComplaintDAO.getComplaint(con, userID, complaintID);
             if (retrievedCD == null || !retrievedCD.getSubject().equals("Noise complaint")) {
                 throw new Exception("Retrieved complaint does not match inserted complaint");
