@@ -39,16 +39,36 @@ public class UIConfig {
                         "Total Reports", "Pending", "In Progress", "Resolved"
         };
 
-        public static String[] NAV_ICON_PATHS = {
+        public static String[] NAV_RESIDENT_ICON_PATHS = {
+                        "src/assets/icons/dashboard_icon.png",
+                        "src/assets/icons/reports_icon.png",
+                        "src/assets/icons/submit_icon.png",
+        };
+
+        public static String[] NAV_SECRETARY_ICON_PATHS = {
                         "src/assets/icons/dashboard_icon.png",
                         "src/assets/icons/reports_icon.png",
                         "src/assets/icons/submit_icon.png",
                         "src/assets/icons/users_icon.png",
         };
 
-        public static String[] NAV_ICON_LABELS = {
-                        "Dashboard", "My Reports", "Submit Report",
+        public static String[] NAV_CAPTAIN_ICON_PATHS = {
+                        "src/assets/icons/dashboard_icon.png",
+                        "src/assets/icons/reports_icon.png",
+                        "src/assets/icons/submit_icon.png",
+        };
+
+        public static String[] NAV_RESIDENT_ICON_LABELS = {
+                        "Dashboard", "My Reports", "Submit Report"
+        };
+
+        public static String[] NAV_SECRETARY_ICON_LABELS = {
+                        "Dashboard", "Reports", "Submit Report",
                         "Users"
+        };
+
+        public static String[] NAV_CAPTAIN_ICON_LABELS = {
+                        "Dashboard", "Reports", "Submit Report",
         };
 
         // =========================

@@ -44,10 +44,13 @@ public class DashboardView extends JPanel {
         bgPanel.add(nav, BorderLayout.WEST);
 
         if (us.getRole().equalsIgnoreCase("captain")) {
+            nav.setCaptainMenus();
             bgPanel.add(cdp, BorderLayout.CENTER);
         } else if (us.getRole().equalsIgnoreCase("secretary")) {
+            nav.setSecretaryMenus();
             bgPanel.add(sdp, BorderLayout.CENTER);
         } else if (us.getRole().equalsIgnoreCase("resident")) {
+            nav.setResidentMenus();
             bgPanel.add(rdp, BorderLayout.CENTER);
         }
 

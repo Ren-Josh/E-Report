@@ -14,9 +14,9 @@ public class NavPanel extends JPanel {
     private JPanel menuContainer;
     private int selectedIndex = 0;
 
-    // MODIFY THESE: Icon paths
-    private String[] iconPaths = UIConfig.NAV_ICON_PATHS;
-    private String[] menuItems = UIConfig.NAV_ICON_LABELS;
+    // Current role-based config
+    private String[] currentIconPaths;
+    private String[] currentMenuItems;
 
     // MODIFY THIS: Icon size
     private int iconSize = 22;
@@ -39,18 +39,50 @@ public class NavPanel extends JPanel {
         // Only top/bottom padding, no left/right padding
         menuContainer.setBorder(BorderFactory.createEmptyBorder(20, 0, 20, 0));
 
-        for (int i = 0; i < menuItems.length; i++) {
-            menuContainer.add(createMenuItem(i));
-            menuContainer.add(Box.createRigidArea(new Dimension(0, 6)));
-        }
+        // Default to resident menus until explicitly set
+        setResidentMenus();
 
         add(menuContainer, BorderLayout.NORTH);
     }
 
+    // ========== ROLE-BASED MENU SETTERS ==========
+
+    /**
+     * Load Resident menus: Dashboard, My Reports, Submit Report
+     */
+    public void setResidentMenus() {
+        this.currentIconPaths = UIConfig.NAV_RESIDENT_ICON_PATHS;
+        this.currentMenuItems = UIConfig.NAV_RESIDENT_ICON_LABELS;
+        this.selectedIndex = 0;
+        refreshMenu();
+    }
+
+    /**
+     * Load Captain menus: Dashboard, Reports, Users, Analytics
+     */
+    public void setCaptainMenus() {
+        this.currentIconPaths = UIConfig.NAV_CAPTAIN_ICON_PATHS;
+        this.currentMenuItems = UIConfig.NAV_CAPTAIN_ICON_LABELS;
+        this.selectedIndex = 0;
+        refreshMenu();
+    }
+
+    /**
+     * Load Secretary menus: Dashboard, Reports, Users, Case Management
+     */
+    public void setSecretaryMenus() {
+        this.currentIconPaths = UIConfig.NAV_SECRETARY_ICON_PATHS;
+        this.currentMenuItems = UIConfig.NAV_SECRETARY_ICON_LABELS;
+        this.selectedIndex = 0;
+        refreshMenu();
+    }
+
+    // ============================================
+
     private JPanel createMenuItem(int index) {
         boolean isSelected = (index == selectedIndex);
-        String text = menuItems[index];
-        String iconPath = iconPaths[index];
+        String text = currentMenuItems[index];
+        String iconPath = currentIconPaths[index];
 
         JPanel panel = new JPanel(new GridBagLayout()) {
             @Override
@@ -168,7 +200,7 @@ public class NavPanel extends JPanel {
 
     private void refreshMenu() {
         menuContainer.removeAll();
-        for (int i = 0; i < menuItems.length; i++) {
+        for (int i = 0; i < currentMenuItems.length; i++) {
             menuContainer.add(createMenuItem(i));
             menuContainer.add(Box.createRigidArea(new Dimension(0, 6)));
         }
@@ -177,7 +209,7 @@ public class NavPanel extends JPanel {
     }
 
     public void setSelectedIndex(int index) {
-        if (index >= 0 && index < menuItems.length) {
+        if (index >= 0 && index < currentMenuItems.length) {
             selectedIndex = index;
             refreshMenu();
         }
