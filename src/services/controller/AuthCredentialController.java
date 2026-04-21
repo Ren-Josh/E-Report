@@ -1,6 +1,6 @@
 package services.controller;
 
-import daos.GetUserDAO;
+import daos.GetUserDao;
 import config.database.DBConnection;
 import java.sql.Connection;
 import models.Credential;
@@ -12,13 +12,13 @@ import models.UserSession;
  * Handles user authentication by validating credentials against the database.
  */
 public class AuthCredentialController {
-	
+
 	// ===== DAO INSTANCE =====
-	private GetUserDAO userDAO;
-	
-	public AuthCredentialController(){
+	private GetUserDao userDAO;
+
+	public AuthCredentialController() {
 		// ===== INIT DAO =====
-		userDAO = new GetUserDAO();
+		userDAO = new GetUserDao();
 	}
 
 	/**
@@ -30,22 +30,21 @@ public class AuthCredentialController {
 	 */
 	public UserSession authenticateUser(String username, String password) {
 		Connection con = null;
-		
+
 		try {
 			// ===== CREATE CONNECTION =====
 			con = DBConnection.connect();
-			
+
 			// ===== AUTHENTICATE USER =====
 			Credential credential = userDAO.getCredential(con, username, password);
 
 			// ===== CHECK CREDENTIAL =====
 			if (credential != null) {
-				// ===== CREATE SESSION =====				
+				// ===== CREATE SESSION =====
 				return new UserSession(
-					credential.getUI_ID(),
-					credential.getRole(),
-					credential.getIsVerified()
-				);
+						credential.getUI_ID(),
+						credential.getRole(),
+						credential.getIsVerified());
 			}
 
 		} catch (Exception e) {

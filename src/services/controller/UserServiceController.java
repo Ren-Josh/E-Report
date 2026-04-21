@@ -1,7 +1,7 @@
 package services.controller;
 
-import daos.AddUserDAO;
-import daos.GetUserDAO;
+import daos.AddUserDao;
+import daos.GetUserDao;
 import config.database.DBConnection;
 import models.Credential;
 import models.UserInfo;
@@ -9,26 +9,26 @@ import java.sql.Connection;
 import java.sql.SQLException;
 
 public class UserServiceController {
-	
+
 	// ===== DAO INSTANCE =====
-	private AddUserDAO addUserDAO;
-	
-	public UserServiceController(){
+	private AddUserDao addUserDAO;
+
+	public UserServiceController() {
 		// ===== INIT DAO =====
-		addUserDAO = new AddUserDAO();
+		addUserDAO = new AddUserDao();
 	}
 
-	public UserInfo getUserInfo(int UI_ID){
-		UserInfo ui = null;		
-		GetUserDAO gudao = new GetUserDAO();
+	public UserInfo getUserInfo(int UI_ID) {
+		UserInfo ui = null;
+		GetUserDao gudao = new GetUserDao();
 
-		try(Connection con = DBConnection.connect();){
+		try (Connection con = DBConnection.connect();) {
 			con.setAutoCommit(false);
-			
+
 			ui = gudao.getUser(con, UI_ID);
 
 			return ui;
-		}catch(SQLException e){
+		} catch (SQLException e) {
 			System.err.println("Error fetching user information! ");
 			e.printStackTrace();
 		}
@@ -40,16 +40,16 @@ public class UserServiceController {
 	 * Registers a new user with credentials as a single transaction.
 	 * 
 	 * @param ui UserInfo object
-	 * @param c Credential object
+	 * @param c  Credential object
 	 * @return status message
 	 */
 	public String registerUser(UserInfo ui, Credential c) {
 		Connection con = null;
-		
+
 		try {
 			// ===== CREATE CONNECTION =====
 			con = DBConnection.connect();
-			
+
 			// ===== CHECK USERNAME =====
 			if (addUserDAO.isUsernameTaken(con, c.getUsername())) {
 				return "Username is already taken.";

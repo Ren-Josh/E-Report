@@ -6,7 +6,7 @@ import java.nio.file.Files;
 import java.sql.Connection;
 import java.sql.SQLException;
 
-import daos.AddComplaintDAO;
+import daos.AddComplaintDao;
 import config.database.DBConnection;
 import models.ComplaintDetail;
 
@@ -16,35 +16,36 @@ import models.ComplaintDetail;
  * Handles operations related to complaints submitted by users.
  */
 public class ComplaintServiceController {
-	
+
 	// ===== DAO INSTANCE =====
-	private AddComplaintDAO addComplaintDAO;
-	
-	public ComplaintServiceController(){
+	private AddComplaintDao addComplaintDAO;
+
+	public ComplaintServiceController() {
 		// ===== INIT DAO =====
-		addComplaintDAO = new AddComplaintDAO();
+		addComplaintDAO = new AddComplaintDao();
 	}
 
 	/**
 	 * Adds a new complaint for a given user.
 	 * 
-	 * @param UI_ID The user ID filing the complaint
-	 * @param cd The ComplaintDetail object containing complaint data
+	 * @param UI_ID       The user ID filing the complaint
+	 * @param cd          The ComplaintDetail object containing complaint data
 	 * @param droppedFile Optional file to attach (e.g., an image); can be null
 	 */
 	public void addComplaint(int UI_ID, ComplaintDetail cd, File droppedFile) {
 		Connection con = null;
-		
+
 		try {
 			// ===== CREATE CONNECTION =====
 			con = DBConnection.connect();
-			
+
 			// ===== PROCESS IMAGE =====
 			if (droppedFile != null) {
 				try {
 					processAndAttachImage(cd, droppedFile);
 				} catch (Exception e) {
-					System.err.println("Non-critical Error: Image failed to save, continuing with complaint submission.");
+					System.err
+							.println("Non-critical Error: Image failed to save, continuing with complaint submission.");
 					e.printStackTrace();
 				}
 			}
@@ -71,7 +72,7 @@ public class ComplaintServiceController {
 	/**
 	 * Processes and attaches an image file to the ComplaintDetail object.
 	 * 
-	 * @param cd The ComplaintDetail object to attach the image to
+	 * @param cd          The ComplaintDetail object to attach the image to
 	 * @param droppedFile The image file to read and attach
 	 */
 	public void processAndAttachImage(ComplaintDetail cd, File droppedFile) {
