@@ -11,13 +11,12 @@ import models.ComplaintAction;
 import models.ComplaintDetail;
 import models.ComplaintHistoryDetail;
 
-public class GetComplaintDAO {
+public class GetComplaintDao {
 
 	// ===== SQL STRINGS =====
 	private String queryComplaint, queryAllComplaints, queryHistory, queryAction;
-	private String queryUserCount, queryTotalCount, queryStatusCount;
 
-	public GetComplaintDAO() {
+	public GetComplaintDao() {
 		// ===== INIT SQL =====
 		queryComplaint = """
 				SELECT cd.CD_ID, cd.current_status, cd.subject, cd.type,
@@ -49,24 +48,6 @@ public class GetComplaintDAO {
 					date_time_assigned, resolution_date_time
 				FROM Complaint_Action
 				WHERE CD_ID = ?;
-				""";
-
-		queryUserCount = """
-				SELECT COUNT(C_ID) AS Total
-				FROM Complaint
-				WHERE UI_ID = ?;
-				""";
-
-		queryTotalCount = """
-				SELECT COUNT(C_ID) AS Total
-				FROM Complaint;
-				""";
-
-		queryStatusCount = """
-				SELECT COUNT(*) AS Total
-				FROM Complaint_Detail cd INNER JOIN Complaint c
-				ON cd.cd_id = c.cd_id
-				WHERE c.ui_id = ? AND cd.current_status = ?;
 				""";
 	}
 
@@ -191,67 +172,5 @@ public class GetComplaintDAO {
 		}
 
 		return null;
-	}
-
-	public int getUserTotalReportCount(Connection con, int UI_ID) {
-		// ===== GET USER REPORT COUNT =====
-		try (PreparedStatement stmt = con.prepareStatement(queryUserCount)) {
-
-			stmt.setInt(1, UI_ID);
-
-			// ===== EXECUTE QUERY =====
-			try (ResultSet rs = stmt.executeQuery()) {
-				if (rs.next()) {
-					return rs.getInt("Total");
-				}
-			}
-
-		} catch (SQLException e) {
-			System.err.println("Error retrieving report count for UI_ID: " + UI_ID);
-			e.printStackTrace();
-		}
-
-		return -1;
-	}
-
-	public int getTotalReportCount(Connection con) {
-		// ===== GET TOTAL REPORT COUNT =====
-		try (PreparedStatement stmt = con.prepareStatement(queryTotalCount)) {
-
-			// ===== EXECUTE QUERY =====
-			try (ResultSet rs = stmt.executeQuery()) {
-				if (rs.next()) {
-					return rs.getInt("Total");
-				}
-			}
-
-		} catch (SQLException e) {
-			System.err.println("Error retrieving report count");
-			e.printStackTrace();
-		}
-
-		return -1;
-	}
-
-	public int getUserTotalStatusCount(Connection con, int UI_ID, String status) {
-		// ===== GET STATUS COUNT =====
-		try (PreparedStatement stmt = con.prepareStatement(queryStatusCount)) {
-
-			stmt.setInt(1, UI_ID);
-			stmt.setString(2, status);
-
-			// ===== EXECUTE QUERY =====
-			try (ResultSet rs = stmt.executeQuery()) {
-				if (rs.next()) {
-					return rs.getInt("Total");
-				}
-			}
-
-		} catch (SQLException e) {
-			System.err.println("Error retrieving status count for UI_ID: " + UI_ID);
-			e.printStackTrace();
-		}
-
-		return -1;
 	}
 }

@@ -1,4 +1,4 @@
-package features.core.dashboardpanel.secretary;
+package features.core;
 
 import javax.swing.*;
 import javax.swing.table.TableCellRenderer;

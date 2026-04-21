@@ -5,27 +5,27 @@ import config.AppConfig;
 import models.UserInfo;
 import models.Credential;
 
-public class AddUserDAO {
-	
+public class AddUserDao {
+
 	// ===== SQL STRINGS =====
 	private String queryUserInfo, queryCredential, queryCheckUser, queryCount;
-	
-	public AddUserDAO(){
+
+	public AddUserDao() {
 		// ===== INIT SQL =====
 		queryUserInfo = """
-			INSERT INTO %s(first_name, middle_name, last_name, sex,
-				contact_number, email_address, house_number,
-				street, purok)
-			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
-			""".formatted(AppConfig.TABLE_USER_INFO);
-			
+				INSERT INTO %s(first_name, middle_name, last_name, sex,
+					contact_number, email_address, house_number,
+					street, purok)
+				VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
+				""".formatted(AppConfig.TABLE_USER_INFO);
+
 		queryCredential = """
-			INSERT INTO %s(UI_ID, username, password, role, is_verified)
-			VALUES (?, ?, ?, ?, ?);
-			""".formatted(AppConfig.TABLE_CREDENTIAL);
-			
+				INSERT INTO %s(UI_ID, username, password, role, is_verified)
+				VALUES (?, ?, ?, ?, ?);
+				""".formatted(AppConfig.TABLE_CREDENTIAL);
+
 		queryCheckUser = "SELECT COUNT(*) FROM %s WHERE username = ?".formatted(AppConfig.TABLE_CREDENTIAL);
-		
+
 		queryCount = "SELECT COUNT(*) FROM %s".formatted(AppConfig.TABLE_CREDENTIAL);
 	}
 
@@ -69,15 +69,16 @@ public class AddUserDAO {
 
 	public boolean isUsernameTaken(Connection con, String username) {
 		boolean isTaken = false;
-		
+
 		// ===== CHECK USERNAME =====
 		try (PreparedStatement stmt = con.prepareStatement(queryCheckUser)) {
 			stmt.setString(1, username);
-			
+
 			// ===== EXECUTE QUERY =====
 			try (ResultSet rs = stmt.executeQuery()) {
 				if (rs.next()) {
-					if(rs.getInt(1) > 0) isTaken = true;
+					if (rs.getInt(1) > 0)
+						isTaken = true;
 				}
 			}
 		} catch (SQLException e) {
@@ -88,10 +89,10 @@ public class AddUserDAO {
 
 	public int getUserCount(Connection con) {
 		int userCount = 0;
-		
+
 		// ===== COUNT USERS =====
 		try (PreparedStatement stmt = con.prepareStatement(queryCount);
-			 ResultSet rs = stmt.executeQuery()) {
+				ResultSet rs = stmt.executeQuery()) {
 
 			if (rs.next()) {
 				userCount = rs.getInt(1);

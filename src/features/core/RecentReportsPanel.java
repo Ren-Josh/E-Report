@@ -1,4 +1,4 @@
-package features.core.dashboardpanel.secretary;
+package features.core;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableCellRenderer;
@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.function.Consumer;
 
 import features.components.GlassPanel;
+import features.core.dashboardpanel.secretary.DashboardTable;
 
 public class RecentReportsPanel extends GlassPanel {
 

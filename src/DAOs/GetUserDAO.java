@@ -16,26 +16,26 @@ import java.sql.SQLException;
  * - User information by user ID
  * - Credential details by username and password
  */
-public class GetUserDAO {
-	
+public class GetUserDao {
+
 	// ===== SQL STRINGS =====
 	private String queryUser, queryCredential;
-	
-	public GetUserDAO(){
+
+	public GetUserDao() {
 		// ===== INIT SQL =====
 		queryUser = """
-			SELECT UI_ID, first_name, middle_name, last_name, sex,
-				contact_number, email_address, house_number, street, purok
-			FROM User_Info
-			WHERE UI_ID = ?;
-			""";
-			
+				SELECT UI_ID, first_name, middle_name, last_name, sex,
+					contact_number, email_address, house_number, street, purok
+				FROM User_Info
+				WHERE UI_ID = ?;
+				""";
+
 		queryCredential = """
-			SELECT c.UI_ID, c.username, c.password, c.role, c.is_verified
-			FROM Credential c
-			INNER JOIN User_Info ui ON c.UI_ID = ui.UI_ID
-			WHERE username = ? AND password = ?;
-			""";
+				SELECT c.UI_ID, c.username, c.password, c.role, c.is_verified
+				FROM Credential c
+				INNER JOIN User_Info ui ON c.UI_ID = ui.UI_ID
+				WHERE username = ? AND password = ?;
+				""";
 	}
 
 	/**
@@ -58,7 +58,7 @@ public class GetUserDAO {
 			// ===== EXECUTE QUERY =====
 			try (ResultSet rs = stmt.executeQuery()) {
 				if (rs.next()) {
-					// ===== MAP TO USERINFO =====					
+					// ===== MAP TO USERINFO =====
 					UserInfo ui = new UserInfo();
 					ui.setUI_ID(rs.getInt("UI_ID"));
 					ui.setFName(rs.getString("first_name"));
@@ -103,7 +103,7 @@ public class GetUserDAO {
 
 			// ===== EXECUTE QUERY =====
 			try (ResultSet rs = stmt.executeQuery()) {
-				if (rs.next()) {					
+				if (rs.next()) {
 					// ===== MAP TO CREDENTIAL =====
 					Credential c = new Credential();
 					c.setUI_ID(rs.getInt("UI_ID"));

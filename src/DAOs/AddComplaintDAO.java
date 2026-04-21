@@ -15,29 +15,29 @@ import models.ComplaintHistoryDetail;
  * All methods throw SQLException on failure, making them
  * safe to use in transactions.
  */
-public class AddComplaintDAO {
-	
+public class AddComplaintDao {
+
 	// ===== SQL STRINGS =====
 	private String insertDetailSQL, insertComplaintSQL, insertHistoryDetailSQL, insertHistorySQL, insertActionSQL;
 	private Connection con;
 	private int cdID, chdID, rows;
 	private ResultSet rs;
-	
-	public AddComplaintDAO(){
+
+	public AddComplaintDao() {
 		// ===== INIT SQL =====
 		insertDetailSQL = "INSERT INTO Complaint_Detail "
-			+ "(current_status, subject, type, date_time, street, purok, longitude, latitude, persons_involved, details, photo_attachment) "
-			+ "VALUES (?,?,?,?,?,?,?,?,?,?,?);";
-			
+				+ "(current_status, subject, type, date_time, street, purok, longitude, latitude, persons_involved, details, photo_attachment) "
+				+ "VALUES (?,?,?,?,?,?,?,?,?,?,?);";
+
 		insertComplaintSQL = "INSERT INTO Complaint(CD_ID, UI_ID) VALUES(?,?);";
-		
+
 		insertHistoryDetailSQL = "INSERT INTO Complaint_History_Detail "
-			+ "(status, process, date_time_updated, updated_by) VALUES (?,?,?,?);";
-			
+				+ "(status, process, date_time_updated, updated_by) VALUES (?,?,?,?);";
+
 		insertHistorySQL = "INSERT INTO Complaint_History(CD_ID, CHD_ID) VALUES (?,?);";
-		
+
 		insertActionSQL = "INSERT INTO Complaint_Action "
-			+ "(CD_ID, action_taken, recommendation, oic, resolution_date_time) VALUES (?,?,?,?,?);";
+				+ "(CD_ID, action_taken, recommendation, oic, resolution_date_time) VALUES (?,?,?,?,?);";
 	}
 
 	/**
@@ -51,7 +51,7 @@ public class AddComplaintDAO {
 	 */
 	public int addComplaint(Connection con, int userID, ComplaintDetail cd) throws SQLException {
 		this.con = con;
-		
+
 		// ===== INSERT DETAIL =====
 		try (PreparedStatement stmtDetail = con.prepareStatement(insertDetailSQL, Statement.RETURN_GENERATED_KEYS)) {
 			stmtDetail.setString(1, cd.getCurrentStatus());
@@ -103,9 +103,10 @@ public class AddComplaintDAO {
 	 */
 	public int addComplaintHistory(Connection con, int complaintID, ComplaintHistoryDetail chd) throws SQLException {
 		this.con = con;
-		
+
 		// ===== INSERT HISTORY DETAIL =====
-		try (PreparedStatement stmtHistoryDetail = con.prepareStatement(insertHistoryDetailSQL, Statement.RETURN_GENERATED_KEYS)) {
+		try (PreparedStatement stmtHistoryDetail = con.prepareStatement(insertHistoryDetailSQL,
+				Statement.RETURN_GENERATED_KEYS)) {
 			stmtHistoryDetail.setString(1, chd.getStatus());
 			stmtHistoryDetail.setString(2, chd.getProcess());
 			stmtHistoryDetail.setTimestamp(3, chd.getDateTimeUpdated());
@@ -148,7 +149,7 @@ public class AddComplaintDAO {
 	 */
 	public boolean addComplaintAction(Connection con, int complaintID, ComplaintAction ca) throws SQLException {
 		this.con = con;
-		
+
 		// ===== INSERT ACTION =====
 		try (PreparedStatement stmtAction = con.prepareStatement(insertActionSQL, Statement.RETURN_GENERATED_KEYS)) {
 			stmtAction.setInt(1, complaintID);
