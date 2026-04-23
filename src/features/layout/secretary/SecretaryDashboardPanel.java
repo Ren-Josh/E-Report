@@ -1,4 +1,4 @@
-package features.layout;
+package features.layout.secretary;
 
 // ============================================================
 // JAVA STANDARD LIBRARY IMPORTS

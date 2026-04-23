@@ -1,4 +1,4 @@
-package features.layout;
+package features.components;
 
 import javax.swing.*;
 

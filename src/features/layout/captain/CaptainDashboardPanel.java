@@ -1,8 +1,9 @@
-package features.layout;
+package features.layout.captain;
 
 import javax.swing.*;
 
 import app.E_Report;
+import features.components.FilterBarPanel;
 import features.core.dashboardpanel.DashboardInfoCardsPanel;
 import features.core.dashboardpanel.captain.*;
 

@@ -1,4 +1,4 @@
-package features.core.dashboardpanel.captain;
+package features.components;
 
 import javax.swing.*;
 import javax.swing.border.*;
@@ -7,9 +7,6 @@ import java.awt.event.*;
 import java.util.Calendar;
 import java.util.Date;
 import config.UIConfig;
-import features.components.UIComboBox;
-import features.components.UIButton;
-import features.components.UIInput;
 import features.components.filter.TimeFilter;
 import features.components.filter.TimeFilterPanel;
 

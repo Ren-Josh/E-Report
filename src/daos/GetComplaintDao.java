@@ -13,11 +13,9 @@ import models.ComplaintHistoryDetail;
 
 public class GetComplaintDao {
 
-	// ===== SQL STRINGS =====
 	private String queryComplaint, queryAllComplaints, queryHistory, queryAction, queryResidentRecentComplaint;
 
 	public GetComplaintDao() {
-		// ===== INIT SQL =====
 		queryComplaint = """
 				SELECT cd.CD_ID, cd.current_status, cd.subject, cd.type,
 					cd.date_time, cd.street, cd.purok, cd.longitude, cd.latitude,
@@ -56,7 +54,7 @@ public class GetComplaintDao {
 				WHERE c.UI_ID = ?;
 				""";
 
-		queryResidentRecentComplaint = queryAllComplaints = """
+		queryResidentRecentComplaint = """
 				SELECT
 				    cd.CD_ID,
 				    cd.current_status,
@@ -102,7 +100,6 @@ public class GetComplaintDao {
 				""";
 	}
 
-	// ===== MAP RESULTSET TO COMPLAINTDETAIL =====
 	private ComplaintDetail mapToComplaintDetail(ResultSet rs) throws SQLException {
 		ComplaintDetail cd = new ComplaintDetail();
 
@@ -124,7 +121,6 @@ public class GetComplaintDao {
 		return cd;
 	}
 
-	// ===== MAP RESULTSET TO COMPLAINTHISTORYDETAIL =====
 	private ComplaintHistoryDetail mapToHistoryDetail(ResultSet rs) throws SQLException {
 		ComplaintHistoryDetail chd = new ComplaintHistoryDetail();
 		chd.setStatus(rs.getString("status"));
@@ -135,107 +131,83 @@ public class GetComplaintDao {
 	}
 
 	public ComplaintDetail getComplaint(Connection con, int UI_ID, int CD_ID) {
-		// ===== GET COMPLAINT =====
 		try (PreparedStatement stmt = con.prepareStatement(queryComplaint)) {
-
 			stmt.setInt(1, UI_ID);
 			stmt.setInt(2, CD_ID);
 
-			// ===== EXECUTE QUERY =====
 			try (ResultSet rs = stmt.executeQuery()) {
 				if (rs.next()) {
 					return mapToComplaintDetail(rs);
 				}
 			}
-
 		} catch (SQLException e) {
 			System.err.println("Error retrieving complaint detail from Complaint_Detail table");
 			e.printStackTrace();
 		}
-
 		return null;
 	}
 
 	public List<ComplaintDetail> getAllComplaint(Connection con, int UI_ID) {
 		List<ComplaintDetail> cdList = new ArrayList<>();
 
-		// ===== GET ALL COMPLAINTS =====
 		try (PreparedStatement stmt = con.prepareStatement(queryAllComplaints)) {
-
 			stmt.setInt(1, UI_ID);
 
-			// ===== EXECUTE QUERY =====
 			try (ResultSet rs = stmt.executeQuery()) {
 				while (rs.next()) {
 					cdList.add(mapToComplaintDetail(rs));
 				}
 			}
-
 		} catch (SQLException e) {
 			System.err.println("Error retrieving all complaints for UI_ID: " + UI_ID);
 			e.printStackTrace();
 		}
-
 		return cdList;
 	}
 
 	public List<ComplaintDetail> getRecentComplaint(Connection con, int UI_ID, int limit) {
 		List<ComplaintDetail> cdList = new ArrayList<>();
 
-		// ===== GET ALL COMPLAINTS =====
-		try (PreparedStatement stmt = con.prepareStatement(queryAllComplaints)) {
-
+		try (PreparedStatement stmt = con.prepareStatement(queryResidentRecentComplaint)) {
 			stmt.setInt(1, UI_ID);
 			stmt.setInt(2, limit);
 
-			// ===== EXECUTE QUERY =====
 			try (ResultSet rs = stmt.executeQuery()) {
 				while (rs.next()) {
 					cdList.add(mapToComplaintDetail(rs));
 				}
 			}
-
 		} catch (SQLException e) {
-			System.err.println("Error retrieving all complaints for UI_ID: " + UI_ID);
+			System.err.println("Error retrieving recent complaints for UI_ID: " + UI_ID);
 			e.printStackTrace();
 		}
-
 		return cdList;
 	}
 
 	public List<ComplaintHistoryDetail> getComplaintHistory(Connection con, int CD_ID) {
 		List<ComplaintHistoryDetail> chdList = new ArrayList<>();
 
-		// ===== GET COMPLAINT HISTORY =====
 		try (PreparedStatement stmt = con.prepareStatement(queryHistory)) {
-
 			stmt.setInt(1, CD_ID);
 
-			// ===== EXECUTE QUERY =====
 			try (ResultSet rs = stmt.executeQuery()) {
 				while (rs.next()) {
 					chdList.add(mapToHistoryDetail(rs));
 				}
 			}
-
 		} catch (SQLException e) {
 			System.err.println("Error retrieving complaint history for CD_ID: " + CD_ID);
 			e.printStackTrace();
 		}
-
 		return chdList;
 	}
 
 	public ComplaintAction getComplaintAction(Connection con, int CD_ID) {
-		// ===== GET COMPLAINT ACTION =====
 		try (PreparedStatement stmt = con.prepareStatement(queryAction)) {
-
 			stmt.setInt(1, CD_ID);
 
-			// ===== EXECUTE QUERY =====
 			try (ResultSet rs = stmt.executeQuery()) {
 				if (rs.next()) {
-					// ===== MAP TO ACTION =====
 					ComplaintAction ca = new ComplaintAction();
 					ca.setActionTaken(rs.getString("action_taken"));
 					ca.setRecommendation(rs.getString("recommendation"));
@@ -245,12 +217,10 @@ public class GetComplaintDao {
 					return ca;
 				}
 			}
-
 		} catch (SQLException e) {
 			System.err.println("Error retrieving complaint action for CD_ID: " + CD_ID);
 			e.printStackTrace();
 		}
-
 		return null;
 	}
 }

@@ -1,4 +1,4 @@
-package features.layout;
+package features.components;
 
 import javax.swing.*;
 import java.awt.*;
@@ -330,7 +330,8 @@ public class HeaderPanel extends JPanel {
     protected void onProfileClicked() {
         System.out.println("Profile clicked");
         if (app != null) {
-            // app.showProfilePanel();
+            app.navigate("profile");
+            ;
         }
     }
 

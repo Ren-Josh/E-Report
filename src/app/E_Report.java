@@ -9,9 +9,11 @@ import java.util.List;
 
 import models.*;
 import config.UIConfig;
+import features.layout.common.ProfilePanel;
 import features.views.DashboardView;
 import features.views.HomepageView;
 import features.views.LoginView;
+import features.views.MyReportsView;
 import features.views.RegisterView;
 import services.controller.DatabaseController;
 
@@ -60,6 +62,10 @@ public class E_Report extends JFrame {
             add(new RegisterView(this));
         } else if (route.equalsIgnoreCase("dashboard")) {
             add(new DashboardView(this));
+        } else if (route.equalsIgnoreCase("profile")) {
+            add(new ProfilePanel(this));
+        } else if (route.equalsIgnoreCase("myreport")) {
+            add(new MyReportsView(this));
         }
 
         // 3. Tell Swing to redraw the window
