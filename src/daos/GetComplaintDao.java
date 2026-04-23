@@ -14,7 +14,7 @@ import models.ComplaintHistoryDetail;
 public class GetComplaintDao {
 
 	// ===== SQL STRINGS =====
-	private String queryComplaint, queryAllComplaints, queryHistory, queryAction;
+	private String queryComplaint, queryAllComplaints, queryHistory, queryAction, queryResidentRecentComplaint;
 
 	public GetComplaintDao() {
 		// ===== INIT SQL =====
@@ -28,12 +28,63 @@ public class GetComplaintDao {
 				""";
 
 		queryAllComplaints = """
-				SELECT cd.CD_ID, cd.current_status, cd.subject, cd.type,
-					cd.date_time, cd.street, cd.purok, cd.longitude, cd.latitude,
-					cd.persons_involved, cd.details, cd.photo_attachment
+				SELECT
+				    cd.CD_ID,
+				    cd.current_status,
+				    cd.subject,
+				    cd.type,
+				    cd.date_time,
+				    cd.street,
+				    cd.purok,
+				    cd.longitude,
+				    cd.latitude,
+				    cd.persons_involved,
+				    cd.details,
+				    cd.photo_attachment,
+				    CASE
+				        WHEN cd.current_status = 'Pending' THEN cd.date_time_created
+				        ELSE latest_chd.latest_dateTimeUpdated
+				    END AS last_update
 				FROM Complaint_Detail cd
 				INNER JOIN Complaint c ON c.CD_ID = cd.CD_ID
+				LEFT JOIN (
+				    SELECT ch.CD_ID, MAX(chd.date_time_updated) AS latest_dateTimeUpdated
+				    FROM Complaint_History ch
+				    INNER JOIN Complaint_History_Detail chd ON chd.CHD_ID = ch.CHD_ID
+				    GROUP BY ch.CD_ID
+				) latest_chd ON latest_chd.CD_ID = cd.CD_ID
 				WHERE c.UI_ID = ?;
+				""";
+
+		queryResidentRecentComplaint = queryAllComplaints = """
+				SELECT
+				    cd.CD_ID,
+				    cd.current_status,
+				    cd.subject,
+				    cd.type,
+				    cd.date_time,
+				    cd.street,
+				    cd.purok,
+				    cd.longitude,
+				    cd.latitude,
+				    cd.persons_involved,
+				    cd.details,
+				    cd.photo_attachment,
+				    CASE
+				        WHEN cd.current_status = 'Pending' THEN cd.date_time_created
+				        ELSE latest_chd.latest_dateTimeUpdated
+				    END AS last_update
+				FROM Complaint_Detail cd
+				INNER JOIN Complaint c ON c.CD_ID = cd.CD_ID
+				LEFT JOIN (
+				    SELECT ch.CD_ID, MAX(chd.date_time_updated) AS latest_dateTimeUpdated
+				    FROM Complaint_History ch
+				    INNER JOIN Complaint_History_Detail chd ON chd.CHD_ID = ch.CHD_ID
+				    GROUP BY ch.CD_ID
+				) latest_chd ON latest_chd.CD_ID = cd.CD_ID
+				WHERE c.UI_ID = ?
+				ORDER BY cd.date_time_created DESC
+				LIMIT ?;
 				""";
 
 		queryHistory = """
@@ -54,6 +105,8 @@ public class GetComplaintDao {
 	// ===== MAP RESULTSET TO COMPLAINTDETAIL =====
 	private ComplaintDetail mapToComplaintDetail(ResultSet rs) throws SQLException {
 		ComplaintDetail cd = new ComplaintDetail();
+
+		cd.setComplaintId(rs.getInt("CD_ID"));
 		cd.setCurrentStatus(rs.getString("current_status"));
 		cd.setSubject(rs.getString("subject"));
 		cd.setType(rs.getString("type"));
@@ -65,6 +118,9 @@ public class GetComplaintDao {
 		cd.setPersonsInvolved(rs.getString("persons_involved"));
 		cd.setDetails(rs.getString("details"));
 		cd.setPhotoAttachmentBytes(rs.getBytes("photo_attachment"));
+
+		cd.setLastUpdateTimestamp(rs.getTimestamp("last_update"));
+
 		return cd;
 	}
 
@@ -107,6 +163,30 @@ public class GetComplaintDao {
 		try (PreparedStatement stmt = con.prepareStatement(queryAllComplaints)) {
 
 			stmt.setInt(1, UI_ID);
+
+			// ===== EXECUTE QUERY =====
+			try (ResultSet rs = stmt.executeQuery()) {
+				while (rs.next()) {
+					cdList.add(mapToComplaintDetail(rs));
+				}
+			}
+
+		} catch (SQLException e) {
+			System.err.println("Error retrieving all complaints for UI_ID: " + UI_ID);
+			e.printStackTrace();
+		}
+
+		return cdList;
+	}
+
+	public List<ComplaintDetail> getRecentComplaint(Connection con, int UI_ID, int limit) {
+		List<ComplaintDetail> cdList = new ArrayList<>();
+
+		// ===== GET ALL COMPLAINTS =====
+		try (PreparedStatement stmt = con.prepareStatement(queryAllComplaints)) {
+
+			stmt.setInt(1, UI_ID);
+			stmt.setInt(2, limit);
 
 			// ===== EXECUTE QUERY =====
 			try (ResultSet rs = stmt.executeQuery()) {

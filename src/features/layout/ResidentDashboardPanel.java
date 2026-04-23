@@ -27,6 +27,10 @@ import config.UIConfig;
 import features.core.RecentReportsPanel;
 import features.core.dashboardpanel.DashboardInfoCardsPanel;
 import features.core.dashboardpanel.secretary.InfoPanel;
+import models.ComplaintDetail;
+import models.UserSession;
+import services.controller.ComplaintServiceController;
+import services.controller.ReportStatisticsController;
 
 /**
  * SecretaryDashboardPanel - Main dashboard view for Secretary role
@@ -42,7 +46,7 @@ public class ResidentDashboardPanel extends JPanel {
 
     /** Column headers for the recent reports table */
     private static final String[] REPORT_TABLE_COLUMNS = {
-            "Report ID", "Category", "Purok", "Date Submitted",
+            "Report ID", "Type", "Purok", "Date Submitted",
             "Last Update", "Status", "Action"
     };
 
@@ -81,6 +85,7 @@ public class ResidentDashboardPanel extends JPanel {
     /** Reference to main application for user info and navigation */
     protected E_Report app;
 
+    protected UserSession us;
     // ============================================================
     // INSTANCE VARIABLES - UI Components
     // ============================================================
@@ -113,6 +118,7 @@ public class ResidentDashboardPanel extends JPanel {
 
     /** Current report data entries stored for controller management */
     private List<Object[]> reportDataList;
+    private List<ComplaintDetail> complaints;
 
     /** Current activity entries stored for controller management */
     private List<String> activityList;
@@ -132,13 +138,18 @@ public class ResidentDashboardPanel extends JPanel {
      * @param app Main application reference for context
      */
     public ResidentDashboardPanel(E_Report app) {
+        this.us = app.getUserSession();
         this.app = app;
         this.statIconPaths = UIConfig.STAT_ICON_PATHS;
-        this.statValues = new int[4];
 
-        // Initialize data storage lists (empty)
         this.reportDataList = new ArrayList<>();
 
+        ReportStatisticsController rsc = new ReportStatisticsController();
+        int countTotalReport = rsc.countTotalReportByUser(us);
+        int pendingCount = rsc.countTotalReportByUserAndStatus(us, "Pending");
+        int inProgressCount = rsc.countTotalReportByUserAndStatus(us, "In Progress");
+        int resolvedCount = rsc.countTotalReportByUserAndStatus(us, "Resolved");
+        this.statValues = new int[] { countTotalReport, pendingCount, inProgressCount, resolvedCount };
         initializeUI();
     }
 
@@ -184,7 +195,7 @@ public class ResidentDashboardPanel extends JPanel {
         gbc.insets = new Insets(0, 0, 0, 0);
 
         // LEFT — Recent Reports (60% width, full height)
-        reportsPanel = new RecentReportsPanel("My Recent Reports", REPORT_TABLE_COLUMNS);
+        reportsPanel = new RecentReportsPanel("My Recent Reports", REPORT_TABLE_COLUMNS, 7);
         reportsPanel.setButtonColumn(ACTION_COLUMN_INDEX, ACTION_BUTTON_TEXT, ACTION_BUTTON_COLOR);
         reportsPanel.setOnViewClicked(row -> handleReportAction(row));
 
@@ -197,16 +208,27 @@ public class ResidentDashboardPanel extends JPanel {
         wrapper.add(Box.createVerticalGlue());
         add(wrapper, BorderLayout.CENTER);
 
+        ComplaintServiceController csc = new ComplaintServiceController();
+        complaints = csc.getRecentComplaintByUser(us, 7);
+
         // Seed data
-        addReport(new Object[] { "R-001", "Noise", "Purok 1", "2026-04-20", "2026-04-21", "Pending", "View" });
-        addReport(new Object[] { "R-002", "Noise", "Purok 1", "2026-04-20", "2026-04-21", "Pending", "View" });
-        addReport(new Object[] { "R-003", "Noise", "Purok 1", "2026-04-20", "2026-04-21", "Pending", "View" });
-        addReport(new Object[] { "R-004", "Noise", "Purok 1", "2026-04-20", "2026-04-21", "Pending", "View" });
-        addReport(new Object[] { "R-005", "Noise", "Purok 1", "2026-04-20", "2026-04-21", "Pending", "View" });
-        addReport(new Object[] { "R-006", "Noise", "Purok 1", "2026-04-20", "2026-04-21", "Pending", "View" });
-        addReport(new Object[] { "R-007", "Noise", "Purok 1", "2026-04-20", "2026-04-21", "Pending", "View" });
-        addReport(new Object[] { "R-008", "Noise", "Purok 1", "2026-04-20", "2026-04-21", "Pending", "View" });
-        addReport(new Object[] { "R-009", "Noise", "Purok 1", "2026-04-20", "2026-04-21", "Pending", "View" });
+        if (complaints != null) {
+            for (ComplaintDetail cd : complaints) {
+                // Build the Object[] that matches your table columns
+                Object[] reportRow = new Object[] {
+                        cd.getComplaintId(), // "Report ID"
+                        cd.getType(), // "Category"
+                        cd.getPurok(), // "Purok"
+                        cd.getDateTime(), // "Date Submitted"
+                        cd.getLastUpdateTimestamp() != null // "Last Update"
+                                ? (cd.getLastUpdateTimestamp())
+                                : (cd.getDateTime()), // "Last Update"
+                        cd.getCurrentStatus() // "Status"
+                };
+
+                addReport(reportRow);
+            }
+        }
     }
 
     // ============================================================

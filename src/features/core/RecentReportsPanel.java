@@ -19,7 +19,7 @@ public class RecentReportsPanel extends GlassPanel {
     // ── Data ──────────────────────────────────────────────────────
     private final List<Object[]> allData = new ArrayList<>();
     private int currentPage = 0;
-    private int rowsPerPage = 6;
+    private int rowsPerPage;
 
     // ── UI ────────────────────────────────────────────────────────
     private DashboardTable table;
@@ -30,11 +30,20 @@ public class RecentReportsPanel extends GlassPanel {
     private JButton nextButton;
     private JLabel pageLabel;
     private JTextField jumpField;
+    private JPanel paginationBar;
 
     // ── Constructor ───────────────────────────────────────────────
+
+    /** Default: 6 rows per page. */
     public RecentReportsPanel(String title, String[] columnNames) {
+        this(title, columnNames, 6);
+    }
+
+    /** Polymorphic entry-point: choose how many rows each page holds. */
+    public RecentReportsPanel(String title, String[] columnNames, int rowsPerPage) {
         super(new BorderLayout(0, 8));
         this.title = title;
+        this.rowsPerPage = Math.max(1, rowsPerPage);
         setBorder(BorderFactory.createEmptyBorder(15, 15, 12, 15));
         setMaximumSize(new Dimension(Integer.MAX_VALUE, Integer.MAX_VALUE));
         initializeUI(columnNames);
@@ -47,7 +56,7 @@ public class RecentReportsPanel extends GlassPanel {
         tableModel = new DefaultTableModel(columnNames, 0) {
             @Override
             public boolean isCellEditable(int row, int col) {
-                return false; // disable editor entirely — clicks handled by MouseListener
+                return false;
             }
         };
 
@@ -99,7 +108,9 @@ public class RecentReportsPanel extends GlassPanel {
         scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
 
         add(scrollPane, BorderLayout.CENTER);
-        add(buildPaginationBar(), BorderLayout.SOUTH);
+
+        paginationBar = buildPaginationBar();
+        add(paginationBar, BorderLayout.SOUTH);
     }
 
     // Override this in subclass or set via a callback
@@ -263,8 +274,8 @@ public class RecentReportsPanel extends GlassPanel {
     private void handleJump() {
         String text = jumpField.getText().trim();
         try {
-            int requested = Integer.parseInt(text); // user types 1-based
-            int target = requested - 1; // convert to 0-based
+            int requested = Integer.parseInt(text);
+            int target = requested - 1;
             if (target < 0 || target >= getTotalPages()) {
                 jumpField.setBackground(new Color(255, 220, 220));
                 Timer t = new Timer(350, e -> jumpField.setBackground(new Color(248, 247, 252)));
@@ -293,7 +304,6 @@ public class RecentReportsPanel extends GlassPanel {
         refreshPage();
     }
 
-    /** Wipes the model and loads ONLY the rows that belong to currentPage. */
     private void refreshPage() {
         tableModel.setRowCount(0);
 
@@ -307,30 +317,34 @@ public class RecentReportsPanel extends GlassPanel {
     }
 
     private void updatePaginationControls() {
-        if (pageLabel == null)
+        if (pageLabel == null || paginationBar == null)
             return;
+
         int total = getTotalPages();
+
+        // Toggle pagination bar visibility
+        boolean showPagination = total > 1;
+        paginationBar.setVisible(showPagination);
+
+        // When only 1 page, stretch table to fill the space
+        table.setFillsViewportHeight(!showPagination);
+
         pageLabel.setText("Page " + (currentPage + 1) + " of " + total);
         prevButton.setEnabled(currentPage > 0);
         nextButton.setEnabled(currentPage < total - 1);
+
+        // Force re-layout so the CENTER region expands/contracts immediately
+        revalidate();
+        repaint();
     }
 
     // ── Public API ────────────────────────────────────────────────
 
-    /**
-     * Appends a row to the dataset.
-     * Does NOT refresh the table mid-batch — call commitReports() when done.
-     * For single additions outside a batch, use addReportAndRefresh().
-     */
     public void addReport(Object[] reportData) {
         allData.add(reportData);
         refreshPage();
     }
 
-    /**
-     * Call this once after all addReport() calls in a batch
-     * to render page 1 cleanly.
-     */
     public void commitReports() {
         currentPage = 0;
         refreshPage();
@@ -352,10 +366,6 @@ public class RecentReportsPanel extends GlassPanel {
         refreshPage();
     }
 
-    /**
-     * Converts a visible (page-relative) row index to the absolute
-     * index in allData. Always use this in ButtonEditor callbacks.
-     */
     public int getAbsoluteRowIndex(int visibleRow) {
         return currentPage * rowsPerPage + visibleRow;
     }

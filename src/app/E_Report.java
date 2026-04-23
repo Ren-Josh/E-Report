@@ -24,9 +24,9 @@ public class E_Report extends JFrame {
     protected Credential cred;
     private ComplaintDetail cd;
     private List<ComplaintDetail> cdList;
+    private int totalReportByUser, totalReport, totalReportByDate, totalReportByStatus, totalReportByRole;
 
     public E_Report() {
-        // Initialize Database
         DatabaseController.initializeDatabase();
 
         setTitle("Barangay Malacañang E-Reporting System");

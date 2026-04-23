@@ -11,7 +11,7 @@ import java.util.Map;
 
 public class ReportStatisticsDao {
     private String queryUserReportCount, queryAllReportCount, queryStatusCount, queryAllStatusCount,
-            queryReportCountRole;
+            queryReportCountRole, queryReportCountByDate;
 
     public ReportStatisticsDao() {
         queryUserReportCount = """
@@ -43,9 +43,14 @@ public class ReportStatisticsDao {
                 GROUP BY u.role
                 ORDER BY u.role;
                 """;
+
+        queryReportCountByDate = """
+                SELECT COUNT(*) AS Total
+                FROM Complaint
+                WHERE created_at BETWEEN ? AND ?""";
     }
 
-    public int countReportsByUser(Connection con, int UI_ID) {
+    public int countTotalReportByUser(Connection con, int UI_ID) {
         // ===== GET USER REPORT COUNT =====
         try (PreparedStatement stmt = con.prepareStatement(queryUserReportCount)) {
 
@@ -66,7 +71,7 @@ public class ReportStatisticsDao {
         return -1;
     }
 
-    public int countAllReports(Connection con) {
+    public int countTotalReport(Connection con) {
         // ===== GET TOTAL REPORT COUNT =====
         try (PreparedStatement stmt = con.prepareStatement(queryAllReportCount)) {
 
@@ -85,7 +90,28 @@ public class ReportStatisticsDao {
         return -1;
     }
 
-    public int countReportsByUserAndStatus(Connection con, int UI_ID, String status) {
+    public int countTotalReportByDate(Connection con, String start, String end) {
+
+        try (PreparedStatement stmt = con.prepareStatement(queryReportCountByDate)) {
+
+            stmt.setString(1, start);
+            stmt.setString(2, end);
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt("Total");
+                }
+            }
+
+        } catch (SQLException e) {
+            System.err.println("Error retrieving report count");
+            e.printStackTrace();
+        }
+
+        return -1;
+    }
+
+    public int countTotalReportByUserAndStatus(Connection con, int UI_ID, String status) {
         // ===== GET STATUS COUNT =====
         try (PreparedStatement stmt = con.prepareStatement(queryStatusCount)) {
 
@@ -107,7 +133,7 @@ public class ReportStatisticsDao {
         return -1;
     }
 
-    public int countAllReportsByStatus(Connection con, String status) {
+    public int countTotalReportByStatus(Connection con, String status) {
 
         try (PreparedStatement stmt = con.prepareStatement(queryAllStatusCount)) {
 
@@ -127,7 +153,7 @@ public class ReportStatisticsDao {
         return -1;
     }
 
-    public List<Object[]> getAllTrends(Connection con, String groupBy, String start, String end) {
+    public List<Object[]> getTotalTrends(Connection con, String groupBy, String start, String end) {
 
         List<Object[]> list = new ArrayList<>();
 
@@ -166,7 +192,7 @@ public class ReportStatisticsDao {
         return list;
     }
 
-    public Map<String, Integer> countReportsByRole(Connection con) {
+    public Map<String, Integer> countTotalReportByRole(Connection con) {
 
         Map<String, Integer> map = new LinkedHashMap<>();
         String sql = queryReportCountRole;

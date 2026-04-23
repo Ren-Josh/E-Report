@@ -5,13 +5,16 @@ import java.sql.Timestamp;
 public class ComplaintDetail {
     private String currentStatus, subject, type, street, purok, personsInvolved, details;
     private byte[] photoAttachmentBytes;
-    private Timestamp dateTime;
+    private Timestamp dateTime, lastUpdateTimestamp;
     private double longitude, latitude;
+    private int CD_ID;
 
-    public ComplaintDetail(String currentStatus, String subject, String type, Timestamp dateTime, double longitude,
+    public ComplaintDetail(int CD_ID, String currentStatus, String subject, String type, Timestamp dateTime,
+            double longitude,
             double latitude, String street, String purok, String personsInvolved, String details,
             byte[] photoAttachmentBytes) {
 
+        this.CD_ID = CD_ID;
         this.currentStatus = currentStatus;
         this.subject = subject;
         this.type = type;
@@ -27,6 +30,14 @@ public class ComplaintDetail {
 
     public ComplaintDetail() {
     };
+
+    public int getComplaintId() {
+        return CD_ID;
+    }
+
+    public void setComplaintId(int CD_ID) {
+        this.CD_ID = CD_ID;
+    }
 
     public String getCurrentStatus() {
         return currentStatus;
@@ -114,6 +125,14 @@ public class ComplaintDetail {
 
     public void setPhotoAttachmentBytes(byte[] photoAttachment) {
         this.photoAttachmentBytes = photoAttachment;
+    }
+
+    public void setLastUpdateTimestamp(Timestamp timeStamp) {
+        this.lastUpdateTimestamp = timeStamp;
+    }
+
+    public Timestamp getLastUpdateTimestamp() {
+        return lastUpdateTimestamp;
     }
 
 }

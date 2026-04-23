@@ -5,10 +5,13 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.List;
 
 import daos.AddComplaintDao;
+import daos.GetComplaintDao;
 import config.database.DBConnection;
 import models.ComplaintDetail;
+import models.UserSession;
 
 /**
  * ComplaintServiceController
@@ -85,5 +88,29 @@ public class ComplaintServiceController {
 			System.err.println("Failed to read the image file!");
 			e.printStackTrace();
 		}
+	}
+
+	public List<ComplaintDetail> getAllComplaintByUser(UserSession us) {
+		GetComplaintDao gcd = new GetComplaintDao();
+
+		try (Connection con = DBConnection.connect();) {
+			return gcd.getAllComplaint(con, us.getUserId());
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+
+		return null;
+	}
+
+	public List<ComplaintDetail> getRecentComplaintByUser(UserSession us, int limit) {
+		GetComplaintDao gcd = new GetComplaintDao();
+
+		try (Connection con = DBConnection.connect();) {
+			return gcd.getRecentComplaint(con, us.getUserId(), limit);
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+
+		return null;
 	}
 }

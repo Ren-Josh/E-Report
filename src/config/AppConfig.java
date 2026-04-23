@@ -18,7 +18,7 @@ public class AppConfig {
     // Table Creation Queries
     public static final String CREATE_USER_INFO_TABLE = """
             CREATE TABLE IF NOT EXISTS User_Info(
-                UI_ID INT AUTO_INCREMENT PRIMARY KEY NOT NULL,
+                UI_ID INT AUTO_INCREMENT PRIMARY KEY,
                 first_name VARCHAR(50) NOT NULL,
                 middle_name VARCHAR(50) NOT NULL,
                 last_name VARCHAR(50) NOT NULL,
