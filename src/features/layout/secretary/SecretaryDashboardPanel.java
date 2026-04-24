@@ -30,6 +30,7 @@ import config.UIConfig;
 import features.core.RecentReportsPanel;
 import features.core.dashboardpanel.DashboardInfoCardsPanel;
 import features.core.dashboardpanel.secretary.InfoPanel;
+import services.fetcher.SecretaryDashboardFetcher;
 
 /**
  * SecretaryDashboardPanel - Main dashboard view for Secretary role
@@ -100,6 +101,8 @@ public class SecretaryDashboardPanel extends JPanel {
     /** Tasks info panel (40% width in bottom section) */
     private InfoPanel tasksPanel;
 
+    private SecretaryDashboardFetcher fetcher;
+
     // ============================================================
     // INSTANCE VARIABLES - Configuration Data
     // ============================================================
@@ -138,13 +141,32 @@ public class SecretaryDashboardPanel extends JPanel {
         this.app = app;
         this.statIconPaths = UIConfig.STAT_ICON_PATHS;
         this.statValues = new int[4];
-
-        // Initialize data storage lists (empty)
         this.reportDataList = new ArrayList<>();
         this.activityList = new ArrayList<>();
         this.taskList = new ArrayList<>();
 
         initializeUI();
+
+        this.fetcher = new SecretaryDashboardFetcher(app);
+        this.fetcher.addDataChangeListener(this::onDataChanged);
+
+    }
+
+    private void onDataChanged() {
+        int[] stats = fetcher.getStatValues();
+        statsCards.updateValues(stats[0], stats[1], stats[2], stats[3]);
+
+        reportDataList.clear();
+        reportDataList.addAll(fetcher.getReports());
+        refreshReportsTable();
+
+        activityList.clear();
+        activityList.addAll(fetcher.getActivities());
+        refreshActivities();
+
+        taskList.clear();
+        taskList.addAll(fetcher.getTasks());
+        refreshTasks();
     }
 
     // ============================================================

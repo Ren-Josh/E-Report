@@ -14,10 +14,14 @@ public class UIInput extends JTextField {
     private String placeholder;
     private ImageIcon icon;
     private int cornerRadius = 15;
-    
     private UIValidator.FieldType fieldType = UIValidator.FieldType.TEXT;
+    private Color idleBorderColor = new Color(220, 220, 220);
+    private Color readonlyBackground = new Color(248, 250, 252);
 
-    public enum ValidationState { IDLE, INVALID, VALID }
+    public enum ValidationState {
+        IDLE, INVALID, VALID
+    }
+
     private ValidationState state = ValidationState.IDLE;
 
     public UIInput(int columns) {
@@ -30,9 +34,17 @@ public class UIInput extends JTextField {
         applyPadding(12);
 
         getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
-            public void insertUpdate(javax.swing.event.DocumentEvent e) { validateLive(); }
-            public void removeUpdate(javax.swing.event.DocumentEvent e) { validateLive(); }
-            public void changedUpdate(javax.swing.event.DocumentEvent e) { validateLive(); }
+            public void insertUpdate(javax.swing.event.DocumentEvent e) {
+                validateLive();
+            }
+
+            public void removeUpdate(javax.swing.event.DocumentEvent e) {
+                validateLive();
+            }
+
+            public void changedUpdate(javax.swing.event.DocumentEvent e) {
+                validateLive();
+            }
         });
     }
 
@@ -40,20 +52,43 @@ public class UIInput extends JTextField {
         this(columns);
         if (iconPath != null) {
             this.icon = new ImageIcon(new ImageIcon(iconPath).getImage()
-                .getScaledInstance(18, 18, Image.SCALE_SMOOTH));
+                    .getScaledInstance(18, 18, Image.SCALE_SMOOTH));
             applyPadding(36);
         }
     }
 
-    public UIValidator.FieldType getFieldType() { return fieldType; }
-    public void setFieldType(UIValidator.FieldType type) { this.fieldType = type; }
+    public UIValidator.FieldType getFieldType() {
+        return fieldType;
+    }
+
+    public void setFieldType(UIValidator.FieldType type) {
+        this.fieldType = type;
+    }
+
+    public void setIdleBorderColor(Color color) {
+        this.idleBorderColor = color;
+        repaint();
+    }
+
+    public void setReadonlyBackground(Color color) {
+        this.readonlyBackground = color;
+        repaint();
+    }
+
+    @Override
+    public void setEditable(boolean b) {
+        super.setEditable(b);
+        setBackground(b ? Color.WHITE : readonlyBackground);
+        repaint();
+    }
 
     public void setLimit(int max, boolean numericOnly) {
         ((AbstractDocument) getDocument()).setDocumentFilter(new DocumentFilter() {
             @Override
-            public void replace(FilterBypass fb, int offset, int length, String text, AttributeSet attrs) 
+            public void replace(FilterBypass fb, int offset, int length, String text, AttributeSet attrs)
                     throws BadLocationException {
-                if (numericOnly && !text.matches("\\d*")) return;
+                if (numericOnly && !text.matches("\\d*"))
+                    return;
                 int currentLength = fb.getDocument().getLength();
                 if ((currentLength + text.length() - length) <= max) {
                     super.replace(fb, offset, length, text, attrs);
@@ -64,45 +99,69 @@ public class UIInput extends JTextField {
 
     private void validateLive() {
         String value = getValue();
-        if (value.isEmpty()) { clearError(); return; }
-        if (UIValidator.isValidField(this.fieldType, value)) setValid();
-        else setError();
+        if (value.isEmpty()) {
+            clearError();
+            return;
+        }
+        if (UIValidator.isValidField(this.fieldType, value))
+            setValid();
+        else
+            setError();
     }
 
-    public String getValue() { return getText() == null ? "" : getText().trim(); }
-    public void setError() { state = ValidationState.INVALID; repaint(); }
-    public void setValid() { state = ValidationState.VALID; repaint(); }
-    public void clearError() { state = ValidationState.IDLE; repaint(); }
-    public void setPlaceholder(String p) { this.placeholder = p; repaint(); }
-    private void applyPadding(int left) { setBorder(new EmptyBorder(8, left, 8, 12)); }
+    public String getValue() {
+        return getText() == null ? "" : getText().trim();
+    }
+
+    public void setError() {
+        state = ValidationState.INVALID;
+        repaint();
+    }
+
+    public void setValid() {
+        state = ValidationState.VALID;
+        repaint();
+    }
+
+    public void clearError() {
+        state = ValidationState.IDLE;
+        repaint();
+    }
+
+    public void setPlaceholder(String p) {
+        this.placeholder = p;
+        repaint();
+    }
+
+    private void applyPadding(int left) {
+        setBorder(new EmptyBorder(8, left, 8, 12));
+    }
 
     @Override
     protected void paintComponent(Graphics g) {
         Graphics2D g2 = (Graphics2D) g.create();
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION, 
-            RenderingHints.VALUE_INTERPOLATION_BICUBIC);
-        g2.setRenderingHint(RenderingHints.KEY_RENDERING, 
-            RenderingHints.VALUE_RENDER_QUALITY);
-        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, 
-            RenderingHints.VALUE_ANTIALIAS_ON);
-            
+        g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION,
+                RenderingHints.VALUE_INTERPOLATION_BICUBIC);
+        g2.setRenderingHint(RenderingHints.KEY_RENDERING,
+                RenderingHints.VALUE_RENDER_QUALITY);
+
         g2.setColor(getBackground());
-        g2.fillRoundRect(0, 0, getWidth()-1, getHeight()-1, cornerRadius, cornerRadius);
+        g2.fillRoundRect(0, 0, getWidth() - 1, getHeight() - 1, cornerRadius, cornerRadius);
 
         Color border = switch (state) {
             case INVALID -> new Color(220, 60, 60);
             case VALID -> new Color(0, 170, 80);
-            default -> new Color(220, 220, 220);
+            default -> idleBorderColor;
         };
 
         g2.setColor(border);
         g2.setStroke(new BasicStroke(1.5f));
-        g2.drawRoundRect(0, 0, getWidth()-1, getHeight()-1, cornerRadius, cornerRadius);
+        g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, cornerRadius, cornerRadius);
 
         if (icon != null) {
             g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.4f));
-            g2.drawImage(icon.getImage(), 10, (getHeight()-18)/2, 18, 18, null);
+            g2.drawImage(icon.getImage(), 10, (getHeight() - 18) / 2, 18, 18, null);
         }
 
         super.paintComponent(g);

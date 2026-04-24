@@ -11,21 +11,21 @@ public class UIValidator {
     public enum FieldType {
         TEXT,
         EMAIL,
-        PHONE
+        PHONE,
+        PASSWORD
     }
 
-    private static final Pattern EMAIL_PATTERN = 
-            Pattern.compile("^[A-Za-z0-9+_.-]+@(.+)$");
+    private static final Pattern EMAIL_PATTERN = Pattern.compile("^[A-Za-z0-9+_.-]+@(.+)$");
 
-    private static final Pattern CONTACT_PATTERN = 
-            Pattern.compile("^(09|08)[0-9]{9}$");
+    private static final Pattern CONTACT_PATTERN = Pattern.compile("^(09|08)[0-9]{9}$");
 
     public static boolean validateInputs(List<UIInput> inputs) {
         boolean hasError = false;
         for (UIInput input : inputs) {
             String value = input.getValue();
             if (value.isEmpty() || !isValidField(input.getFieldType(), value)) {
-                if (!hasError) input.requestFocus();
+                if (!hasError)
+                    input.requestFocus();
                 input.setError();
                 hasError = true;
             } else {
@@ -36,10 +36,12 @@ public class UIValidator {
     }
 
     public static boolean isValidField(FieldType type, String value) {
-        if (value == null || value.trim().isEmpty()) return false;
+        if (value == null || value.trim().isEmpty())
+            return false;
         return switch (type) {
             case EMAIL -> EMAIL_PATTERN.matcher(value).matches();
             case PHONE -> CONTACT_PATTERN.matcher(value).matches();
+            case PASSWORD -> value.length() >= 8;
             case TEXT -> value.length() >= 1;
         };
     }
@@ -48,7 +50,8 @@ public class UIValidator {
         boolean hasError = false;
         for (UIPasswordInput input : inputs) {
             if (input.getValue().isEmpty()) {
-                if (!hasError) input.requestFocus();
+                if (!hasError)
+                    input.requestFocus();
                 input.setError();
                 hasError = true;
             } else {
@@ -65,5 +68,26 @@ public class UIValidator {
         }
         comboBox.setValid();
         return false;
+    }
+
+    public static int calculatePasswordStrength(String password) {
+        if (password == null || password.isEmpty())
+            return 0;
+        int score = 0;
+        if (password.length() >= 8)
+            score += 25;
+        if (password.matches(".*[a-z].*"))
+            score += 20;
+        if (password.matches(".*[A-Z].*"))
+            score += 20;
+        if (password.matches(".*\\d.*"))
+            score += 15;
+        if (password.matches(".*[!@#$%^&*()].*"))
+            score += 20;
+        return Math.min(score, 100);
+    }
+
+    public static boolean isStrongPassword(String password) {
+        return calculatePasswordStrength(password) >= 60;
     }
 }

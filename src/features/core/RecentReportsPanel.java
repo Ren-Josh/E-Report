@@ -44,7 +44,7 @@ public class RecentReportsPanel extends GlassPanel {
         super(new BorderLayout(0, 8));
         this.title = title;
         this.rowsPerPage = Math.max(1, rowsPerPage);
-        setBorder(BorderFactory.createEmptyBorder(15, 15, 12, 15));
+        setBorder(BorderFactory.createEmptyBorder(15, 15, 0, 15));
         setMaximumSize(new Dimension(Integer.MAX_VALUE, Integer.MAX_VALUE));
         initializeUI(columnNames);
     }

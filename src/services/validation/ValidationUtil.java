@@ -6,12 +6,9 @@ import javax.swing.JPasswordField;
 import javax.swing.JTextField;
 
 public class ValidationUtil {
-    private static final Pattern EMAIL_PATTERN =
-            Pattern.compile("^[A-Za-z0-9+_.-]+@(.+)$");
+    private static final Pattern EMAIL_PATTERN = Pattern.compile("^[A-Za-z0-9+_.-]+@(.+)$");
 
-    private static final Pattern CONTACT_PATTERN =
-            Pattern.compile("^(09|08)[0-9]{9}$");
-
+    private static final Pattern CONTACT_PATTERN = Pattern.compile("^(09|08)[0-9]{9}$");
 
     public static boolean requireFields(Map<JTextField, String> fields, StringBuilder error) {
 
@@ -96,7 +93,7 @@ public class ValidationUtil {
 
         return true;
     }
-    
+
     public static boolean isValidEmail(String email) {
         return email != null && EMAIL_PATTERN.matcher(email).matches();
     }
@@ -107,5 +104,30 @@ public class ValidationUtil {
 
     public static boolean isValidAge(int age) {
         return age >= 0 && age <= 200;
+    }
+
+    public static boolean validatePassword(String password, String confirm, StringBuilder error) {
+        if (password == null || password.isEmpty()) {
+            error.append("- Password is required\n");
+            return false;
+        }
+        if (password.length() < 8) {
+            error.append("- Password must be at least 8 characters\n");
+            return false;
+        }
+        if (confirm != null && !password.equals(confirm)) {
+            error.append("- Passwords do not match\n");
+            return false;
+        }
+        return true;
+    }
+
+    public static boolean validatePasswordStrength(String password, StringBuilder error) {
+        int strength = UIValidator.calculatePasswordStrength(password);
+        if (strength < 30) {
+            error.append("- Password is too weak\n");
+            return false;
+        }
+        return true;
     }
 }

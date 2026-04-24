@@ -36,21 +36,21 @@ public class DashboardView extends JPanel {
 
         header = new HeaderPanel(app);
         nav = new NavPanel();
-        cdp = new CaptainDashboardPanel(app);
-        sdp = new SecretaryDashboardPanel(app);
-        rdp = new ResidentDashboardPanel(app);
 
         bgPanel.add(header, BorderLayout.NORTH);
         bgPanel.add(nav, BorderLayout.WEST);
 
         if (us.getRole().equalsIgnoreCase("captain")) {
-            nav.setCaptainMenus();
+            cdp = new CaptainDashboardPanel(app);
+            nav.setCaptainMenus(route -> app.navigate(route));
             bgPanel.add(cdp, BorderLayout.CENTER);
         } else if (us.getRole().equalsIgnoreCase("secretary")) {
-            nav.setSecretaryMenus();
+            sdp = new SecretaryDashboardPanel(app);
+            nav.setSecretaryMenus(route -> app.navigate(route));
             bgPanel.add(sdp, BorderLayout.CENTER);
         } else if (us.getRole().equalsIgnoreCase("resident")) {
-            nav.setResidentMenus();
+            rdp = new ResidentDashboardPanel(app);
+            nav.setResidentMenus(route -> app.navigate(route));
             bgPanel.add(rdp, BorderLayout.CENTER);
         }
 

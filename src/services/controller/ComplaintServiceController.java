@@ -72,6 +72,17 @@ public class ComplaintServiceController {
 		}
 	}
 
+	public List<ComplaintDetail> getAllComplaints() {
+		GetComplaintDao gcd = new GetComplaintDao();
+
+		try (Connection con = DBConnection.connect()) {
+			return gcd.getAllComplaints(con);
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		return null;
+	}
+
 	/**
 	 * Processes and attaches an image file to the ComplaintDetail object.
 	 * 

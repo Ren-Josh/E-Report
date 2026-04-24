@@ -20,7 +20,7 @@ public class UIRadioButtonGroup extends JPanel {
             rb.setOpaque(false);
             rb.setFocusPainted(false);
             rb.setCursor(new Cursor(Cursor.HAND_CURSOR));
-            
+
             group.add(rb);
             add(rb);
         }
@@ -34,5 +34,19 @@ public class UIRadioButtonGroup extends JPanel {
             }
         }
         return null;
+    }
+
+    public void setSelectedValue(String value) {
+        for (Enumeration<AbstractButton> buttons = group.getElements(); buttons.hasMoreElements();) {
+            AbstractButton button = buttons.nextElement();
+            if (button.getText().equals(value)) {
+                button.setSelected(true);
+                return;
+            }
+        }
+    }
+
+    public void clearSelection() {
+        group.clearSelection();
     }
 }

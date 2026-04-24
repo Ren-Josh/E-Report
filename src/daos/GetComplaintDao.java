@@ -13,25 +13,38 @@ import models.ComplaintHistoryDetail;
 
 public class GetComplaintDao {
 
-	private String queryComplaint, queryAllComplaints, queryHistory, queryAction, queryResidentRecentComplaint;
+	private String queryComplaint, queryAllComplaints, queryHistory, queryAction, queryResidentRecentComplaint,
+			queryAllComplaintsNoFilter;
 
 	public GetComplaintDao() {
+		// Single complaint – now returns date_time_created as `date_time` alias
 		queryComplaint = """
-				SELECT cd.CD_ID, cd.current_status, cd.subject, cd.type,
-					cd.date_time, cd.street, cd.purok, cd.longitude, cd.latitude,
-					cd.persons_involved, cd.details, cd.photo_attachment
+				SELECT
+				    cd.CD_ID,
+				    cd.current_status,
+				    cd.subject,
+				    cd.type,
+				    cd.date_time_created AS date_time,    -- <-- use creation date
+				    cd.street,
+				    cd.purok,
+				    cd.longitude,
+				    cd.latitude,
+				    cd.persons_involved,
+				    cd.details,
+				    cd.photo_attachment
 				FROM Complaint c
 				INNER JOIN Complaint_Detail cd ON cd.CD_ID = c.CD_ID
 				WHERE c.UI_ID = ? AND cd.CD_ID = ?;
 				""";
 
+		// All complaints for a specific user
 		queryAllComplaints = """
 				SELECT
 				    cd.CD_ID,
 				    cd.current_status,
 				    cd.subject,
 				    cd.type,
-				    cd.date_time,
+				    cd.date_time_created AS date_time,   -- corrected
 				    cd.street,
 				    cd.purok,
 				    cd.longitude,
@@ -54,13 +67,14 @@ public class GetComplaintDao {
 				WHERE c.UI_ID = ?;
 				""";
 
+		// Recent complaints for a resident dashboard
 		queryResidentRecentComplaint = """
 				SELECT
 				    cd.CD_ID,
 				    cd.current_status,
 				    cd.subject,
 				    cd.type,
-				    cd.date_time,
+				    cd.date_time_created AS date_time,   -- corrected
 				    cd.street,
 				    cd.purok,
 				    cd.longitude,
@@ -85,6 +99,36 @@ public class GetComplaintDao {
 				LIMIT ?;
 				""";
 
+		// All complaints (used by AllReportsFetcher)
+		queryAllComplaintsNoFilter = """
+				SELECT
+				    cd.CD_ID,
+				    cd.current_status,
+				    cd.subject,
+				    cd.type,
+				    cd.date_time_created AS date_time,   -- corrected
+				    cd.street,
+				    cd.purok,
+				    cd.longitude,
+				    cd.latitude,
+				    cd.persons_involved,
+				    cd.details,
+				    cd.photo_attachment,
+				    CASE
+				        WHEN cd.current_status = 'Pending' THEN cd.date_time_created
+				        ELSE latest_chd.latest_dateTimeUpdated
+				    END AS last_update
+				FROM Complaint_Detail cd
+				INNER JOIN Complaint c ON c.CD_ID = cd.CD_ID
+				LEFT JOIN (
+				    SELECT ch.CD_ID, MAX(chd.date_time_updated) AS latest_dateTimeUpdated
+				    FROM Complaint_History ch
+				    INNER JOIN Complaint_History_Detail chd ON chd.CHD_ID = ch.CHD_ID
+				    GROUP BY ch.CD_ID
+				) latest_chd ON latest_chd.CD_ID = cd.CD_ID
+				ORDER BY cd.date_time_created DESC;
+				""";
+
 		queryHistory = """
 				SELECT chd.CHD_ID, chd.status, chd.process, chd.date_time_updated, chd.updated_by
 				FROM Complaint_History_Detail chd
@@ -94,7 +138,7 @@ public class GetComplaintDao {
 
 		queryAction = """
 				SELECT CD_ID, action_taken, recommendation, oic,
-					date_time_assigned, resolution_date_time
+				    date_time_assigned, resolution_date_time
 				FROM Complaint_Action
 				WHERE CD_ID = ?;
 				""";
@@ -160,6 +204,22 @@ public class GetComplaintDao {
 			}
 		} catch (SQLException e) {
 			System.err.println("Error retrieving all complaints for UI_ID: " + UI_ID);
+			e.printStackTrace();
+		}
+		return cdList;
+	}
+
+	public List<ComplaintDetail> getAllComplaints(Connection con) {
+		List<ComplaintDetail> cdList = new ArrayList<>();
+
+		try (PreparedStatement stmt = con.prepareStatement(queryAllComplaintsNoFilter)) {
+			try (ResultSet rs = stmt.executeQuery()) {
+				while (rs.next()) {
+					cdList.add(mapToComplaintDetail(rs));
+				}
+			}
+		} catch (SQLException e) {
+			System.err.println("Error retrieving all complaints");
 			e.printStackTrace();
 		}
 		return cdList;

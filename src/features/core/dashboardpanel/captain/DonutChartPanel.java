@@ -47,6 +47,22 @@ public class DonutChartPanel extends BaseCardPanel {
      */
     private Color[] colors;
 
+    // -------------------------------------------------------------------------
+    // UI COMPONENTS (stored for dynamic updates)
+    // -------------------------------------------------------------------------
+
+    /** Wrapper holding donutPanel and legendPanel. */
+    private JPanel chartPanel;
+
+    /** The donut rendering panel. */
+    private JPanel donutPanel;
+
+    /** The legend listing categories. */
+    private JPanel legendPanel;
+
+    /** The title label at the top. */
+    private JLabel titleLabel;
+
     // =========================================================================
     // CONSTRUCTOR
     // =========================================================================
@@ -105,94 +121,75 @@ public class DonutChartPanel extends BaseCardPanel {
      */
     public DonutChartPanel(String title, String[] labels, int[] values, Color[] colors) {
         super(title);
-        this.labels = labels;
-        this.values = values;
-        this.colors = colors;
+        this.labels = labels != null ? labels : new String[0];
+        this.values = values != null ? values : new int[0];
+        this.colors = colors != null ? colors : new Color[0];
 
         setLayout(new BorderLayout(10, 10));
 
-        JLabel titleLabel = new JLabel(title);
+        titleLabel = new JLabel(title);
         titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 18));
         titleLabel.setForeground(new Color(33, 37, 41));
         add(titleLabel, BorderLayout.NORTH);
 
-        JPanel chartPanel = new JPanel(new BorderLayout(10, 0));
+        chartPanel = new JPanel(new BorderLayout(10, 0));
         chartPanel.setOpaque(false);
 
-        JPanel donutPanel = new JPanel() {
+        donutPanel = createDonutPanel();
+        donutPanel.setOpaque(false);
+        donutPanel.setPreferredSize(new Dimension(150, 150));
+        chartPanel.add(donutPanel, BorderLayout.CENTER);
 
-            // -----------------------------------------------------------------
-            // PAINT-LEVEL VARIABLES (paintComponent)
-            // -----------------------------------------------------------------
+        legendPanel = createLegendPanel();
+        chartPanel.add(legendPanel, BorderLayout.EAST);
 
-            /*
-             * g2 : Graphics2D
-             * Derived 2D graphics context from the base Graphics object.
-             * Antialiasing is enabled on this context. Disposed at the
-             * end of each paint cycle.
-             *
-             * size : int
-             * The pixel diameter of the donut chart. Computed as the
-             * smaller of the panel's current width or height, minus 20px
-             * to provide edge padding.
-             *
-             * x : int
-             * The X pixel coordinate for the top-left corner of the
-             * bounding box that contains the donut chart, centering it
-             * horizontally within the panel.
-             *
-             * y : int
-             * The Y pixel coordinate for the top-left corner of the
-             * bounding box that contains the donut chart, centering it
-             * vertically within the panel.
-             *
-             * total : int
-             * The sum of all values in the values array. Used as the
-             * denominator when computing each segment's proportional
-             * arc angle.
-             *
-             * startAngle : float = 90
-             * The current starting angle in degrees for the next arc
-             * segment. Initialized to 90 degrees (top of circle) and
-             * incremented by each segment's arcAngle after drawing.
-             *
-             * -- Inside segment drawing loop --
-             *
-             * arcAngle : float
-             * The sweep angle in degrees for the current segment,
-             * computed as -(value / total) * 360. Negative value
-             * draws the arc clockwise.
-             *
-             * arc : Arc2D
-             * A pie-type arc shape used to render each donut segment
-             * within the bounding box defined by x, y, and size.
-             *
-             * innerSize : int
-             * The diameter of the white center circle that creates the
-             * donut hole. Computed as half of size.
-             *
-             * innerX : int
-             * The X pixel coordinate for the top-left corner of the
-             * white center oval, centered within the donut bounding box.
-             *
-             * innerY : int
-             * The Y pixel coordinate for the top-left corner of the
-             * white center oval, centered within the donut bounding box.
-             */
+        add(chartPanel, BorderLayout.CENTER);
+    }
 
-            /**
-             * Renders the donut chart onto this panel.
-             *
-             * Draws filled pie segments proportional to each value relative
-             * to the total, starting from the top (90 degrees) and sweeping
-             * clockwise. Overlays a white filled oval at the center to create
-             * the donut hole effect. Antialiasing is applied for smoother output.
-             *
-             * @param g The base Graphics context provided by the Swing paint system.
-             */
+    // =========================================================================
+    // PUBLIC API — Data Updates
+    // =========================================================================
+
+    /**
+     * Updates the donut chart data, colors, and legend, then repaints.
+     *
+     * @param title     New chart title (can be null to keep existing).
+     * @param newLabels New category labels.
+     * @param newValues New segment values.
+     * @param newColors New segment colors.
+     */
+    public void updateData(String title, String[] newLabels, int[] newValues, Color[] newColors) {
+        if (title != null) {
+            titleLabel.setText(title);
+        }
+        this.labels = newLabels != null ? newLabels : new String[0];
+        this.values = newValues != null ? newValues : new int[0];
+        this.colors = newColors != null ? newColors : new Color[0];
+
+        // Rebuild legend since label text and values changed
+        chartPanel.remove(legendPanel);
+        legendPanel = createLegendPanel();
+        chartPanel.add(legendPanel, BorderLayout.EAST);
+
+        chartPanel.revalidate();
+        chartPanel.repaint();
+    }
+
+    // =========================================================================
+    // PRIVATE — Component Builders
+    // =========================================================================
+
+    private JPanel createDonutPanel() {
+        return new JPanel() {
             @Override
             protected void paintComponent(Graphics g) {
                 super.paintComponent(g);
+
+                if (values == null || values.length == 0 || labels == null || labels.length == 0) {
+                    drawEmptyState(g);
+                    return;
+                }
+
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
@@ -204,10 +201,16 @@ public class DonutChartPanel extends BaseCardPanel {
                 for (int v : values)
                     total += v;
 
+                if (total == 0) {
+                    drawEmptyState(g);
+                    g2.dispose();
+                    return;
+                }
+
                 float startAngle = 90;
                 for (int i = 0; i < values.length; i++) {
                     float arcAngle = -(float) (values[i] * 360.0 / total);
-                    g2.setColor(colors[i]);
+                    g2.setColor(safeColor(i));
                     Arc2D arc = new Arc2D.Float(x, y, size, size, startAngle, arcAngle, Arc2D.PIE);
                     g2.fill(arc);
                     startAngle += arcAngle;
@@ -221,32 +224,58 @@ public class DonutChartPanel extends BaseCardPanel {
 
                 g2.dispose();
             }
-        };
-        donutPanel.setOpaque(false);
-        donutPanel.setPreferredSize(new Dimension(150, 150));
-        chartPanel.add(donutPanel, BorderLayout.CENTER);
 
-        JPanel legendPanel = new JPanel(new GridLayout(labels.length, 1, 2, 2));
-        legendPanel.setOpaque(false);
+            private void drawEmptyState(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(new Color(180, 180, 180));
+                g2.setFont(new Font("Segoe UI", Font.ITALIC, 14));
+                String msg = "No data available";
+                FontMetrics fm = g2.getFontMetrics();
+                int x = (getWidth() - fm.stringWidth(msg)) / 2;
+                int y = getHeight() / 2;
+                g2.drawString(msg, x, y);
+                g2.dispose();
+            }
+        };
+    }
+
+    private JPanel createLegendPanel() {
+        JPanel panel = new JPanel(new GridLayout(Math.max(labels.length, 1), 1, 2, 2));
+        panel.setOpaque(false);
+
+        if (labels == null || labels.length == 0) {
+            JLabel empty = new JLabel("No data");
+            empty.setFont(new Font("Segoe UI", Font.ITALIC, 10));
+            empty.setForeground(new Color(180, 180, 180));
+            panel.add(empty);
+            return panel;
+        }
 
         for (int i = 0; i < labels.length; i++) {
             JPanel item = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
             item.setOpaque(false);
 
             JPanel colorBox = new JPanel();
-            colorBox.setBackground(colors[i]);
+            colorBox.setBackground(safeColor(i));
             colorBox.setPreferredSize(new Dimension(12, 12));
 
-            JLabel label = new JLabel(labels[i] + " (" + values[i] + ")");
+            int val = (values != null && i < values.length) ? values[i] : 0;
+            JLabel label = new JLabel(labels[i] + " (" + val + ")");
             label.setFont(new Font("Segoe UI", Font.PLAIN, 10));
             label.setForeground(new Color(108, 117, 125));
 
             item.add(colorBox);
             item.add(label);
-            legendPanel.add(item);
+            panel.add(item);
         }
+        return panel;
+    }
 
-        chartPanel.add(legendPanel, BorderLayout.EAST);
-        add(chartPanel, BorderLayout.CENTER);
+    private Color safeColor(int index) {
+        if (colors != null && index >= 0 && index < colors.length) {
+            return colors[index];
+        }
+        return Color.GRAY;
     }
 }

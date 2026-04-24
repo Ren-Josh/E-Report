@@ -45,17 +45,40 @@ public class UIConfig {
                         "src/assets/icons/submit_icon.png",
         };
 
+        public static String[] NAV_RESIDENT_TARGET = {
+                        "dashboard",
+                        "myreport",
+                        "submitreport",
+        };
+
         public static String[] NAV_SECRETARY_ICON_PATHS = {
                         "src/assets/icons/dashboard_icon.png",
                         "src/assets/icons/reports_icon.png",
+                        "src/assets/icons/all_reports_icon.png",
                         "src/assets/icons/submit_icon.png",
                         "src/assets/icons/users_icon.png",
+        };
+
+        public static String[] NAV_SECRETARY_TARGET = {
+                        "dashboard",
+                        "myreport",
+                        "reports",
+                        "submitreport",
+                        "users"
         };
 
         public static String[] NAV_CAPTAIN_ICON_PATHS = {
                         "src/assets/icons/dashboard_icon.png",
                         "src/assets/icons/reports_icon.png",
+                        "src/assets/icons/all_reports_icon.png",
                         "src/assets/icons/submit_icon.png",
+        };
+
+        public static String[] NAV_CAPTAIN_TARGET = {
+                        "dashboard",
+                        "myreport",
+                        "reports",
+                        "submitreport"
         };
 
         public static String[] NAV_RESIDENT_ICON_LABELS = {
@@ -63,12 +86,12 @@ public class UIConfig {
         };
 
         public static String[] NAV_SECRETARY_ICON_LABELS = {
-                        "Dashboard", "Reports", "Submit Report",
+                        "Dashboard", "My Reports", "Reports", "Submit Report",
                         "Users"
         };
 
         public static String[] NAV_CAPTAIN_ICON_LABELS = {
-                        "Dashboard", "Reports", "Submit Report",
+                        "Dashboard", "My Reports", "All Reports", "Submit Report",
         };
 
         // =========================

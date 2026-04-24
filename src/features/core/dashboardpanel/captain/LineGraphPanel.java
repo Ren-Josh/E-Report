@@ -3,145 +3,89 @@ package features.core.dashboardpanel.captain;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.geom.*;
+import java.util.Arrays;
 
-/**
- * LineGraphPanel
- *
- * A custom dashboard panel that renders a line graph with an area fill using
- * Java Swing's 2D Graphics API. This panel extends BaseCardPanel and displays
- * a titled card containing a visual representation of numerical data over
- * labeled intervals.
- *
- * The graph includes:
- * - A background grid with horizontal guide lines
- * - A gradient-filled area under the line
- * - A smooth line connecting data points
- * - Circular markers for each data point
- * - X-axis labels (provided)
- * - Y-axis scale labels (fixed percentage-based values)
- *
- * The graph dynamically scales based on the provided data and panel size.
- */
 public class LineGraphPanel extends BaseCardPanel {
 
-    // -------------------------------------------------------------------------
-    // DATA VARIABLES
-    // -------------------------------------------------------------------------
-
-    /**
-     * Array of numerical values to be plotted on the graph.
-     * Each value corresponds to a specific label on the X-axis.
-     */
     private double[] data;
-
-    /**
-     * Labels corresponding to each data point.
-     * Displayed along the X-axis.
-     */
     private String[] labels;
-
-    // -------------------------------------------------------------------------
-    // CONSTANTS
-    // -------------------------------------------------------------------------
-
-    /**
-     * The maximum value used to normalize data scaling on the Y-axis.
-     * Default is 100, assuming percentage-based data.
-     */
+    private String[] pointDetails;
+    private JPanel chartPanel;
+    private JPanel legendPanel;
+    private JPanel contentPanel;
     private double maxValue = 100;
 
-    // =========================================================================
-    // CONSTRUCTORS
-    // =========================================================================
-
-    /**
-     * Constructs a LineGraphPanel with a specified title, data set,
-     * and corresponding labels.
-     *
-     * Initializes the base card panel, assigns the provided data and labels,
-     * and creates a custom chart panel responsible for rendering the graph.
-     *
-     * @param title  The title displayed at the top of the card panel.
-     * @param data   Array of numerical values to be plotted.
-     * @param labels Array of labels corresponding to each data point.
-     */
     public LineGraphPanel(String title, double[] data, String[] labels) {
+        this(title, data, labels, null);
+    }
+
+    public LineGraphPanel(String title, double[] data, String[] labels, String[] pointDetails) {
         super(title);
+        this.data = data != null ? data : new double[0];
+        this.labels = labels != null ? labels : new String[0];
+        this.pointDetails = pointDetails != null ? pointDetails : new String[0];
 
-        this.data = data;
-        this.labels = labels;
+        contentPanel = new JPanel(new BorderLayout(10, 0));
+        contentPanel.setOpaque(false);
 
-        JPanel chartPanel = new JPanel() {
+        chartPanel = createChartPanel();
+        chartPanel.setOpaque(false);
+        chartPanel.setPreferredSize(new Dimension(220, 180));
+        contentPanel.add(chartPanel, BorderLayout.CENTER);
 
-            // -----------------------------------------------------------------
-            // paintComponent — METHOD-LEVEL VARIABLES
-            // -----------------------------------------------------------------
+        legendPanel = createLegendPanel();
+        contentPanel.add(legendPanel, BorderLayout.EAST);
 
-            /*
-             * g2 : Graphics2D
-             * A copy of the Graphics object used for advanced 2D rendering.
-             *
-             * width : int
-             * Current width of the panel.
-             *
-             * height : int
-             * Current height of the panel.
-             *
-             * padding : int
-             * Margin space around the chart area.
-             *
-             * chartWidth : int
-             * Drawable width of the chart excluding padding.
-             *
-             * chartHeight : int
-             * Drawable height of the chart excluding padding.
-             *
-             * gradient : GradientPaint
-             * Paint used to fill the area under the line graph.
-             *
-             * areaPath : Path2D
-             * Shape representing the filled area under the line graph.
-             *
-             * xPoints : int[]
-             * Computed X coordinates for each data point.
-             *
-             * yPoints : int[]
-             * Computed Y coordinates for each data point.
-             *
-             * fm : FontMetrics
-             * Used to calculate text width for label alignment.
-             */
+        add(contentPanel, BorderLayout.CENTER);
+    }
 
-            /**
-             * Paints the line graph, including grid lines, area fill,
-             * data lines, markers, and axis labels.
-             *
-             * Rendering Steps:
-             * 1. Enable anti-aliasing for smoother visuals
-             * 2. Draw horizontal grid lines
-             * 3. Compute data point coordinates
-             * 4. Create and fill gradient area under the line
-             * 5. Draw connecting lines between data points
-             * 6. Draw circular markers on each data point
-             * 7. Render X-axis labels
-             * 8. Render Y-axis scale labels
-             *
-             * @param g The Graphics context used for painting
-             */
+    public void updateData(double[] newData, String[] newLabels) {
+        updateData(newData, newLabels, null);
+    }
+
+    public void updateData(double[] newData, String[] newLabels, String[] newPointDetails) {
+        this.data = newData != null ? newData : new double[0];
+        this.labels = newLabels != null ? newLabels : new String[0];
+        this.pointDetails = newPointDetails != null ? newPointDetails : new String[0];
+
+        if (data.length > 0) {
+            this.maxValue = Arrays.stream(data).max().orElse(100);
+            if (this.maxValue <= 0)
+                this.maxValue = 100;
+        } else {
+            this.maxValue = 100;
+        }
+
+        contentPanel.remove(legendPanel);
+        legendPanel = createLegendPanel();
+        contentPanel.add(legendPanel, BorderLayout.EAST);
+
+        contentPanel.revalidate();
+        contentPanel.repaint();
+    }
+
+    private JPanel createChartPanel() {
+        return new JPanel() {
             @Override
             protected void paintComponent(Graphics g) {
                 super.paintComponent(g);
+
+                if (data == null || data.length == 0 || labels == null || labels.length == 0
+                        || data.length != labels.length) {
+                    drawEmptyState(g);
+                    return;
+                }
 
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
                 int width = getWidth();
                 int height = getHeight();
-                int padding = 40;
+                int padding = 30;
                 int chartWidth = width - 2 * padding;
                 int chartHeight = height - 2 * padding;
 
-                // Draw horizontal grid lines
+                // ---- dashed horizontal grid lines ----
                 g2.setColor(new Color(224, 224, 224));
                 g2.setStroke(new BasicStroke(1, BasicStroke.CAP_BUTT, BasicStroke.JOIN_BEVEL, 0, new float[] { 5 }, 0));
                 for (int i = 0; i <= 4; i++) {
@@ -149,40 +93,47 @@ public class LineGraphPanel extends BaseCardPanel {
                     g2.drawLine(padding, y, width - padding, y);
                 }
 
-                // Create gradient for area fill
-                GradientPaint gradient = new GradientPaint(
-                        0, padding, new Color(66, 133, 244, 180),
-                        0, height - padding, new Color(66, 133, 244, 20));
-
-                Path2D areaPath = new Path2D.Double();
-                areaPath.moveTo(padding, height - padding);
-
+                // ---- compute point positions ----
                 int[] xPoints = new int[data.length];
                 int[] yPoints = new int[data.length];
-
-                // Calculate coordinates for each data point
-                for (int i = 0; i < data.length; i++) {
-                    xPoints[i] = padding + (chartWidth * i / (data.length - 1));
-                    yPoints[i] = height - padding - (int) ((data[i] / maxValue) * chartHeight);
-                    areaPath.lineTo(xPoints[i], yPoints[i]);
+                if (data.length == 1) {
+                    xPoints[0] = padding + chartWidth / 2;
+                    yPoints[0] = height - padding - (int) ((data[0] / maxValue) * chartHeight);
+                } else {
+                    for (int i = 0; i < data.length; i++) {
+                        xPoints[i] = padding + (chartWidth * i / (data.length - 1));
+                        yPoints[i] = height - padding - (int) ((data[i] / maxValue) * chartHeight);
+                    }
                 }
 
-                // Close area path
-                areaPath.lineTo(width - padding, height - padding);
-                areaPath.closePath();
+                // ---- filled area only when there's more than one point ----
+                if (data.length > 1) {
+                    GradientPaint gradient = new GradientPaint(
+                            0, padding, new Color(66, 133, 244, 180),
+                            0, height - padding, new Color(66, 133, 244, 20));
 
-                // Fill area under the line
-                g2.setPaint(gradient);
-                g2.fill(areaPath);
+                    Path2D areaPath = new Path2D.Double();
+                    areaPath.moveTo(xPoints[0], height - padding); // start at baseline under first point
+                    for (int i = 0; i < data.length; i++) {
+                        areaPath.lineTo(xPoints[i], yPoints[i]);
+                    }
+                    // Drop straight down to baseline at the LAST point's x (no right edge
+                    // extension)
+                    areaPath.lineTo(xPoints[data.length - 1], height - padding);
+                    areaPath.closePath();
 
-                // Draw line graph
+                    g2.setPaint(gradient);
+                    g2.fill(areaPath);
+                }
+
+                // ---- draw connecting lines (only between consecutive points) ----
                 g2.setColor(new Color(66, 133, 244));
                 g2.setStroke(new BasicStroke(3));
                 for (int i = 0; i < data.length - 1; i++) {
                     g2.drawLine(xPoints[i], yPoints[i], xPoints[i + 1], yPoints[i + 1]);
                 }
 
-                // Draw data point markers
+                // ---- draw the actual data points ----
                 g2.setColor(Color.WHITE);
                 for (int i = 0; i < data.length; i++) {
                     g2.fillOval(xPoints[i] - 5, yPoints[i] - 5, 10, 10);
@@ -191,31 +142,72 @@ public class LineGraphPanel extends BaseCardPanel {
                     g2.setColor(Color.WHITE);
                 }
 
-                // Draw X-axis labels
+                // ---- month labels ----
                 g2.setColor(new Color(108, 117, 125));
-                g2.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+                g2.setFont(new Font("Segoe UI", Font.PLAIN, 10));
                 FontMetrics fm = g2.getFontMetrics();
                 for (int i = 0; i < labels.length; i++) {
                     int x = xPoints[i] - fm.stringWidth(labels[i]) / 2;
-                    g2.drawString(labels[i], x, height - padding + 20);
+                    g2.drawString(labels[i], x, height - padding + 18);
                 }
 
-                // Draw Y-axis labels
+                // ---- Y-axis value labels ----
+                g2.setColor(new Color(108, 117, 125));
                 for (int i = 0; i <= 4; i++) {
-                    int value = 100 - (i * 25);
-                    String label = String.valueOf(value);
-                    int x = padding - 30;
+                    double value = maxValue - (i * (maxValue / 4.0));
+                    String label = String.format("%.0f", value);
+                    int x = padding - 28;
                     int y = padding + (chartHeight * i / 4) + 4;
                     g2.drawString(label, x, y);
                 }
 
                 g2.dispose();
             }
+
+            private void drawEmptyState(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(new Color(180, 180, 180));
+                g2.setFont(new Font("Segoe UI", Font.ITALIC, 13));
+                String msg = "No data";
+                FontMetrics fm = g2.getFontMetrics();
+                int x = (getWidth() - fm.stringWidth(msg)) / 2;
+                int y = getHeight() / 2;
+                g2.drawString(msg, x, y);
+                g2.dispose();
+            }
         };
+    }
 
-        chartPanel.setOpaque(false);
-        chartPanel.setPreferredSize(new Dimension(300, 200));
+    private JPanel createLegendPanel() {
+        JPanel panel = new JPanel(new GridLayout(Math.max(pointDetails.length, 1), 1, 4, 4));
+        panel.setOpaque(false);
+        panel.setBorder(BorderFactory.createEmptyBorder(10, 5, 10, 5));
 
-        add(chartPanel, BorderLayout.CENTER);
+        if (pointDetails == null || pointDetails.length == 0) {
+            JLabel empty = new JLabel("No data");
+            empty.setFont(new Font("Segoe UI", Font.ITALIC, 10));
+            empty.setForeground(new Color(180, 180, 180));
+            panel.add(empty);
+            return panel;
+        }
+
+        for (int i = 0; i < pointDetails.length; i++) {
+            JPanel item = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
+            item.setOpaque(false);
+
+            JPanel colorBox = new JPanel();
+            colorBox.setBackground(new Color(66, 133, 244));
+            colorBox.setPreferredSize(new Dimension(10, 10));
+
+            JLabel label = new JLabel(pointDetails[i]);
+            label.setFont(new Font("Segoe UI", Font.PLAIN, 10));
+            label.setForeground(new Color(108, 117, 125));
+
+            item.add(colorBox);
+            item.add(label);
+            panel.add(item);
+        }
+        return panel;
     }
 }

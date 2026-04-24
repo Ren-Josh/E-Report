@@ -117,22 +117,55 @@ public class TimeFilterPanel extends JPanel {
 
         // Year range combos (for span of years)
         startYearCombo = createYearCombo(currentYear - 5, currentYear + 5);
+        startYearCombo.setPreferredSize(new Dimension(140, 32));
+        startYearCombo.setFont(new Font("Arial", Font.PLAIN, 12));
+        startYearCombo.setBorder(
+                BorderFactory.createCompoundBorder(
+                        BorderFactory.createLineBorder(new Color(220, 224, 230), 1, true),
+                        BorderFactory.createEmptyBorder(2, 8, 2, 4)));
         endYearCombo = createYearCombo(currentYear - 5, currentYear + 5);
+        endYearCombo.setPreferredSize(new Dimension(140, 32));
+        endYearCombo.setFont(new Font("Arial", Font.PLAIN, 12));
+        endYearCombo.setBorder(
+                BorderFactory.createCompoundBorder(
+                        BorderFactory.createLineBorder(new Color(220, 224, 230), 1, true),
+                        BorderFactory.createEmptyBorder(2, 8, 2, 4)));
         add(wrapWithLabel("Start Year:", startYearCombo));
         add(wrapWithLabel("End Year:", endYearCombo));
 
         // Single year combo
         yearCombo = createYearCombo(currentYear - 5, currentYear + 5);
+        yearCombo.setPreferredSize(new Dimension(140, 32));
+        yearCombo.setFont(new Font("Arial", Font.PLAIN, 12));
+        yearCombo.setBorder(
+                BorderFactory.createCompoundBorder(
+                        BorderFactory.createLineBorder(new Color(220, 224, 230), 1, true),
+                        BorderFactory.createEmptyBorder(2, 8, 2, 4)));
         yearCombo.setSelectedItem(currentYear);
         add(wrapWithLabel("Year:", yearCombo));
 
         // Month combos
         startMonthCombo = new UIComboBox<>(MONTH_NAMES);
         startMonthCombo.setPreferredSize(new Dimension(100, 32));
+        startMonthCombo.setFont(new Font("Arial", Font.PLAIN, 12));
+        startMonthCombo.setBorder(
+                BorderFactory.createCompoundBorder(
+                        BorderFactory.createLineBorder(new Color(220, 224, 230), 1, true),
+                        BorderFactory.createEmptyBorder(2, 8, 2, 4)));
         endMonthCombo = new UIComboBox<>(MONTH_NAMES);
+        endMonthCombo.setFont(new Font("Arial", Font.PLAIN, 12));
         endMonthCombo.setPreferredSize(new Dimension(100, 32));
+        endMonthCombo.setBorder(
+                BorderFactory.createCompoundBorder(
+                        BorderFactory.createLineBorder(new Color(220, 224, 230), 1, true),
+                        BorderFactory.createEmptyBorder(2, 8, 2, 4)));
         monthCombo = new UIComboBox<>(MONTH_NAMES);
         monthCombo.setPreferredSize(new Dimension(100, 32));
+        monthCombo.setFont(new Font("Arial", Font.PLAIN, 12));
+        monthCombo.setBorder(
+                BorderFactory.createCompoundBorder(
+                        BorderFactory.createLineBorder(new Color(220, 224, 230), 1, true),
+                        BorderFactory.createEmptyBorder(2, 8, 2, 4)));
 
         add(wrapWithLabel("Start Month:", startMonthCombo));
         add(wrapWithLabel("End Month:", endMonthCombo));
@@ -142,6 +175,7 @@ public class TimeFilterPanel extends JPanel {
         Integer[] weeks = { 1, 2, 3, 4, 5, 6 };
         weekCombo = new UIComboBox<>(weeks);
         weekCombo.setPreferredSize(new Dimension(70, 32));
+        weekCombo.setFont(new Font("Arial", Font.PLAIN, 12));
         add(wrapWithLabel("Week:", weekCombo));
 
         // Add change listeners to all combos

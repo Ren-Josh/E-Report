@@ -1,30 +1,75 @@
 package features.layout.captain;
 
 import javax.swing.*;
+import java.awt.*;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.List;
 
 import app.E_Report;
 import features.components.FilterBarPanel;
 import features.core.dashboardpanel.DashboardInfoCardsPanel;
 import features.core.dashboardpanel.captain.*;
-
-import java.awt.*;
-import java.util.List;
-import java.util.Arrays;
-import java.util.Date;
+import models.UserSession;
+import services.controller.RecentActivityController;
+import services.controller.ReportStatisticsController;
+import services.fetcher.CaptainDashboardFetcher;
+import features.components.filter.TimeFilter;
 
 public class CaptainDashboardPanel extends JPanel {
     private E_Report app;
+    private UserSession us;
     private DashboardInfoCardsPanel infoCardsPanel;
     private FilterBarPanel filterBarPanel;
+    private ReportStatisticsController rsc;
     private static final int MIN_CONTENT_WIDTH = 1000;
+
+    private LineGraphPanel lineGraphPanel;
+    private DonutChartPanel donutChartPanel;
+    private StackedBarChartPanel stackedBarChartPanel;
+    private BarChartPanel barChartPanel;
+
+    private CaptainDashboardFetcher fetcher;
 
     public CaptainDashboardPanel(E_Report app) {
         this.app = app;
+        this.us = app.getUserSession();
+        rsc = new ReportStatisticsController();
         setLayout(new BorderLayout());
         setOpaque(false);
 
         JScrollPane scrollPane = createScrollableDashboard();
         add(scrollPane, BorderLayout.CENTER);
+
+        this.fetcher = new CaptainDashboardFetcher(app);
+        this.fetcher.addDataChangeListener(this::onDataChanged);
+    }
+
+    private void onDataChanged() {
+        updateInfoCards(fetcher.getTotal(), fetcher.getPending(),
+                fetcher.getInProgress(), fetcher.getResolved());
+
+        lineGraphPanel.updateData(fetcher.getLineValues(),
+                fetcher.getLineLabels(),
+                fetcher.getLineDetails());
+
+        donutChartPanel.updateData("Case Trends Category",
+                fetcher.getCategoryLabels(),
+                fetcher.getCategoryValues(),
+                getDefaultDonutColors());
+
+        stackedBarChartPanel.updateData("Case Status",
+                fetcher.getStatusLabels(),
+                fetcher.getBackgroundTotals(),
+                fetcher.getStatusValues(),
+                getDefaultStatusColors(),
+                fetcher.getTotal());
+
+        barChartPanel.updateData("Report Source",
+                fetcher.getSourceLabels(),
+                fetcher.getSourceValues(),
+                getDefaultSourceColors(),
+                fetcher.getTotal());
     }
 
     private JScrollPane createScrollableDashboard() {
@@ -32,7 +77,6 @@ public class CaptainDashboardPanel extends JPanel {
         contentPanel.setLayout(new BoxLayout(contentPanel, BoxLayout.Y_AXIS));
         contentPanel.setOpaque(false);
 
-        // 1. Info Cards Panel
         String[] iconPaths = {
                 "src/assets/icons/reports_icon.png",
                 "src/assets/icons/report_pending_icon.png",
@@ -44,23 +88,30 @@ public class CaptainDashboardPanel extends JPanel {
         contentPanel.add(infoCardsPanel);
         contentPanel.add(Box.createVerticalStrut(15));
 
-        // 2. Filter Bar Panel
         filterBarPanel = new FilterBarPanel(new FilterBarPanel.FilterListener() {
             @Override
             public void onApply(Date fromDate, Date toDate, String category, String purok, String status) {
-                refreshDashboardData(category, purok, status);
+                String catFilter = (category == null || category.startsWith("All ")) ? null : category;
+                String purokFilter = (purok == null || purok.startsWith("All ")) ? null : purok;
+                String statusFilter = (status == null || status.startsWith("All ")) ? null : status;
+
+                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+                String start = fromDate != null ? sdf.format(fromDate) : null;
+                String end = toDate != null ? sdf.format(toDate) : null;
+
+                TimeFilter timeFilter = filterBarPanel.getTimeFilter();
+                fetcher.applyFilters(start, end, catFilter, purokFilter, statusFilter, timeFilter);
             }
 
             @Override
             public void onReset() {
-                refreshDashboardData(null, null, null);
+                fetcher.applyFilters(null, null, null, null, null, null);
             }
         });
         filterBarPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
         contentPanel.add(filterBarPanel);
         contentPanel.add(Box.createVerticalStrut(20));
 
-        // 3. Charts Row
         JPanel chartsWrapper = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
         chartsWrapper.setOpaque(false);
         chartsWrapper.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -73,7 +124,6 @@ public class CaptainDashboardPanel extends JPanel {
         contentPanel.add(chartsWrapper);
         contentPanel.add(Box.createVerticalStrut(20));
 
-        // 4. Bottom Row
         JPanel bottomWrapper = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
         bottomWrapper.setOpaque(false);
         bottomWrapper.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -84,17 +134,14 @@ public class CaptainDashboardPanel extends JPanel {
         bottomRow.setPreferredSize(new Dimension(MIN_CONTENT_WIDTH, 250));
         bottomWrapper.add(bottomRow);
         contentPanel.add(bottomWrapper);
-
         contentPanel.add(Box.createVerticalGlue());
 
-        // Scroll pane
         JScrollPane scrollPane = new JScrollPane(contentPanel);
         scrollPane.setOpaque(false);
         scrollPane.getViewport().setOpaque(false);
         scrollPane.setBorder(null);
         scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
         scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
-        scrollPane.getViewport().setMinimumSize(new Dimension(800, 600));
 
         JScrollBar verticalBar = scrollPane.getVerticalScrollBar();
         verticalBar.setUnitIncrement(16);
@@ -107,34 +154,15 @@ public class CaptainDashboardPanel extends JPanel {
         JPanel panel = new JPanel(new GridLayout(1, 3, 20, 0));
         panel.setOpaque(false);
 
-        double[] lineData = { 10, 6, 15, 40 };
-        String[] months = { "January", "February", "March", "April" };
-
-        String[] trendLabels = { "Theft", "Garbage Waste", "Vandalism", "Scam", "Others" };
-        int[] trendValues = { 28, 23, 8, 13, 30 };
-        Color[] trendColors = {
-                new Color(186, 85, 211),
-                new Color(255, 193, 7),
-                new Color(66, 133, 244),
-                new Color(52, 168, 83),
-                new Color(255, 152, 0)
-        };
-
-        String[] statusLabels = { "Submitted", "Pending", "In Progress", "Resolved", "Invalid" };
-        int[] statusValues = { 200, 200, 200, 200, 200 };
-        int[] statusFilled = { 45, 65, 20, 100, 10 };
-        Color[] statusColors = {
-                new Color(66, 133, 244),
-                new Color(255, 193, 7),
-                new Color(186, 85, 211),
-                new Color(52, 168, 83),
-                new Color(189, 189, 189)
-        };
-
-        panel.add(new LineGraphPanel("Monthly Case Graph", lineData, months));
-        panel.add(new DonutChartPanel("Case Trends Category", trendLabels, trendValues, trendColors));
-        panel.add(new StackedBarChartPanel("Case Status", statusLabels, statusValues, statusFilled, statusColors));
-
+        lineGraphPanel = new LineGraphPanel("Monthly Case Graph", new double[0], new String[0]);
+        donutChartPanel = new DonutChartPanel("Case Trends Category", new String[0], new int[0],
+                getDefaultDonutColors());
+        stackedBarChartPanel = new StackedBarChartPanel("Case Status", new String[0],
+                new int[0], new int[0],
+                getDefaultStatusColors(), 1);
+        panel.add(lineGraphPanel);
+        panel.add(donutChartPanel);
+        panel.add(stackedBarChartPanel);
         return panel;
     }
 
@@ -142,29 +170,34 @@ public class CaptainDashboardPanel extends JPanel {
         JPanel panel = new JPanel(new GridLayout(1, 2, 20, 0));
         panel.setOpaque(false);
 
-        List<ActivityItem> activities = Arrays.asList(
-                new ActivityItem("Report Status Updated", "You updated Report #180 (ID: C180) to In Progress",
-                        "11:30 AM", "11-28-2026"),
-                new ActivityItem("Report Status Updated", "You updated Report #179 (ID: C179) to Resolved", "4:24 PM",
-                        "11-27-2026"),
-                new ActivityItem("Report Status Updated", "You updated Report #178 (ID: C178) to Invalid", "9:28 AM",
-                        "11-27-2026"));
+        RecentActivityController rac = new RecentActivityController();
+        List<ActivityItem> activities = rac.getRecentActivities(us, 7);
         panel.add(new RecentActivitiesPanel("Recent Activities", activities));
 
-        String[] sourceLabels = { "Resident", "Captain", "Secretary" };
-        int[] sourceValues = { 70, 89, 20 };
-        Color[] sourceColors = {
-                new Color(255, 193, 7),
-                new Color(186, 85, 211),
-                new Color(66, 133, 244)
-        };
-        panel.add(new BarChartPanel("Report Source", sourceLabels, sourceValues, sourceColors));
-
+        barChartPanel = new BarChartPanel("Report Source", new String[0], new int[0],
+                getDefaultSourceColors(), 1);
+        panel.add(barChartPanel);
         return panel;
     }
 
-    private void refreshDashboardData(String category, String purok, String status) {
-        // Implement refresh logic
+    private Color[] getDefaultDonutColors() {
+        return new Color[] {
+                new Color(186, 85, 211), new Color(255, 193, 7),
+                new Color(66, 133, 244), new Color(52, 168, 83), new Color(255, 152, 0)
+        };
+    }
+
+    private Color[] getDefaultStatusColors() {
+        return new Color[] {
+                new Color(66, 133, 244), new Color(255, 193, 7),
+                new Color(186, 85, 211), new Color(52, 168, 83), new Color(189, 189, 189)
+        };
+    }
+
+    private Color[] getDefaultSourceColors() {
+        return new Color[] {
+                new Color(255, 193, 7), new Color(186, 85, 211), new Color(66, 133, 244)
+        };
     }
 
     public DashboardInfoCardsPanel getInfoCardsPanel() {

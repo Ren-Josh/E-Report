@@ -134,7 +134,7 @@ public class RecentActivitiesPanel extends BaseCardPanel {
 
         JPanel row = new JPanel(new BorderLayout(10, 5));
         row.setOpaque(false);
-        row.setBorder(BorderFactory.createEmptyBorder(8, 5, 8, 5));
+        row.setBorder(BorderFactory.createEmptyBorder(8, 0, 8, 15));
 
         // ------------------------------------------------------------
         // LEFT SECTION (ICON + TEXT)
@@ -143,7 +143,7 @@ public class RecentActivitiesPanel extends BaseCardPanel {
         leftPanel.setOpaque(false);
 
         JPanel iconPanel = new JPanel();
-        iconPanel.setPreferredSize(new Dimension(8, 8));
+        iconPanel.setPreferredSize(new Dimension(4, 8));
         iconPanel.setBackground(new Color(66, 133, 244));
         iconPanel.setOpaque(true);
 

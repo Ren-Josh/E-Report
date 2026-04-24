@@ -5,19 +5,19 @@ import config.UIConfig;
 import features.components.HeaderPanel;
 import features.components.NavPanel;
 import features.core.BackgroundPanel;
-import features.layout.common.MyReportPanel;
+import features.layout.common.AllReportsPanel;
 import models.UserSession;
 
 import javax.swing.*;
 import java.awt.*;
 
-public class MyReportsView extends JPanel {
+public class AllReportsView extends JPanel {
     private E_Report app;
     private HeaderPanel header;
     private NavPanel nav;
-    private MyReportPanel myReportsPanel;
+    private AllReportsPanel allReportsPanel;
 
-    public MyReportsView(E_Report app) {
+    public AllReportsView(E_Report app) {
         this.app = app;
         setLayout(new BorderLayout());
 
@@ -27,7 +27,7 @@ public class MyReportsView extends JPanel {
 
         header = new HeaderPanel(app);
         nav = new NavPanel();
-        myReportsPanel = new MyReportPanel(app);
+        allReportsPanel = new AllReportsPanel(app);
 
         // Set nav menus based on role
         UserSession us = app.getUserSession();
@@ -41,7 +41,7 @@ public class MyReportsView extends JPanel {
 
         bgPanel.add(header, BorderLayout.NORTH);
         bgPanel.add(nav, BorderLayout.WEST);
-        bgPanel.add(myReportsPanel, BorderLayout.CENTER);
+        bgPanel.add(allReportsPanel, BorderLayout.CENTER);
 
         add(bgPanel, BorderLayout.CENTER);
     }
@@ -54,7 +54,7 @@ public class MyReportsView extends JPanel {
         return nav;
     }
 
-    public MyReportPanel getMyReportsPanel() {
-        return myReportsPanel;
+    public AllReportsPanel getAllReportsPanel() {
+        return allReportsPanel;
     }
 }

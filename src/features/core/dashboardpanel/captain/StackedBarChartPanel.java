@@ -3,143 +3,93 @@ package features.core.dashboardpanel.captain;
 import javax.swing.*;
 import java.awt.*;
 
-/**
- * StackedBarChartPanel
- *
- * A custom Swing panel that renders a simple stacked-style bar chart with a
- * legend. Each bar represents a category label with a filled value against
- * a fixed maximum scale.
- *
- * The panel consists of:
- * - A custom-drawn chart area (bars + grid + axis labels)
- * - A vertical legend showing color indicators and values
- *
- * This class extends BaseCardPanel and is intended for dashboard visualization
- * of categorized quantitative data.
- */
 public class StackedBarChartPanel extends BaseCardPanel {
 
-    // ============================================================
-    // INSTANCE VARIABLES (DATA SET)
-    // ============================================================
-
-    /** Array of category labels displayed in the chart and legend. */
     private String[] labels;
-
-    /** Maximum possible values per category (reserved for scaling logic). */
     private int[] maxValues;
-
-    /** Actual filled values used to render bar heights. */
     private int[] filledValues;
-
-    /** Color palette assigned per category bar and legend swatch. */
+    private int maxVal;
     private Color[] colors;
+    private JPanel contentPanel;
+    private JPanel chartPanel;
+    private JPanel legendPanel;
+    private boolean hasData = false;
 
-    // ============================================================
-    // CONSTRUCTOR
-    // ============================================================
-
-    /**
-     * Constructs a StackedBarChartPanel with dataset and rendering configuration.
-     *
-     * Initializes chart data arrays and builds the UI consisting of a custom
-     * bar chart panel and a legend panel aligned horizontally.
-     *
-     * @param title        Title displayed in the BaseCardPanel header.
-     * @param labels       Array of category labels.
-     * @param maxValues    Array of maximum reference values per category.
-     * @param filledValues Array of actual values used for bar height rendering.
-     * @param colors       Array of colors assigned to each category.
-     */
     public StackedBarChartPanel(
             String title,
             String[] labels,
             int[] maxValues,
             int[] filledValues,
-            Color[] colors) {
+            Color[] colors,
+            int maxVal) {
         super(title);
+        updateInternalData(labels, maxValues, filledValues, colors, maxVal, false);
+        buildUI();
+    }
 
-        this.labels = labels;
-        this.maxValues = maxValues;
-        this.filledValues = filledValues;
-        this.colors = colors;
-
-        // ------------------------------------------------------------
-        // MAIN CONTENT WRAPPER
-        // ------------------------------------------------------------
-        JPanel contentPanel = new JPanel(new BorderLayout(10, 0));
+    private void buildUI() {
+        contentPanel = new JPanel(new BorderLayout(10, 0));
         contentPanel.setOpaque(false);
 
-        // ------------------------------------------------------------
-        // CHART PANEL (CUSTOM DRAWING SURFACE)
-        // ------------------------------------------------------------
+        chartPanel = createChartPanel();
+        chartPanel.setOpaque(false);
+        chartPanel.setPreferredSize(new Dimension(220, 180));
+        contentPanel.add(chartPanel, BorderLayout.CENTER);
 
-        JPanel chartPanel = new JPanel() {
+        legendPanel = createLegendPanel();
+        contentPanel.add(legendPanel, BorderLayout.EAST);
 
-            // ============================================================
-            // METHOD: paintComponent (CUSTOM GRAPH RENDERING)
-            // ============================================================
+        add(contentPanel, BorderLayout.CENTER);
+    }
 
-            // ------------------------------------------------------------
-            // METHOD-LEVEL VARIABLES
-            // ------------------------------------------------------------
+    public void updateData(String title, String[] newLabels, int[] newMaxValues, int[] newFilled, Color[] newColors,
+            int newMaxVal) {
+        if (title != null) {
+            // setTitle(title);
+        }
+        updateInternalData(newLabels, newMaxValues, newFilled, newColors, newMaxVal, true);
+    }
 
-            /*
-             * width : int
-             * Total width of the chart panel.
-             *
-             * height : int
-             * Total height of the chart panel.
-             *
-             * padLeft : int
-             * Left padding for Y-axis labels and spacing.
-             *
-             * padRight : int
-             * Right padding for chart margin.
-             *
-             * padTop : int
-             * Top padding for chart spacing.
-             *
-             * padBottom : int
-             * Bottom padding for chart spacing.
-             *
-             * chartW : int
-             * Computed drawable width of chart area.
-             *
-             * chartH : int
-             * Computed drawable height of chart area.
-             *
-             * barW : int
-             * Width of each bar based on available space.
-             *
-             * maxVal : int
-             * Fixed maximum scale used for bar height normalization.
-             *
-             * sectionW : int
-             * Horizontal segment width allocated per label.
-             *
-             * x : int
-             * X-position of each bar.
-             *
-             * y : int
-             * Y-position of each bar based on value scaling.
-             *
-             * barH : int
-             * Computed height of each bar.
-             *
-             * val : int
-             * Value used for rendering Y-axis labels.
-             */
+    private void updateInternalData(String[] newLabels, int[] newMaxValues, int[] newFilled, Color[] newColors,
+            int newMaxVal, boolean rebuild) {
+        this.labels = newLabels != null ? newLabels : new String[0];
+        this.maxValues = newMaxValues != null ? newMaxValues : new int[0];
+        this.filledValues = newFilled != null ? newFilled : new int[0];
+        this.colors = newColors != null ? newColors : new Color[0];
 
-            /**
-             * Custom paint method that renders:
-             * - Grid lines
-             * - Y-axis labels
-             * - Data bars with background and filled portions
-             */
+        // Check if we have actual data to display
+        boolean hasNonZeroValues = false;
+        for (int v : this.filledValues) {
+            if (v > 0) {
+                hasNonZeroValues = true;
+                break;
+            }
+        }
+        this.hasData = this.labels.length > 0 && this.filledValues.length > 0 && hasNonZeroValues;
+
+        // CRITICAL FIX: Actually update the ceiling value!
+        this.maxVal = newMaxVal > 0 ? newMaxVal : 100;
+
+        if (rebuild) {
+            // Rebuild legend since text/values changed
+            contentPanel.remove(legendPanel);
+            legendPanel = createLegendPanel();
+            contentPanel.add(legendPanel, BorderLayout.EAST);
+            contentPanel.revalidate();
+            contentPanel.repaint();
+        }
+    }
+
+    private JPanel createChartPanel() {
+        return new JPanel() {
             @Override
             protected void paintComponent(Graphics g) {
                 super.paintComponent(g);
+
+                if (!hasData) {
+                    drawEmptyState(g);
+                    return;
+                }
 
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(
@@ -157,12 +107,9 @@ public class StackedBarChartPanel extends BaseCardPanel {
                 int chartW = width - padLeft - padRight;
                 int chartH = height - padTop - padBottom;
 
-                int barW = Math.max(18, (chartW / labels.length) - 12);
-                int maxVal = 200;
+                int barW = Math.max(18, (chartW / Math.max(labels.length, 1)) - 12);
 
-                // ------------------------------------------------------------
                 // GRID LINES
-                // ------------------------------------------------------------
                 g2.setColor(new Color(224, 224, 224));
                 g2.setStroke(new BasicStroke(1));
 
@@ -171,81 +118,91 @@ public class StackedBarChartPanel extends BaseCardPanel {
                     g2.drawLine(padLeft, y, width - padRight, y);
                 }
 
-                // ------------------------------------------------------------
-                // Y-AXIS LABELS
-                // ------------------------------------------------------------
+                // Y-AXIS LABELS — use floating point division
                 g2.setColor(new Color(108, 117, 125));
                 g2.setFont(new Font("Segoe UI", Font.PLAIN, 10));
 
                 for (int i = 0; i <= 4; i++) {
-                    int val = (4 - i) * 50;
+                    double rawVal = (4 - i) * (maxVal / 4.0);
+                    int val = (int) Math.round(rawVal);
                     int y = padTop + (chartH * i / 4) + 4;
                     g2.drawString(String.valueOf(val), padLeft - 32, y);
                 }
 
-                // ------------------------------------------------------------
                 // BARS RENDERING
-                // ------------------------------------------------------------
                 for (int i = 0; i < labels.length; i++) {
 
-                    int sectionW = chartW / labels.length;
+                    int sectionW = chartW / Math.max(labels.length, 1);
                     int x = padLeft + (sectionW * i) + (sectionW - barW) / 2;
 
-                    int barH = (int) ((filledValues[i] / (double) maxVal) * chartH);
+                    int fill = (filledValues != null && i < filledValues.length) ? filledValues[i] : 0;
+                    int barH = (int) ((fill / (double) maxVal) * chartH);
                     int y = padTop + chartH - barH;
 
-                    // Background bar (light tint)
-                    g2.setColor(new Color(
-                            colors[i].getRed(),
-                            colors[i].getGreen(),
-                            colors[i].getBlue(),
-                            50));
+                    Color c = safeColor(i);
+                    g2.setColor(new Color(c.getRed(), c.getGreen(), c.getBlue(), 50));
                     g2.fillRoundRect(x, padTop, barW, chartH, 10, 10);
 
-                    // Filled bar
-                    g2.setColor(colors[i]);
+                    g2.setColor(c);
                     g2.fillRoundRect(x, y, barW, barH, 10, 10);
                 }
 
                 g2.dispose();
             }
+
+            private void drawEmptyState(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(new Color(180, 180, 180));
+                g2.setFont(new Font("Segoe UI", Font.ITALIC, 14));
+                String msg = "No data available";
+                FontMetrics fm = g2.getFontMetrics();
+                int x = (getWidth() - fm.stringWidth(msg)) / 2;
+                int y = getHeight() / 2;
+                g2.drawString(msg, x, y);
+                g2.dispose();
+            }
         };
+    }
 
-        chartPanel.setOpaque(false);
-        chartPanel.setPreferredSize(new Dimension(220, 180));
+    private JPanel createLegendPanel() {
+        JPanel panel = new JPanel(new GridLayout(Math.max(labels.length, 1), 1, 8, 8));
+        panel.setOpaque(false);
+        panel.setBorder(BorderFactory.createEmptyBorder(10, 5, 10, 5));
 
-        contentPanel.add(chartPanel, BorderLayout.CENTER);
-
-        // ------------------------------------------------------------
-        // LEGEND PANEL
-        // ------------------------------------------------------------
-
-        JPanel legendPanel = new JPanel(new GridLayout(labels.length, 1, 8, 8));
-        legendPanel.setOpaque(false);
-        legendPanel.setBorder(BorderFactory.createEmptyBorder(10, 5, 10, 5));
+        if (!hasData) {
+            JLabel empty = new JLabel("No data");
+            empty.setFont(new Font("Segoe UI", Font.ITALIC, 11));
+            empty.setForeground(new Color(180, 180, 180));
+            panel.add(empty);
+            return panel;
+        }
 
         for (int i = 0; i < labels.length; i++) {
-
             JPanel item = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
             item.setOpaque(false);
 
             JPanel swatch = new JPanel();
-            swatch.setBackground(colors[i]);
+            swatch.setBackground(safeColor(i));
             swatch.setPreferredSize(new Dimension(12, 12));
             swatch.setOpaque(true);
 
-            JLabel text = new JLabel(labels[i] + " (" + filledValues[i] + ")");
+            int val = (filledValues != null && i < filledValues.length) ? filledValues[i] : 0;
+            JLabel text = new JLabel(labels[i] + " (" + val + ")");
             text.setFont(new Font("Segoe UI", Font.PLAIN, 11));
             text.setForeground(new Color(90, 90, 90));
 
             item.add(swatch);
             item.add(text);
-
-            legendPanel.add(item);
+            panel.add(item);
         }
+        return panel;
+    }
 
-        contentPanel.add(legendPanel, BorderLayout.EAST);
-
-        add(contentPanel, BorderLayout.CENTER);
+    private Color safeColor(int index) {
+        if (colors != null && index >= 0 && index < colors.length) {
+            return colors[index];
+        }
+        return Color.GRAY;
     }
 }

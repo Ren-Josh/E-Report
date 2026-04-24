@@ -10,9 +10,6 @@ import config.UIConfig;
 import features.components.filter.TimeFilter;
 import features.components.filter.TimeFilterPanel;
 
-/**
- * FilterBarPanel (Pill Design - Fixed)
- */
 public class FilterBarPanel extends JPanel {
 
     // -------------------------------------------------------------------------
@@ -50,8 +47,8 @@ public class FilterBarPanel extends JPanel {
     private static final Color MORE_BTN_COLOR = new Color(100, 110, 130);
 
     private static final int PILL_RADIUS = 20;
-    private static final int FIELD_HEIGHT = 34;
-    private static final int H_GAP = 8;
+    private static final int FIELD_HEIGHT = 30;
+    private static final int H_GAP = 5;
 
     // ===================================================================
     // NESTED TYPES
@@ -101,10 +98,13 @@ public class FilterBarPanel extends JPanel {
     // ===================================================================
     // INITIALIZATION — DASHBOARD MODE
     // ===================================================================
+    // ===================================================================
+    // INITIALIZATION — DASHBOARD MODE (FIXED)
+    // ===================================================================
     private void initializeDashboard(String[] categories, String[] puroks, String[] statuses) {
         setLayout(new BorderLayout(0, 0));
         setOpaque(false);
-        setBorder(BorderFactory.createEmptyBorder(12, 16, 12, 16));
+        setBorder(BorderFactory.createEmptyBorder(0, 0, 12, 0));
 
         JPanel mainBar = new JPanel();
         mainBar.setLayout(new BoxLayout(mainBar, BoxLayout.Y_AXIS));
@@ -112,48 +112,56 @@ public class FilterBarPanel extends JPanel {
         mainBar.setBackground(BAR_BG);
         mainBar.setBorder(BorderFactory.createCompoundBorder(
                 new LineBorder(new Color(210, 215, 225), 1, true),
-                BorderFactory.createEmptyBorder(12, 16, 12, 16)));
+                BorderFactory.createEmptyBorder(12, 5, 12, 5)));
 
-        // === TOP ROW: Use BorderLayout for left/right alignment ===
-        JPanel topWrapper = new JPanel(new BorderLayout(0, 0));
-        topWrapper.setOpaque(false);
-        topWrapper.setMaximumSize(new Dimension(Integer.MAX_VALUE, FIELD_HEIGHT + 10));
+        // === TOP ROW: BoxLayout with horizontal glue ===
+        JPanel topRow = new JPanel();
+        topRow.setLayout(new BoxLayout(topRow, BoxLayout.X_AXIS));
+        topRow.setOpaque(false);
+        topRow.setMaximumSize(new Dimension(Integer.MAX_VALUE, FIELD_HEIGHT + 15));
+        topRow.setBorder(BorderFactory.createEmptyBorder(5, 0, 5, 0));
 
-        JPanel leftRow = new JPanel(new FlowLayout(FlowLayout.LEFT, H_GAP, 0));
-        leftRow.setOpaque(false);
+        // LEFT side (filters) — FlowLayout inside a fixed-max-width wrapper
+        JPanel leftWrapper = new JPanel(new FlowLayout(FlowLayout.LEFT, H_GAP, 0));
+        leftWrapper.setOpaque(false);
+        leftWrapper.setMaximumSize(new Dimension(800, FIELD_HEIGHT + 10)); // Prevent overflow
 
         timeFilterPanel = new TimeFilterPanel();
         timeFilterPanel.setFilterType(TimeFilter.FilterType.SINGLE_YEAR);
-        addColorIndicator(leftRow, timeFilterPanel, TIME_COLOR, "Time Period");
+        addColorIndicator(leftWrapper, timeFilterPanel, TIME_COLOR, "Time Period");
 
         categoryCombo = new UIComboBox<>(categories);
         categoryCombo.setPreferredSize(new Dimension(150, FIELD_HEIGHT));
         styleComboAsPill(categoryCombo, CATEGORY_COLOR);
-        addColorIndicator(leftRow, categoryCombo, CATEGORY_COLOR, "Category");
+        addColorIndicator(leftWrapper, categoryCombo, CATEGORY_COLOR, "Category");
 
         moreFiltersButton = createMoreFiltersButton();
         moreFiltersButton.addActionListener(e -> toggleAdvancedFilters());
-        leftRow.add(Box.createHorizontalStrut(8));
-        leftRow.add(moreFiltersButton);
+        leftWrapper.add(Box.createHorizontalStrut(6));
+        leftWrapper.add(moreFiltersButton);
 
-        topWrapper.add(leftRow, BorderLayout.WEST);
+        topRow.add(leftWrapper);
 
-        JPanel rightRow = new JPanel(new FlowLayout(FlowLayout.RIGHT, H_GAP, 0));
-        rightRow.setOpaque(false);
+        // GLUE: pushes right side to the far edge
+        topRow.add(Box.createHorizontalGlue());
+
+        // RIGHT side (buttons) — never gets pushed out
+        JPanel rightWrapper = new JPanel(new FlowLayout(FlowLayout.RIGHT, H_GAP, 3));
+        rightWrapper.setOpaque(false);
 
         applyButton = createSolidPillButton("Apply", TIME_COLOR);
         applyButton.addActionListener(e -> {
             notifyApply();
             updateActiveChips();
         });
-        rightRow.add(applyButton);
+        rightWrapper.add(applyButton);
 
         JButton resetBtn = createTextButton("Reset");
         resetBtn.addActionListener(e -> notifyReset());
-        rightRow.add(resetBtn);
+        rightWrapper.add(resetBtn);
 
-        topWrapper.add(rightRow, BorderLayout.EAST);
-        mainBar.add(topWrapper);
+        topRow.add(rightWrapper);
+        mainBar.add(topRow);
 
         // === ADVANCED ROW ===
         advancedFiltersRow = new JPanel(new FlowLayout(FlowLayout.LEFT, H_GAP, 0));
@@ -161,7 +169,7 @@ public class FilterBarPanel extends JPanel {
         advancedFiltersRow.setBackground(new Color(245, 247, 250));
         advancedFiltersRow.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createMatteBorder(1, 0, 0, 0, new Color(220, 225, 235)),
-                BorderFactory.createEmptyBorder(10, 0, 10, 0)));
+                BorderFactory.createEmptyBorder(10, 0, 5, 0)));
         advancedFiltersRow.setVisible(false);
         advancedFiltersRow.setMaximumSize(new Dimension(Integer.MAX_VALUE, FIELD_HEIGHT + 20));
 
@@ -222,14 +230,19 @@ public class FilterBarPanel extends JPanel {
 
         mainBar.add(row, BorderLayout.WEST);
 
-        JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, H_GAP, 0));
+        JPanel rightPanel = new JPanel();
+        rightPanel.setLayout(new BoxLayout(rightPanel, BoxLayout.X_AXIS));
         rightPanel.setOpaque(false);
+        rightPanel.setAlignmentY(Component.CENTER_ALIGNMENT);
 
         applyButton = createSolidPillButton("Search", SEARCH_COLOR);
+        applyButton.setAlignmentY(Component.CENTER_ALIGNMENT);
         applyButton.addActionListener(e -> notifySearch());
         rightPanel.add(applyButton);
+        rightPanel.add(Box.createHorizontalStrut(H_GAP));
 
         JButton clearBtn = createTextButton("Clear");
+        clearBtn.setAlignmentY(Component.CENTER_ALIGNMENT);
         clearBtn.addActionListener(e -> notifyClearSearch());
         rightPanel.add(clearBtn);
 
@@ -342,15 +355,19 @@ public class FilterBarPanel extends JPanel {
     }
 
     private JButton createTextButton(String text) {
-        UIButton btn = new UIButton(text, null, new Dimension(84, FIELD_HEIGHT),
+        UIButton btn = new UIButton(text, null, new Dimension(80, FIELD_HEIGHT),
                 new Font("Arial", Font.PLAIN, 12), PILL_RADIUS, UIButton.ButtonType.OUTLINED);
         btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        btn.setFocusPainted(false);
         btn.setForeground(MORE_BTN_COLOR);
-        btn.setContentAreaFilled(false);
         btn.setBorderPainted(false);
+
+        btn.setContentAreaFilled(false);
+
         btn.setFocusPainted(false);
-        btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btn.setOpaque(false);
+
+        btn.setPreferredSize(new Dimension(83, FIELD_HEIGHT));
+
         btn.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseEntered(MouseEvent e) {
@@ -366,7 +383,7 @@ public class FilterBarPanel extends JPanel {
     }
 
     private UIButton createSolidPillButton(String text, Color bgColor) {
-        UIButton btn = new UIButton(text, bgColor, new Dimension(85, FIELD_HEIGHT),
+        UIButton btn = new UIButton(text, bgColor, new Dimension(80, FIELD_HEIGHT),
                 new Font("Arial", Font.PLAIN, 12), PILL_RADIUS, UIButton.ButtonType.PRIMARY);
         btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
         btn.setFocusPainted(false);
@@ -383,7 +400,6 @@ public class FilterBarPanel extends JPanel {
         if (!timeDesc.equals(String.valueOf(Calendar.getInstance().get(Calendar.YEAR)))) {
             activeFiltersChips.add(createFilterChip(timeDesc, TIME_COLOR, () -> {
                 timeFilterPanel.reset();
-                updateActiveChips();
             }));
         }
 
@@ -391,7 +407,6 @@ public class FilterBarPanel extends JPanel {
         if (cat != null && !cat.startsWith("All ")) {
             activeFiltersChips.add(createFilterChip(cat, CATEGORY_COLOR, () -> {
                 categoryCombo.setSelectedIndex(0);
-                updateActiveChips();
             }));
         }
 
@@ -400,7 +415,6 @@ public class FilterBarPanel extends JPanel {
             if (purok != null && !purok.startsWith("All ")) {
                 activeFiltersChips.add(createFilterChip(purok, PUROK_COLOR, () -> {
                     purokCombo.setSelectedIndex(0);
-                    updateActiveChips();
                 }));
             }
 
@@ -408,7 +422,6 @@ public class FilterBarPanel extends JPanel {
             if (status != null && !status.startsWith("All ")) {
                 activeFiltersChips.add(createFilterChip(status, STATUS_COLOR, () -> {
                     statusCombo.setSelectedIndex(0);
-                    updateActiveChips();
                 }));
             }
         }
@@ -448,7 +461,9 @@ public class FilterBarPanel extends JPanel {
         remove.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
-                onRemove.run();
+                onRemove.run(); // Reset the combo box
+                updateActiveChips(); // Rebuild pills visually
+                notifyApply(); // FIX: Fire filter update to refresh charts
             }
 
             @Override

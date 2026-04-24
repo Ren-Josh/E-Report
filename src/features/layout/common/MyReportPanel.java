@@ -108,7 +108,6 @@ public class MyReportPanel extends JPanel {
     // ============================================================
 
     private void loadAllReports() {
-        System.out.println("[MyReportPanel] Loading complaints for user ID: " + us.getUserId());
 
         ComplaintServiceController csc = new ComplaintServiceController();
         List<ComplaintDetail> complaints = csc.getAllComplaintByUser(us);
@@ -117,7 +116,6 @@ public class MyReportPanel extends JPanel {
 
         if (complaints != null && !complaints.isEmpty()) {
             allComplaints.addAll(complaints);
-            System.out.println("[MyReportPanel] Loaded " + complaints.size() + " complaints");
         } else {
             System.out.println("[MyReportPanel] No complaints returned (null or empty)");
         }
@@ -134,9 +132,6 @@ public class MyReportPanel extends JPanel {
     // ============================================================
 
     private void applyFilters(Date fromDate, Date toDate, String category, String purok, String status) {
-        System.out.println("[MyReportPanel] Filtering - from: " + fromDate + ", to: " + toDate
-                + ", category: '" + category + "', purok: '" + purok + "', status: '" + status + "'");
-
         filteredDataList.clear();
 
         for (ComplaintDetail cd : allComplaints) {
@@ -189,7 +184,6 @@ public class MyReportPanel extends JPanel {
             }
         }
 
-        System.out.println("[MyReportPanel] Filter matched " + filteredDataList.size() + " of " + allComplaints.size());
         refreshTable();
     }
 
@@ -198,7 +192,6 @@ public class MyReportPanel extends JPanel {
         for (ComplaintDetail cd : allComplaints) {
             filteredDataList.add(complaintToRow(cd));
         }
-        System.out.println("[MyReportPanel] Showing all " + filteredDataList.size() + " rows");
         refreshTable();
     }
 
