@@ -1,60 +1,28 @@
 package features.components.filter;
 
+import features.components.UIComboBox;
+import config.UIConfig;
+
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.util.Calendar;
 import java.util.Date;
 
-import features.components.UIComboBox;
-
-/**
- * TimeFilterPanel
- * 
- * A replacement for ModernDatePicker that provides structured time-based
- * filtering
- * instead of free-form date selection. Supports five filter modes:
- * 
- * 1. Span of Years: Select start and end year
- * 2. Single Year: Select one year
- * 3. Span of Months: Select year, start month, and end month
- * 4. Single Month: Select year and month
- * 5. Single Week: Select year, month, and week number
- * 
- * All modes default to the current system year. The panel dynamically
- * shows/hides
- * relevant dropdowns based on the selected filter type.
- * 
- * This component is designed to be backward-compatible with code expecting
- * date-based filtering by providing computed Date objects via getStartDate()
- * and getEndDate().
- */
 public class TimeFilterPanel extends JPanel {
-
-    // ========================================================================
-    // UI COMPONENTS
-    // ========================================================================
 
     private UIComboBox<String> filterTypeCombo;
     private UIComboBox<Integer> yearCombo;
-    private UIComboBox<Integer> startYearCombo; // For year span
-    private UIComboBox<Integer> endYearCombo; // For year span
+    private UIComboBox<Integer> startYearCombo;
+    private UIComboBox<Integer> endYearCombo;
     private UIComboBox<String> monthCombo;
-    private UIComboBox<String> startMonthCombo; // For month span
-    private UIComboBox<String> endMonthCombo; // For month span
+    private UIComboBox<String> startMonthCombo;
+    private UIComboBox<String> endMonthCombo;
     private UIComboBox<Integer> weekCombo;
-
-    // ========================================================================
-    // STATE
-    // ========================================================================
 
     private int currentYear;
     private TimeFilter currentFilter;
     private java.util.List<FilterChangeListener> listeners = new java.util.ArrayList<>();
-
-    // ========================================================================
-    // CONSTANTS
-    // ========================================================================
 
     private static final String[] MONTH_NAMES = {
             "January", "February", "March", "April", "May", "June",
@@ -62,6 +30,7 @@ public class TimeFilterPanel extends JPanel {
     };
 
     private static final String[] FILTER_TYPES = {
+            "All Time",
             "Span of Years",
             "Single Year",
             "Span of Months",
@@ -69,25 +38,12 @@ public class TimeFilterPanel extends JPanel {
             "Single Week"
     };
 
-    // ========================================================================
-    // CONSTRUCTORS
-    // ========================================================================
-
-    /**
-     * Constructs a TimeFilterPanel with default settings (current year, single year
-     * mode).
-     */
     public TimeFilterPanel() {
         this.currentYear = Calendar.getInstance().get(Calendar.YEAR);
         initialize();
-        setFilterType(TimeFilter.FilterType.SINGLE_YEAR);
+        setFilterType(TimeFilter.FilterType.ALL_TIME);
     }
 
-    /**
-     * Constructs a TimeFilterPanel initialized to a specific filter.
-     * 
-     * @param initialFilter The initial filter configuration
-     */
     public TimeFilterPanel(TimeFilter initialFilter) {
         this.currentYear = Calendar.getInstance().get(Calendar.YEAR);
         this.currentFilter = initialFilter;
@@ -95,119 +51,58 @@ public class TimeFilterPanel extends JPanel {
         syncUIFromFilter(initialFilter);
     }
 
-    // ========================================================================
-    // INITIALIZATION
-    // ========================================================================
-
     private void initialize() {
         setLayout(new FlowLayout(FlowLayout.LEFT, 8, 0));
         setOpaque(false);
 
-        // Filter type selector
         filterTypeCombo = new UIComboBox<>(FILTER_TYPES);
-        filterTypeCombo.setPreferredSize(new Dimension(140, 32));
-        filterTypeCombo.setFont(new Font("Arial", Font.PLAIN, 12));
-        filterTypeCombo.setOpaque(true);
-        filterTypeCombo.setBorder(
-                BorderFactory.createCompoundBorder(
-                        BorderFactory.createLineBorder(new Color(220, 224, 230), 1, true),
-                        BorderFactory.createEmptyBorder(2, 8, 2, 4)));
+        UIComboBox.applyPreset(filterTypeCombo, UIConfig.COMBOBOX_WIDTH_STANDARD);
         filterTypeCombo.addActionListener(e -> onFilterTypeChanged());
         add(wrapWithLabel("Filter By:", filterTypeCombo));
 
-        // Year range combos (for span of years)
-        startYearCombo = createYearCombo(currentYear - 5, currentYear + 5);
-        startYearCombo.setPreferredSize(new Dimension(140, 32));
-        startYearCombo.setFont(new Font("Arial", Font.PLAIN, 12));
-        startYearCombo.setBorder(
-                BorderFactory.createCompoundBorder(
-                        BorderFactory.createLineBorder(new Color(220, 224, 230), 1, true),
-                        BorderFactory.createEmptyBorder(2, 8, 2, 4)));
-        endYearCombo = createYearCombo(currentYear - 5, currentYear + 5);
-        endYearCombo.setPreferredSize(new Dimension(140, 32));
-        endYearCombo.setFont(new Font("Arial", Font.PLAIN, 12));
-        endYearCombo.setBorder(
-                BorderFactory.createCompoundBorder(
-                        BorderFactory.createLineBorder(new Color(220, 224, 230), 1, true),
-                        BorderFactory.createEmptyBorder(2, 8, 2, 4)));
+        startYearCombo = createYearCombo(currentYear - 5, currentYear + 5, UIConfig.COMBOBOX_WIDTH_STANDARD);
+        endYearCombo = createYearCombo(currentYear - 5, currentYear + 5, UIConfig.COMBOBOX_WIDTH_STANDARD);
         add(wrapWithLabel("Start Year:", startYearCombo));
         add(wrapWithLabel("End Year:", endYearCombo));
 
-        // Single year combo
-        yearCombo = createYearCombo(currentYear - 5, currentYear + 5);
-        yearCombo.setPreferredSize(new Dimension(140, 32));
-        yearCombo.setFont(new Font("Arial", Font.PLAIN, 12));
-        yearCombo.setBorder(
-                BorderFactory.createCompoundBorder(
-                        BorderFactory.createLineBorder(new Color(220, 224, 230), 1, true),
-                        BorderFactory.createEmptyBorder(2, 8, 2, 4)));
+        yearCombo = createYearCombo(currentYear - 5, currentYear + 5, UIConfig.COMBOBOX_WIDTH_STANDARD);
         yearCombo.setSelectedItem(currentYear);
         add(wrapWithLabel("Year:", yearCombo));
 
-        // Month combos
         startMonthCombo = new UIComboBox<>(MONTH_NAMES);
-        startMonthCombo.setPreferredSize(new Dimension(100, 32));
-        startMonthCombo.setFont(new Font("Arial", Font.PLAIN, 12));
-        startMonthCombo.setBorder(
-                BorderFactory.createCompoundBorder(
-                        BorderFactory.createLineBorder(new Color(220, 224, 230), 1, true),
-                        BorderFactory.createEmptyBorder(2, 8, 2, 4)));
+        UIComboBox.applyPreset(startMonthCombo, UIConfig.COMBOBOX_WIDTH_MEDIUM);
+
         endMonthCombo = new UIComboBox<>(MONTH_NAMES);
-        endMonthCombo.setFont(new Font("Arial", Font.PLAIN, 12));
-        endMonthCombo.setPreferredSize(new Dimension(100, 32));
-        endMonthCombo.setBorder(
-                BorderFactory.createCompoundBorder(
-                        BorderFactory.createLineBorder(new Color(220, 224, 230), 1, true),
-                        BorderFactory.createEmptyBorder(2, 8, 2, 4)));
+        UIComboBox.applyPreset(endMonthCombo, UIConfig.COMBOBOX_WIDTH_MEDIUM);
+
         monthCombo = new UIComboBox<>(MONTH_NAMES);
-        monthCombo.setPreferredSize(new Dimension(100, 32));
-        monthCombo.setFont(new Font("Arial", Font.PLAIN, 12));
-        monthCombo.setBorder(
-                BorderFactory.createCompoundBorder(
-                        BorderFactory.createLineBorder(new Color(220, 224, 230), 1, true),
-                        BorderFactory.createEmptyBorder(2, 8, 2, 4)));
+        UIComboBox.applyPreset(monthCombo, UIConfig.COMBOBOX_WIDTH_MEDIUM);
 
         add(wrapWithLabel("Start Month:", startMonthCombo));
         add(wrapWithLabel("End Month:", endMonthCombo));
         add(wrapWithLabel("Month:", monthCombo));
 
-        // Week combo (1-6, since max weeks in month is 6)
         Integer[] weeks = { 1, 2, 3, 4, 5, 6 };
         weekCombo = new UIComboBox<>(weeks);
-        weekCombo.setPreferredSize(new Dimension(70, 32));
-        weekCombo.setFont(new Font("Arial", Font.PLAIN, 12));
+        UIComboBox.applyPreset(weekCombo, UIConfig.COMBOBOX_WIDTH_SHORT);
         add(wrapWithLabel("Week:", weekCombo));
 
-        // Add change listeners to all combos
         addChangeListeners();
-
-        // Initial visibility update
         updateVisibility();
     }
 
-    private UIComboBox<Integer> createYearCombo(int startYear, int endYear) {
+    private UIComboBox<Integer> createYearCombo(int startYear, int endYear, int width) {
         java.util.List<Integer> years = new java.util.ArrayList<>();
         for (int y = startYear; y <= endYear; y++)
             years.add(y);
 
         UIComboBox<Integer> combo = new UIComboBox<>(years.toArray(new Integer[0]));
-        combo.setPreferredSize(new Dimension(90, 32));
-        combo.setFont(new Font("Arial", Font.PLAIN, 12));
-        combo.setOpaque(true);
-
-        // Rounded border matching pill theme
-        combo.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(new Color(220, 224, 230), 1, true),
-                BorderFactory.createEmptyBorder(2, 8, 2, 4)));
-
+        UIComboBox.applyPreset(combo, width);
         return combo;
     }
 
     private JPanel wrapWithLabel(String text, JComponent component) {
-        // NO labels — components are self-explanatory or use tooltips
         component.setToolTipText(text);
-
-        // Just return the component wrapped in minimal padding
         JPanel wrapper = new JPanel(new BorderLayout());
         wrapper.setOpaque(false);
         wrapper.setBorder(BorderFactory.createEmptyBorder(2, 2, 2, 2));
@@ -217,7 +112,6 @@ public class TimeFilterPanel extends JPanel {
 
     private void addChangeListeners() {
         ActionListener updateListener = e -> updateCurrentFilter();
-
         filterTypeCombo.addActionListener(updateListener);
         yearCombo.addActionListener(updateListener);
         startYearCombo.addActionListener(updateListener);
@@ -228,10 +122,6 @@ public class TimeFilterPanel extends JPanel {
         weekCombo.addActionListener(updateListener);
     }
 
-    // ========================================================================
-    // FILTER TYPE HANDLING
-    // ========================================================================
-
     private void onFilterTypeChanged() {
         updateVisibility();
         updateCurrentFilter();
@@ -240,7 +130,6 @@ public class TimeFilterPanel extends JPanel {
     private void updateVisibility() {
         int typeIndex = filterTypeCombo.getSelectedIndex();
 
-        // Hide all first
         startYearCombo.getParent().setVisible(false);
         endYearCombo.getParent().setVisible(false);
         yearCombo.getParent().setVisible(false);
@@ -249,38 +138,33 @@ public class TimeFilterPanel extends JPanel {
         monthCombo.getParent().setVisible(false);
         weekCombo.getParent().setVisible(false);
 
-        // Show relevant based on type
         switch (typeIndex) {
-            case 0: // Span of Years
+            case 0 -> {
+            }
+            case 1 -> {
                 startYearCombo.getParent().setVisible(true);
                 endYearCombo.getParent().setVisible(true);
-                break;
-            case 1: // Single Year
-                yearCombo.getParent().setVisible(true);
-                break;
-            case 2: // Span of Months
+            }
+            case 2 -> yearCombo.getParent().setVisible(true);
+            case 3 -> {
                 yearCombo.getParent().setVisible(true);
                 startMonthCombo.getParent().setVisible(true);
                 endMonthCombo.getParent().setVisible(true);
-                break;
-            case 3: // Single Month
+            }
+            case 4 -> {
                 yearCombo.getParent().setVisible(true);
                 monthCombo.getParent().setVisible(true);
-                break;
-            case 4: // Single Week
+            }
+            case 5 -> {
                 yearCombo.getParent().setVisible(true);
                 monthCombo.getParent().setVisible(true);
                 weekCombo.getParent().setVisible(true);
-                break;
+            }
         }
 
         revalidate();
         repaint();
     }
-
-    // ========================================================================
-    // FILTER COMPUTATION
-    // ========================================================================
 
     private void updateCurrentFilter() {
         int typeIndex = filterTypeCombo.getSelectedIndex();
@@ -288,7 +172,8 @@ public class TimeFilterPanel extends JPanel {
 
         try {
             switch (typeIndex) {
-                case 0: // Span of Years
+                case 0 -> newFilter = TimeFilter.forAllTime();
+                case 1 -> {
                     int sYear = (Integer) startYearCombo.getSelectedItem();
                     int eYear = (Integer) endYearCombo.getSelectedItem();
                     if (sYear > eYear) {
@@ -297,13 +182,9 @@ public class TimeFilterPanel extends JPanel {
                         eYear = temp;
                     }
                     newFilter = TimeFilter.forYearSpan(sYear, eYear);
-                    break;
-
-                case 1: // Single Year
-                    newFilter = TimeFilter.forSingleYear((Integer) yearCombo.getSelectedItem());
-                    break;
-
-                case 2: // Span of Months
+                }
+                case 2 -> newFilter = TimeFilter.forSingleYear((Integer) yearCombo.getSelectedItem());
+                case 3 -> {
                     int year = (Integer) yearCombo.getSelectedItem();
                     int sMonth = startMonthCombo.getSelectedIndex();
                     int eMonth = endMonthCombo.getSelectedIndex();
@@ -313,23 +194,17 @@ public class TimeFilterPanel extends JPanel {
                         eMonth = temp;
                     }
                     newFilter = TimeFilter.forMonthSpan(year, sMonth, eMonth);
-                    break;
-
-                case 3: // Single Month
-                    newFilter = TimeFilter.forSingleMonth(
-                            (Integer) yearCombo.getSelectedItem(),
-                            monthCombo.getSelectedIndex());
-                    break;
-
-                case 4: // Single Week
-                    newFilter = TimeFilter.forSingleWeek(
-                            (Integer) yearCombo.getSelectedItem(),
-                            monthCombo.getSelectedIndex(),
-                            (Integer) weekCombo.getSelectedItem());
-                    break;
+                }
+                case 4 -> newFilter = TimeFilter.forSingleMonth(
+                        (Integer) yearCombo.getSelectedItem(),
+                        monthCombo.getSelectedIndex());
+                case 5 -> newFilter = TimeFilter.forSingleWeek(
+                        (Integer) yearCombo.getSelectedItem(),
+                        monthCombo.getSelectedIndex(),
+                        (Integer) weekCombo.getSelectedItem());
             }
         } catch (Exception ex) {
-            newFilter = TimeFilter.forSingleYear(currentYear);
+            newFilter = TimeFilter.forAllTime();
         }
 
         if (newFilter != null && !newFilter.equals(currentFilter)) {
@@ -345,39 +220,32 @@ public class TimeFilterPanel extends JPanel {
         filterTypeCombo.setSelectedIndex(filter.getFilterType().ordinal());
 
         switch (filter.getFilterType()) {
-            case SPAN_OF_YEARS:
+            case ALL_TIME -> {
+            }
+            case SPAN_OF_YEARS -> {
                 startYearCombo.setSelectedItem(filter.getStartYear());
                 endYearCombo.setSelectedItem(filter.getEndYear());
-                break;
-            case SINGLE_YEAR:
-                yearCombo.setSelectedItem(filter.getYear());
-                break;
-            case SPAN_OF_MONTHS:
+            }
+            case SINGLE_YEAR -> yearCombo.setSelectedItem(filter.getYear());
+            case SPAN_OF_MONTHS -> {
                 yearCombo.setSelectedItem(filter.getYear());
                 startMonthCombo.setSelectedIndex(filter.getStartMonth());
                 endMonthCombo.setSelectedIndex(filter.getEndMonth());
-                break;
-            case SINGLE_MONTH:
+            }
+            case SINGLE_MONTH -> {
                 yearCombo.setSelectedItem(filter.getYear());
                 monthCombo.setSelectedIndex(filter.getMonth());
-                break;
-            case SINGLE_WEEK:
+            }
+            case SINGLE_WEEK -> {
                 yearCombo.setSelectedItem(filter.getYear());
                 monthCombo.setSelectedIndex(filter.getMonth());
                 weekCombo.setSelectedItem(filter.getWeekOfMonth());
-                break;
+            }
         }
 
         updateVisibility();
     }
 
-    // ========================================================================
-    // LISTENER INTERFACE
-    // ========================================================================
-
-    /**
-     * Listener interface for filter change events.
-     */
     public interface FilterChangeListener {
         void onFilterChanged(TimeFilter newFilter);
     }
@@ -396,72 +264,32 @@ public class TimeFilterPanel extends JPanel {
         }
     }
 
-    // ========================================================================
-    // PUBLIC API (Backward Compatible + New)
-    // ========================================================================
-
-    /**
-     * Gets the current TimeFilter object.
-     * This is the primary method for backend access.
-     * 
-     * @return Current TimeFilter configuration
-     */
     public TimeFilter getTimeFilter() {
         return currentFilter;
     }
 
-    /**
-     * Sets the filter type programmatically.
-     * 
-     * @param type The filter type to set
-     */
     public void setFilterType(TimeFilter.FilterType type) {
         filterTypeCombo.setSelectedIndex(type.ordinal());
     }
 
-    /**
-     * Gets the computed start date for the current filter.
-     * Backward-compatible with date picker expectations.
-     * 
-     * @return Start Date (00:00:00 of first day)
-     */
     public Date getStartDate() {
-        if (currentFilter == null) {
+        if (currentFilter == null)
             updateCurrentFilter();
-        }
-        return currentFilter != null ? currentFilter.getStartDate()
-                : TimeFilter.forSingleYear(currentYear).getStartDate();
+        return currentFilter != null ? currentFilter.getStartDate() : null;
     }
 
-    /**
-     * Gets the computed end date for the current filter.
-     * Backward-compatible with date picker expectations.
-     * 
-     * @return End Date (23:59:59 of last day)
-     */
     public Date getEndDate() {
-        if (currentFilter == null) {
+        if (currentFilter == null)
             updateCurrentFilter();
-        }
-        return currentFilter != null ? currentFilter.getEndDate() : TimeFilter.forSingleYear(currentYear).getEndDate();
+        return currentFilter != null ? currentFilter.getEndDate() : null;
     }
 
-    /**
-     * Returns a formatted string describing the current filter.
-     * Useful for display or debugging.
-     * 
-     * @return Human-readable filter description
-     */
     public String getFilterDescription() {
-        return currentFilter != null ? currentFilter.getDescription() : String.valueOf(currentYear);
+        return currentFilter != null ? currentFilter.getDescription() : "All Time";
     }
 
-    /**
-     * Resets to default (current year, single year mode).
-     */
     public void reset() {
-        filterTypeCombo.setSelectedIndex(1); // Single Year
-        yearCombo.setSelectedItem(currentYear);
+        filterTypeCombo.setSelectedIndex(0);
         updateCurrentFilter();
     }
 }

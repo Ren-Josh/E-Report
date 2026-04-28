@@ -60,12 +60,14 @@ public class LoginView extends JPanel {
         // Username
         UIInput txtUser = new UIInput(20, UIConfig.USER_ICON_PATH);
         txtUser.setPlaceholder("Enter your username");
+        txtUser.applySizePreset(UIInput.SizePreset.DEFAULT);
         gbc.gridy = 1;
         FormLayoutUtils.addInputGroup(loginCard, "Username", txtUser, gbc, 0, 1);
 
         // Password
         UIPasswordInput txtPass = new UIPasswordInput(20);
         txtPass.setPlaceholder("Enter your password");
+        txtPass.applySizePreset(UIPasswordInput.SizePreset.DEFAULT);
         gbc.gridy = 3;
         FormLayoutUtils.addInputGroup(loginCard, "Password", txtPass, gbc, 0, 3);
 

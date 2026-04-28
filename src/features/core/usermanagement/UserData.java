@@ -11,6 +11,8 @@ public class UserData {
     private String street;
     private String email;
 
+    // ── Constructors ─────────────────────────────────────────────
+
     public UserData(String name, String role, String purok, String phone, boolean banned) {
         this.name = name;
         this.role = role;
@@ -31,7 +33,30 @@ public class UserData {
         this.street = street;
     }
 
-    // Getters and Setters
+    public UserData(int id, String name, String role, String purok, String phone,
+            boolean banned, String houseNumber, String street, String email) {
+        this(id, name, role, purok, phone, banned, houseNumber, street);
+        this.email = email;
+    }
+
+    // ── Helpers ──────────────────────────────────────────────────
+
+    public String getStatus() {
+        return banned ? "Banned" : "Active";
+    }
+
+    public UserData copy() {
+        UserData copy = new UserData(id, name, role, purok, phone, banned, houseNumber, street, email);
+        return copy;
+    }
+
+    @Override
+    public String toString() {
+        return "UserData{id=" + id + ", name='" + name + '\'' + ", role='" + role + '\'' + '}';
+    }
+
+    // ── Getters / Setters ────────────────────────────────────────
+
     public int getId() {
         return id;
     }

@@ -13,6 +13,8 @@ public class LineGraphPanel extends BaseCardPanel {
     private JPanel chartPanel;
     private JPanel legendPanel;
     private JPanel contentPanel;
+    private JLabel titleLabel; // direct reference to BaseCardPanel's title
+    private String cardTitle;
     private double maxValue = 100;
 
     public LineGraphPanel(String title, double[] data, String[] labels) {
@@ -21,9 +23,13 @@ public class LineGraphPanel extends BaseCardPanel {
 
     public LineGraphPanel(String title, double[] data, String[] labels, String[] pointDetails) {
         super(title);
+        this.cardTitle = title;
         this.data = data != null ? data : new double[0];
         this.labels = labels != null ? labels : new String[0];
         this.pointDetails = pointDetails != null ? pointDetails : new String[0];
+
+        // Grab a direct reference to the bold title label that BaseCardPanel created
+        this.titleLabel = findTitleLabel(this, title);
 
         contentPanel = new JPanel(new BorderLayout(10, 0));
         contentPanel.setOpaque(false);
@@ -39,14 +45,54 @@ public class LineGraphPanel extends BaseCardPanel {
         add(contentPanel, BorderLayout.CENTER);
     }
 
+    /**
+     * Searches the hierarchy for the bold JLabel whose text matches the initial
+     * title.
+     */
+    private JLabel findTitleLabel(Container container, String expectedText) {
+        for (Component c : container.getComponents()) {
+            if (c instanceof JLabel) {
+                JLabel lbl = (JLabel) c;
+                if (expectedText.equals(lbl.getText())
+                        && lbl.getFont() != null
+                        && lbl.getFont().isBold()) {
+                    return lbl;
+                }
+            }
+            if (c instanceof Container) {
+                JLabel found = findTitleLabel((Container) c, expectedText);
+                if (found != null)
+                    return found;
+            }
+        }
+        return null;
+    }
+
+    /** Updates the card title safely. */
+    public void setCardTitle(String newTitle) {
+        if (titleLabel != null && newTitle != null) {
+            titleLabel.setText(newTitle);
+            this.cardTitle = newTitle;
+        }
+    }
+
     public void updateData(double[] newData, String[] newLabels) {
-        updateData(newData, newLabels, null);
+        updateData(newData, newLabels, null, null);
     }
 
     public void updateData(double[] newData, String[] newLabels, String[] newPointDetails) {
+        updateData(newData, newLabels, newPointDetails, null);
+    }
+
+    /** Full update — data, legend, and optional new card title. */
+    public void updateData(double[] newData, String[] newLabels, String[] newPointDetails, String newTitle) {
         this.data = newData != null ? newData : new double[0];
         this.labels = newLabels != null ? newLabels : new String[0];
         this.pointDetails = newPointDetails != null ? newPointDetails : new String[0];
+
+        if (newTitle != null) {
+            setCardTitle(newTitle);
+        }
 
         if (data.length > 0) {
             this.maxValue = Arrays.stream(data).max().orElse(100);
@@ -106,19 +152,17 @@ public class LineGraphPanel extends BaseCardPanel {
                     }
                 }
 
-                // ---- filled area only when there's more than one point ----
+                // ---- filled area (only when more than one point) ----
                 if (data.length > 1) {
                     GradientPaint gradient = new GradientPaint(
                             0, padding, new Color(66, 133, 244, 180),
                             0, height - padding, new Color(66, 133, 244, 20));
 
                     Path2D areaPath = new Path2D.Double();
-                    areaPath.moveTo(xPoints[0], height - padding); // start at baseline under first point
+                    areaPath.moveTo(xPoints[0], height - padding);
                     for (int i = 0; i < data.length; i++) {
                         areaPath.lineTo(xPoints[i], yPoints[i]);
                     }
-                    // Drop straight down to baseline at the LAST point's x (no right edge
-                    // extension)
                     areaPath.lineTo(xPoints[data.length - 1], height - padding);
                     areaPath.closePath();
 
@@ -126,14 +170,14 @@ public class LineGraphPanel extends BaseCardPanel {
                     g2.fill(areaPath);
                 }
 
-                // ---- draw connecting lines (only between consecutive points) ----
+                // ---- draw connecting lines ----
                 g2.setColor(new Color(66, 133, 244));
                 g2.setStroke(new BasicStroke(3));
                 for (int i = 0; i < data.length - 1; i++) {
                     g2.drawLine(xPoints[i], yPoints[i], xPoints[i + 1], yPoints[i + 1]);
                 }
 
-                // ---- draw the actual data points ----
+                // ---- draw data points ----
                 g2.setColor(Color.WHITE);
                 for (int i = 0; i < data.length; i++) {
                     g2.fillOval(xPoints[i] - 5, yPoints[i] - 5, 10, 10);
@@ -142,7 +186,7 @@ public class LineGraphPanel extends BaseCardPanel {
                     g2.setColor(Color.WHITE);
                 }
 
-                // ---- month labels ----
+                // ---- X-axis labels ----
                 g2.setColor(new Color(108, 117, 125));
                 g2.setFont(new Font("Segoe UI", Font.PLAIN, 10));
                 FontMetrics fm = g2.getFontMetrics();

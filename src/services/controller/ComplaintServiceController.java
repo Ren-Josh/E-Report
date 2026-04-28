@@ -4,13 +4,16 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.util.List;
 
 import daos.AddComplaintDao;
 import daos.GetComplaintDao;
 import config.database.DBConnection;
 import models.ComplaintDetail;
+import models.ComplaintHistoryDetail;
 import models.UserSession;
 
 /**
@@ -123,5 +126,49 @@ public class ComplaintServiceController {
 		}
 
 		return null;
+	}
+
+	public boolean updateComplaintStatus(int complaintId, String newStatus, String note, String updatedBy) {
+		AddComplaintDao dao = new AddComplaintDao();
+		Connection con = null;
+		try {
+			con = DBConnection.connect();
+			con.setAutoCommit(false);
+
+			String updateStatusSql = "UPDATE Complaint_Detail SET current_status = ? WHERE CD_ID = ?";
+			try (PreparedStatement stmt = con.prepareStatement(updateStatusSql)) {
+				stmt.setString(1, newStatus);
+				stmt.setInt(2, complaintId);
+				stmt.executeUpdate();
+			}
+
+			ComplaintHistoryDetail history = new ComplaintHistoryDetail();
+			history.setStatus(newStatus);
+			history.setProcess(note != null ? note : "");
+			history.setDateTimeUpdated(new Timestamp(System.currentTimeMillis()));
+			history.setUpdatedBy(updatedBy != null ? updatedBy : "Staff");
+
+			dao.addComplaintHistory(con, complaintId, history);
+			con.commit();
+			return true;
+		} catch (SQLException e) {
+			if (con != null) {
+				try {
+					con.rollback();
+				} catch (SQLException rollbackEx) {
+					rollbackEx.printStackTrace();
+				}
+			}
+			e.printStackTrace();
+			return false;
+		} finally {
+			if (con != null) {
+				try {
+					con.close();
+				} catch (SQLException e) {
+					e.printStackTrace();
+				}
+			}
+		}
 	}
 }

@@ -9,6 +9,7 @@ import java.util.List;
 
 import models.*;
 import config.UIConfig;
+import features.views.SubmitReportView;
 import features.views.AllReportsView;
 import features.views.DashboardView;
 import features.views.HomepageView;
@@ -16,6 +17,7 @@ import features.views.LoginView;
 import features.views.MyProfileView;
 import features.views.MyReportsView;
 import features.views.RegisterView;
+import features.views.UserManagementView;
 import services.controller.DatabaseController;
 
 public class E_Report extends JFrame {
@@ -69,9 +71,12 @@ public class E_Report extends JFrame {
             add(new MyReportsView(this));
         } else if (route.equalsIgnoreCase("reports")) {
             add(new AllReportsView(this));
+        } else if (route.equalsIgnoreCase("usermanagement")) {
+            add(new UserManagementView(this));
+        } else if (route.equalsIgnoreCase("submitreport")) {
+            add(new SubmitReportView(this));
         }
 
-        // 3. Tell Swing to redraw the window
         revalidate();
         repaint();
     }
@@ -97,6 +102,10 @@ public class E_Report extends JFrame {
 
     public UserInfo getUserInfo() {
         return ui;
+    }
+
+    public Credential getCredential() {
+        return cred;
     }
 
     public static void main(String[] args) {

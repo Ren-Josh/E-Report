@@ -1,5 +1,8 @@
 package features.components;
 
+import features.components.filter.TimeFilter;
+import features.components.filter.TimeFilterPanel;
+
 import javax.swing.*;
 import javax.swing.border.*;
 import java.awt.*;
@@ -7,14 +10,9 @@ import java.awt.event.*;
 import java.util.Calendar;
 import java.util.Date;
 import config.UIConfig;
-import features.components.filter.TimeFilter;
-import features.components.filter.TimeFilterPanel;
 
 public class FilterBarPanel extends JPanel {
 
-    // -------------------------------------------------------------------------
-    // COMPONENTS
-    // -------------------------------------------------------------------------
     private TimeFilterPanel timeFilterPanel;
     private UIComboBox<String> categoryCombo;
     private UIComboBox<String> purokCombo;
@@ -25,34 +23,25 @@ public class FilterBarPanel extends JPanel {
     private JPanel advancedFiltersRow;
     private JPanel activeFiltersChips;
 
-    // -------------------------------------------------------------------------
-    // STATE
-    // -------------------------------------------------------------------------
     private final Mode currentMode;
     private boolean advancedFiltersVisible = false;
     private FilterListener filterListener;
     private SearchListener searchListener;
 
-    // -------------------------------------------------------------------------
-    // STYLE CONSTANTS
-    // -------------------------------------------------------------------------
-    private static final Color BAR_BG = new Color(245, 247, 250);
-    private static final Color TIME_COLOR = new Color(25, 118, 210);
-    private static final Color CATEGORY_COLOR = new Color(156, 39, 176);
-    private static final Color PUROK_COLOR = new Color(46, 125, 50);
-    private static final Color STATUS_COLOR = new Color(230, 81, 0);
-    private static final Color SEARCH_COLOR = new Color(0, 150, 136);
+    private static final Color BAR_BG = UIConfig.BG_LIGHT;
+    private static final Color TIME_COLOR = UIConfig.ACCENT_BLUE;
+    private static final Color CATEGORY_COLOR = UIConfig.ACCENT_PURPLE;
+    private static final Color PUROK_COLOR = UIConfig.ACCENT_GREEN;
+    private static final Color STATUS_COLOR = UIConfig.ACCENT_ORANGE;
+    private static final Color SEARCH_COLOR = UIConfig.ACCENT_TEAL;
     private static final Color FIELD_BG = Color.WHITE;
-    private static final Color FIELD_BORDER = new Color(220, 224, 230);
-    private static final Color MORE_BTN_COLOR = new Color(100, 110, 130);
+    private static final Color FIELD_BORDER = UIConfig.BORDER_MEDIUM;
+    private static final Color MORE_BTN_COLOR = UIConfig.ACCENT_SLATE;
 
-    private static final int PILL_RADIUS = 20;
-    private static final int FIELD_HEIGHT = 30;
-    private static final int H_GAP = 5;
+    private static final int PILL_RADIUS = UIConfig.RADIUS_PILL;
+    private static final int FIELD_HEIGHT = UIConfig.COMBOBOX_HEIGHT;
+    private static final int H_GAP = UIConfig.XS;
 
-    // ===================================================================
-    // NESTED TYPES
-    // ===================================================================
     public enum Mode {
         DASHBOARD, SEARCH
     }
@@ -69,9 +58,6 @@ public class FilterBarPanel extends JPanel {
         void onClearSearch();
     }
 
-    // ===================================================================
-    // CONSTRUCTORS
-    // ===================================================================
     public FilterBarPanel(String[] categories, String[] puroks, String[] statuses, FilterListener listener) {
         this.currentMode = Mode.DASHBOARD;
         this.filterListener = listener;
@@ -95,44 +81,35 @@ public class FilterBarPanel extends JPanel {
         this(new String[] { "All Categories", "Theft", "Vandalism", "Scam", "Others" }, listener);
     }
 
-    // ===================================================================
-    // INITIALIZATION — DASHBOARD MODE
-    // ===================================================================
-    // ===================================================================
-    // INITIALIZATION — DASHBOARD MODE (FIXED)
-    // ===================================================================
     private void initializeDashboard(String[] categories, String[] puroks, String[] statuses) {
         setLayout(new BorderLayout(0, 0));
         setOpaque(false);
-        setBorder(BorderFactory.createEmptyBorder(0, 0, 12, 0));
+        setBorder(BorderFactory.createEmptyBorder(0, 0, UIConfig.SM + 2, 0));
 
         JPanel mainBar = new JPanel();
         mainBar.setLayout(new BoxLayout(mainBar, BoxLayout.Y_AXIS));
         mainBar.setOpaque(true);
         mainBar.setBackground(BAR_BG);
         mainBar.setBorder(BorderFactory.createCompoundBorder(
-                new LineBorder(new Color(210, 215, 225), 1, true),
-                BorderFactory.createEmptyBorder(12, 5, 12, 5)));
+                new LineBorder(UIConfig.BORDER_LIGHT, 1, true),
+                BorderFactory.createEmptyBorder(UIConfig.SM + 2, UIConfig.XS, UIConfig.SM + 2, UIConfig.XS)));
 
-        // === TOP ROW: BoxLayout with horizontal glue ===
         JPanel topRow = new JPanel();
         topRow.setLayout(new BoxLayout(topRow, BoxLayout.X_AXIS));
         topRow.setOpaque(false);
         topRow.setMaximumSize(new Dimension(Integer.MAX_VALUE, FIELD_HEIGHT + 15));
-        topRow.setBorder(BorderFactory.createEmptyBorder(5, 0, 5, 0));
+        topRow.setBorder(BorderFactory.createEmptyBorder(UIConfig.XS, 0, UIConfig.XS, 0));
 
-        // LEFT side (filters) — FlowLayout inside a fixed-max-width wrapper
         JPanel leftWrapper = new JPanel(new FlowLayout(FlowLayout.LEFT, H_GAP, 0));
         leftWrapper.setOpaque(false);
-        leftWrapper.setMaximumSize(new Dimension(800, FIELD_HEIGHT + 10)); // Prevent overflow
+        leftWrapper.setMaximumSize(new Dimension(800, FIELD_HEIGHT + 10));
 
         timeFilterPanel = new TimeFilterPanel();
-        timeFilterPanel.setFilterType(TimeFilter.FilterType.SINGLE_YEAR);
+        timeFilterPanel.setFilterType(TimeFilter.FilterType.ALL_TIME);
         addColorIndicator(leftWrapper, timeFilterPanel, TIME_COLOR, "Time Period");
 
         categoryCombo = new UIComboBox<>(categories);
-        categoryCombo.setPreferredSize(new Dimension(150, FIELD_HEIGHT));
-        styleComboAsPill(categoryCombo, CATEGORY_COLOR);
+        UIComboBox.applyPreset(categoryCombo, UIConfig.COMBOBOX_WIDTH_LONG);
         addColorIndicator(leftWrapper, categoryCombo, CATEGORY_COLOR, "Category");
 
         moreFiltersButton = createMoreFiltersButton();
@@ -141,11 +118,8 @@ public class FilterBarPanel extends JPanel {
         leftWrapper.add(moreFiltersButton);
 
         topRow.add(leftWrapper);
-
-        // GLUE: pushes right side to the far edge
         topRow.add(Box.createHorizontalGlue());
 
-        // RIGHT side (buttons) — never gets pushed out
         JPanel rightWrapper = new JPanel(new FlowLayout(FlowLayout.RIGHT, H_GAP, 3));
         rightWrapper.setOpaque(false);
 
@@ -156,36 +130,32 @@ public class FilterBarPanel extends JPanel {
         });
         rightWrapper.add(applyButton);
 
-        JButton resetBtn = createTextButton("Reset");
+        UIButton resetBtn = createTextButton("Reset");
         resetBtn.addActionListener(e -> notifyReset());
         rightWrapper.add(resetBtn);
 
         topRow.add(rightWrapper);
         mainBar.add(topRow);
 
-        // === ADVANCED ROW ===
         advancedFiltersRow = new JPanel(new FlowLayout(FlowLayout.LEFT, H_GAP, 0));
         advancedFiltersRow.setOpaque(true);
-        advancedFiltersRow.setBackground(new Color(245, 247, 250));
+        advancedFiltersRow.setBackground(BAR_BG);
         advancedFiltersRow.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createMatteBorder(1, 0, 0, 0, new Color(220, 225, 235)),
-                BorderFactory.createEmptyBorder(10, 0, 5, 0)));
+                BorderFactory.createMatteBorder(1, 0, 0, 0, UIConfig.BORDER_LIGHT),
+                BorderFactory.createEmptyBorder(UIConfig.SM, 0, UIConfig.XS, 0)));
         advancedFiltersRow.setVisible(false);
         advancedFiltersRow.setMaximumSize(new Dimension(Integer.MAX_VALUE, FIELD_HEIGHT + 20));
 
         purokCombo = new UIComboBox<>(puroks);
-        purokCombo.setPreferredSize(new Dimension(140, FIELD_HEIGHT));
-        styleComboAsPill(purokCombo, PUROK_COLOR);
+        UIComboBox.applyPreset(purokCombo, UIConfig.COMBOBOX_WIDTH_STANDARD);
         addColorIndicator(advancedFiltersRow, purokCombo, PUROK_COLOR, "Purok");
 
         statusCombo = new UIComboBox<>(statuses);
-        statusCombo.setPreferredSize(new Dimension(150, FIELD_HEIGHT));
-        styleComboAsPill(statusCombo, STATUS_COLOR);
+        UIComboBox.applyPreset(statusCombo, UIConfig.COMBOBOX_WIDTH_LONG);
         addColorIndicator(advancedFiltersRow, statusCombo, STATUS_COLOR, "Status");
 
         mainBar.add(advancedFiltersRow);
 
-        // === ACTIVE FILTERS CHIPS ===
         activeFiltersChips = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 6));
         activeFiltersChips.setOpaque(false);
         activeFiltersChips.setVisible(false);
@@ -195,20 +165,17 @@ public class FilterBarPanel extends JPanel {
         add(mainBar, BorderLayout.CENTER);
     }
 
-    // ===================================================================
-    // INITIALIZATION — SEARCH MODE
-    // ===================================================================
     private void initializeSearch(String[] categories) {
         setLayout(new BorderLayout(0, 0));
         setOpaque(false);
-        setBorder(BorderFactory.createEmptyBorder(12, 16, 12, 16));
+        setBorder(BorderFactory.createEmptyBorder(UIConfig.SM + 2, UIConfig.MD - 4, UIConfig.SM + 2, UIConfig.MD - 4));
 
         JPanel mainBar = new JPanel(new BorderLayout(0, 0));
         mainBar.setOpaque(true);
         mainBar.setBackground(BAR_BG);
         mainBar.setBorder(BorderFactory.createCompoundBorder(
-                new LineBorder(new Color(210, 215, 225), 1, true),
-                BorderFactory.createEmptyBorder(12, 16, 12, 16)));
+                new LineBorder(UIConfig.BORDER_LIGHT, 1, true),
+                BorderFactory.createEmptyBorder(UIConfig.SM + 2, UIConfig.MD - 4, UIConfig.SM + 2, UIConfig.MD - 4)));
 
         JPanel row = new JPanel(new FlowLayout(FlowLayout.LEFT, H_GAP, 0));
         row.setOpaque(false);
@@ -220,12 +187,11 @@ public class FilterBarPanel extends JPanel {
         addColorIndicator(row, searchField, SEARCH_COLOR, "Search");
 
         timeFilterPanel = new TimeFilterPanel();
-        timeFilterPanel.setFilterType(TimeFilter.FilterType.SINGLE_YEAR);
+        timeFilterPanel.setFilterType(TimeFilter.FilterType.ALL_TIME);
         addColorIndicator(row, timeFilterPanel, TIME_COLOR, "Period");
 
         categoryCombo = new UIComboBox<>(categories);
-        categoryCombo.setPreferredSize(new Dimension(150, FIELD_HEIGHT));
-        styleComboAsPill(categoryCombo, CATEGORY_COLOR);
+        UIComboBox.applyPreset(categoryCombo, UIConfig.COMBOBOX_WIDTH_LONG);
         addColorIndicator(row, categoryCombo, CATEGORY_COLOR, "Category");
 
         mainBar.add(row, BorderLayout.WEST);
@@ -250,9 +216,6 @@ public class FilterBarPanel extends JPanel {
         add(mainBar, BorderLayout.CENTER);
     }
 
-    // ===================================================================
-    // COLOR-CODED PILL STYLING
-    // ===================================================================
     private void addColorIndicator(JPanel container, JComponent component, Color color, String tooltip) {
         JPanel wrapper = new JPanel(new BorderLayout(0, 0)) {
             @Override
@@ -281,48 +244,11 @@ public class FilterBarPanel extends JPanel {
         container.add(wrapper);
     }
 
-    private void styleComboAsPill(UIComboBox<?> combo, Color accentColor) {
-        combo.setOpaque(true);
-        combo.setFont(UIConfig.BODY.deriveFont(Font.PLAIN, 12f));
-        combo.setForeground(new Color(60, 60, 60));
-        combo.setForcePlainBackground(true);
-
-        combo.setRenderer(new DefaultListCellRenderer() {
-            @Override
-            public Component getListCellRendererComponent(
-                    JList<?> list,
-                    Object value,
-                    int index,
-                    boolean isSelected,
-                    boolean cellHasFocus) {
-
-                JLabel label = (JLabel) super.getListCellRendererComponent(
-                        list, value, index, isSelected, cellHasFocus);
-
-                label.setFont(UIConfig.BODY.deriveFont(Font.PLAIN, 12f));
-                label.setBorder(BorderFactory.createEmptyBorder(2, 10, 2, 4));
-
-                if (value != null && value.toString().startsWith("All ")) {
-                    label.setForeground(new Color(150, 150, 150));
-                    label.setFont(UIConfig.BODY.deriveFont(Font.ITALIC, 12f));
-                } else {
-                    label.setForeground(new Color(60, 60, 60));
-                }
-
-                return label;
-            }
-        });
-        combo.setSelectedIndex(0);
-    }
-
     private void styleInputAsPill(UIInput input, Color accentColor) {
         input.setOpaque(true);
-        input.setFont(UIConfig.BODY.deriveFont(Font.PLAIN, 12f));
+        input.setFont(UIConfig.SMALL);
     }
 
-    // ===================================================================
-    // BUTTON FACTORIES
-    // ===================================================================
     private JButton createMoreFiltersButton() {
         JButton btn = new JButton("More ▼") {
             @Override
@@ -332,7 +258,7 @@ public class FilterBarPanel extends JPanel {
                 if (getModel().isPressed()) {
                     g2.setColor(new Color(200, 205, 215));
                 } else if (getModel().isRollover()) {
-                    g2.setColor(new Color(220, 225, 235));
+                    g2.setColor(UIConfig.BG_HOVER);
                 } else {
                     g2.setColor(new Color(235, 238, 242));
                 }
@@ -342,7 +268,7 @@ public class FilterBarPanel extends JPanel {
             }
         };
 
-        btn.setFont(UIConfig.BODY.deriveFont(Font.PLAIN, 12f));
+        btn.setFont(UIConfig.SMALL);
         btn.setForeground(MORE_BTN_COLOR);
         btn.setContentAreaFilled(false);
         btn.setBorderPainted(false);
@@ -354,18 +280,15 @@ public class FilterBarPanel extends JPanel {
         return btn;
     }
 
-    private JButton createTextButton(String text) {
+    private UIButton createTextButton(String text) {
         UIButton btn = new UIButton(text, null, new Dimension(80, FIELD_HEIGHT),
-                new Font("Arial", Font.PLAIN, 12), PILL_RADIUS, UIButton.ButtonType.OUTLINED);
+                UIConfig.SMALL, PILL_RADIUS, UIButton.ButtonType.OUTLINED);
         btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
         btn.setForeground(MORE_BTN_COLOR);
         btn.setBorderPainted(false);
-
         btn.setContentAreaFilled(false);
-
         btn.setFocusPainted(false);
         btn.setOpaque(false);
-
         btn.setPreferredSize(new Dimension(83, FIELD_HEIGHT));
 
         btn.addMouseListener(new MouseAdapter() {
@@ -384,22 +307,25 @@ public class FilterBarPanel extends JPanel {
 
     private UIButton createSolidPillButton(String text, Color bgColor) {
         UIButton btn = new UIButton(text, bgColor, new Dimension(80, FIELD_HEIGHT),
-                new Font("Arial", Font.PLAIN, 12), PILL_RADIUS, UIButton.ButtonType.PRIMARY);
+                UIConfig.SMALL, PILL_RADIUS, UIButton.ButtonType.PRIMARY);
         btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
         btn.setFocusPainted(false);
         return btn;
     }
 
-    // ===================================================================
-    // ACTIVE FILTER CHIPS
-    // ===================================================================
     private void updateActiveChips() {
         activeFiltersChips.removeAll();
 
         String timeDesc = timeFilterPanel.getFilterDescription();
-        if (!timeDesc.equals(String.valueOf(Calendar.getInstance().get(Calendar.YEAR)))) {
+        boolean isAllTime = timeDesc != null &&
+                (timeDesc.equalsIgnoreCase("All Time") || timeDesc.equalsIgnoreCase("All Time Period"));
+
+        if (!isAllTime && !timeDesc.equals(String.valueOf(Calendar.getInstance().get(Calendar.YEAR)))) {
             activeFiltersChips.add(createFilterChip(timeDesc, TIME_COLOR, () -> {
                 timeFilterPanel.reset();
+                timeFilterPanel.setFilterType(TimeFilter.FilterType.ALL_TIME);
+                updateActiveChips();
+                notifyApply();
             }));
         }
 
@@ -450,20 +376,20 @@ public class FilterBarPanel extends JPanel {
         rounded.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 8));
 
         JLabel label = new JLabel(text);
-        label.setFont(UIConfig.BODY.deriveFont(Font.PLAIN, 11f));
+        label.setFont(UIConfig.SMALL.deriveFont(11f));
         label.setForeground(Color.WHITE);
         rounded.add(label);
 
         JLabel remove = new JLabel("×");
-        remove.setFont(UIConfig.BODY.deriveFont(Font.BOLD, 13f));
+        remove.setFont(UIConfig.SMALL_BOLD.deriveFont(13f));
         remove.setForeground(new Color(255, 255, 255, 180));
         remove.setCursor(new Cursor(Cursor.HAND_CURSOR));
         remove.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
-                onRemove.run(); // Reset the combo box
-                updateActiveChips(); // Rebuild pills visually
-                notifyApply(); // FIX: Fire filter update to refresh charts
+                onRemove.run();
+                updateActiveChips();
+                notifyApply();
             }
 
             @Override
@@ -482,9 +408,6 @@ public class FilterBarPanel extends JPanel {
         return chip;
     }
 
-    // ===================================================================
-    // INTERACTION
-    // ===================================================================
     private void toggleAdvancedFilters() {
         advancedFiltersVisible = !advancedFiltersVisible;
         moreFiltersButton.setText(advancedFiltersVisible ? "Less ▲" : "More ▼");
@@ -505,9 +428,6 @@ public class FilterBarPanel extends JPanel {
         }
     }
 
-    // ===================================================================
-    // NOTIFICATION
-    // ===================================================================
     private void notifyApply() {
         if (filterListener != null) {
             filterListener.onApply(
@@ -521,6 +441,7 @@ public class FilterBarPanel extends JPanel {
 
     private void notifyReset() {
         timeFilterPanel.reset();
+        timeFilterPanel.setFilterType(TimeFilter.FilterType.ALL_TIME);
         categoryCombo.setSelectedIndex(0);
         if (purokCombo != null)
             purokCombo.setSelectedIndex(0);
@@ -546,14 +467,12 @@ public class FilterBarPanel extends JPanel {
     private void notifyClearSearch() {
         searchField.setText("");
         timeFilterPanel.reset();
+        timeFilterPanel.setFilterType(TimeFilter.FilterType.ALL_TIME);
         categoryCombo.setSelectedIndex(0);
         if (searchListener != null)
             searchListener.onClearSearch();
     }
 
-    // ===================================================================
-    // GETTERS
-    // ===================================================================
     public TimeFilterPanel getDateFromPicker() {
         return timeFilterPanel;
     }
@@ -579,11 +498,13 @@ public class FilterBarPanel extends JPanel {
     }
 
     public String getFromDateString() {
-        return new java.text.SimpleDateFormat("MM/dd/yyyy").format(timeFilterPanel.getStartDate());
+        Date d = timeFilterPanel.getStartDate();
+        return d != null ? new java.text.SimpleDateFormat("MM/dd/yyyy").format(d) : "";
     }
 
     public String getToDateString() {
-        return new java.text.SimpleDateFormat("MM/dd/yyyy").format(timeFilterPanel.getEndDate());
+        Date d = timeFilterPanel.getEndDate();
+        return d != null ? new java.text.SimpleDateFormat("MM/dd/yyyy").format(d) : "";
     }
 
     public String getSearchText() {

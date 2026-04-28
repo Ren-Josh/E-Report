@@ -25,7 +25,6 @@ public class ProfileInfoCard extends UICard {
         setShowBorder(true);
         setBorderColor(new Color(226, 232, 240));
 
-        // FIX: explicit sizing so BoxLayout doesn't squash or collapse this card
         setPreferredSize(new Dimension(0, 100));
         setMaximumSize(new Dimension(Integer.MAX_VALUE, 100));
 

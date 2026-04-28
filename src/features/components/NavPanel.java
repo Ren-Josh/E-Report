@@ -107,7 +107,7 @@ public class NavPanel extends JPanel {
     }
 
     public void setSecretaryMenus(Consumer<String> navigator) {
-        String[] paths = UIConfig.NAV_CAPTAIN_ICON_PATHS;
+        String[] paths = UIConfig.NAV_SECRETARY_ICON_PATHS;
         String[] labels = UIConfig.NAV_SECRETARY_ICON_LABELS;
         String[] targets = UIConfig.NAV_SECRETARY_TARGET;
 

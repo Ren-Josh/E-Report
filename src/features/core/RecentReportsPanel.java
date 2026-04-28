@@ -1,18 +1,18 @@
 package features.core;
 
+import features.components.GlassPanel;
+import features.core.dashboardpanel.secretary.DashboardTable;
+
 import javax.swing.*;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
-
 import java.awt.*;
 import java.awt.event.*;
+import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
-
-import features.components.GlassPanel;
-import features.core.dashboardpanel.secretary.DashboardTable;
 
 public class RecentReportsPanel extends GlassPanel {
 
@@ -32,14 +32,23 @@ public class RecentReportsPanel extends GlassPanel {
     private JTextField jumpField;
     private JPanel paginationBar;
 
+    // ── Action column ─────────────────────────────────────────────
+    private int actionColumnIndex = 6;
+    private final List<TableAction> tableActions = new ArrayList<>();
+    private Consumer<Integer> viewClickCallback = null; // legacy fallback
+
+    // Default action metrics (override per TableAction if desired)
+    private static final int ACTION_ICON_SIZE = 16;
+    private static final int ACTION_BG_SIZE = 28;
+    private static final int ACTION_GAP = 8;
+    private static final int ACTION_CORNER_RADIUS = 6;
+
     // ── Constructor ───────────────────────────────────────────────
 
-    /** Default: 6 rows per page. */
     public RecentReportsPanel(String title, String[] columnNames) {
         this(title, columnNames, 6);
     }
 
-    /** Polymorphic entry-point: choose how many rows each page holds. */
     public RecentReportsPanel(String title, String[] columnNames, int rowsPerPage) {
         super(new BorderLayout(0, 8));
         this.title = title;
@@ -47,6 +56,94 @@ public class RecentReportsPanel extends GlassPanel {
         setBorder(BorderFactory.createEmptyBorder(15, 15, 0, 15));
         setMaximumSize(new Dimension(Integer.MAX_VALUE, Integer.MAX_VALUE));
         initializeUI(columnNames);
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // TableAction – one interactive icon per cell
+    // ═══════════════════════════════════════════════════════════════
+
+    public static class TableAction {
+        private final String iconPath;
+        private final Color backgroundColor; // null = transparent / no bg
+        private final int iconSize;
+        private final int bgSize;
+        private final int cornerRadius;
+        private final Consumer<Integer> onClick;
+
+        /** Icon with colored background (e.g. purple View button). */
+        public TableAction(String iconPath, Color backgroundColor, Consumer<Integer> onClick) {
+            this(iconPath, backgroundColor, ACTION_ICON_SIZE, ACTION_BG_SIZE, ACTION_CORNER_RADIUS, onClick);
+        }
+
+        /** Bare icon, no background. */
+        public TableAction(String iconPath, Consumer<Integer> onClick) {
+            this(iconPath, null, ACTION_ICON_SIZE, ACTION_BG_SIZE, ACTION_CORNER_RADIUS, onClick);
+        }
+
+        public TableAction(String iconPath, Color backgroundColor,
+                int iconSize, int bgSize, int cornerRadius,
+                Consumer<Integer> onClick) {
+            this.iconPath = iconPath;
+            this.backgroundColor = backgroundColor;
+            this.iconSize = iconSize;
+            this.bgSize = bgSize;
+            this.cornerRadius = cornerRadius;
+            this.onClick = onClick;
+        }
+
+        public String getIconPath() {
+            return iconPath;
+        }
+
+        public Color getBackgroundColor() {
+            return backgroundColor;
+        }
+
+        public int getIconSize() {
+            return iconSize;
+        }
+
+        public int getBgSize() {
+            return bgSize;
+        }
+
+        public int getCornerRadius() {
+            return cornerRadius;
+        }
+
+        public Consumer<Integer> getOnClick() {
+            return onClick;
+        }
+    }
+
+    // ── Action API ────────────────────────────────────────────────
+
+    public void addAction(TableAction action) {
+        tableActions.add(action);
+        refreshActionColumnRenderer();
+        autoSizeActionColumn();
+    }
+
+    public void clearActions() {
+        tableActions.clear();
+        refreshActionColumnRenderer();
+    }
+
+    public void setActionColumnIndex(int idx) {
+        this.actionColumnIndex = idx;
+        refreshActionColumnRenderer();
+        autoSizeActionColumn();
+    }
+
+    public int getActionColumnIndex() {
+        return actionColumnIndex;
+    }
+
+    /**
+     * Legacy single callback – invoked only when no TableActions are registered.
+     */
+    public void setOnViewClicked(Consumer<Integer> callback) {
+        this.viewClickCallback = callback;
     }
 
     // ── UI Init ───────────────────────────────────────────────────
@@ -64,12 +161,12 @@ public class RecentReportsPanel extends GlassPanel {
         table.setModel(tableModel);
         table.setFillsViewportHeight(false);
 
-        // ── Single MouseListener handles both cursor AND click ──
+        // Cursor & click on action column
         table.addMouseMotionListener(new MouseMotionAdapter() {
             @Override
             public void mouseMoved(MouseEvent e) {
                 int col = table.columnAtPoint(e.getPoint());
-                table.setCursor(col == 6
+                table.setCursor(col == actionColumnIndex
                         ? Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
                         : Cursor.getDefaultCursor());
             }
@@ -85,8 +182,8 @@ public class RecentReportsPanel extends GlassPanel {
             public void mouseClicked(MouseEvent e) {
                 int col = table.columnAtPoint(e.getPoint());
                 int row = table.rowAtPoint(e.getPoint());
-                if (col == 6 && row >= 0) {
-                    onViewClicked(row);
+                if (col == actionColumnIndex && row >= 0) {
+                    handleActionClick(e, row);
                 }
             }
         });
@@ -95,6 +192,8 @@ public class RecentReportsPanel extends GlassPanel {
         center.setHorizontalAlignment(SwingConstants.CENTER);
         for (int i = 0; i < table.getColumnCount(); i++)
             table.getColumnModel().getColumn(i).setCellRenderer(center);
+
+        refreshActionColumnRenderer();
 
         JTableHeader header = table.getTableHeader();
         header.setReorderingAllowed(false);
@@ -113,17 +212,140 @@ public class RecentReportsPanel extends GlassPanel {
         add(paginationBar, BorderLayout.SOUTH);
     }
 
-    // Override this in subclass or set via a callback
-    private Consumer<Integer> viewClickCallback = null;
+    // ── Click handling ────────────────────────────────────────────
 
-    public void setOnViewClicked(Consumer<Integer> callback) {
-        this.viewClickCallback = callback;
+    private void handleActionClick(MouseEvent e, int visibleRow) {
+        if (tableActions.isEmpty()) {
+            if (viewClickCallback != null)
+                viewClickCallback.accept(getAbsoluteRowIndex(visibleRow));
+            return;
+        }
+
+        Rectangle cellRect = table.getCellRect(visibleRow, actionColumnIndex, false);
+        int relX = e.getX() - cellRect.x;
+        int relY = e.getY() - cellRect.y;
+
+        int totalWidth = tableActions.size() * ACTION_BG_SIZE
+                + (tableActions.size() - 1) * ACTION_GAP;
+        int startX = (cellRect.width - totalWidth) / 2;
+        int startY = (cellRect.height - ACTION_BG_SIZE) / 2;
+
+        // Click must be inside the vertical band where icons live
+        if (relY < startY || relY > startY + ACTION_BG_SIZE)
+            return;
+
+        int absRow = getAbsoluteRowIndex(visibleRow);
+
+        for (int i = 0; i < tableActions.size(); i++) {
+            int ax = startX + i * (ACTION_BG_SIZE + ACTION_GAP);
+            if (relX >= ax && relX <= ax + ACTION_BG_SIZE) {
+                Consumer<Integer> cb = tableActions.get(i).getOnClick();
+                if (cb != null)
+                    cb.accept(absRow);
+                return;
+            }
+        }
     }
 
-    private void onViewClicked(int visibleRow) {
-        if (viewClickCallback != null)
-            viewClickCallback.accept(getAbsoluteRowIndex(visibleRow));
+    private void refreshActionColumnRenderer() {
+        if (table == null)
+            return;
+        if (actionColumnIndex >= 0 && actionColumnIndex < table.getColumnCount()) {
+            table.getColumnModel().getColumn(actionColumnIndex)
+                    .setCellRenderer(new ActionIconsRenderer());
+        }
     }
+
+    private void autoSizeActionColumn() {
+        if (table == null || tableActions.isEmpty())
+            return;
+        int total = tableActions.size() * ACTION_BG_SIZE
+                + (tableActions.size() - 1) * ACTION_GAP
+                + 20; // padding
+        table.getColumnModel().getColumn(actionColumnIndex)
+                .setPreferredWidth(total);
+    }
+
+    // ── Renderer: centered icons with optional background ─────────
+
+    private class ActionIconsRenderer implements javax.swing.table.TableCellRenderer {
+        @Override
+        public Component getTableCellRendererComponent(JTable t, Object value,
+                boolean isSelected, boolean hasFocus, int row, int column) {
+
+            JPanel container = new JPanel(new GridBagLayout());
+            container.setOpaque(true);
+            container.setBackground(isSelected ? t.getSelectionBackground() : t.getBackground());
+
+            if (tableActions.isEmpty()) {
+                return container;
+            }
+
+            JPanel wrapper = new JPanel(new FlowLayout(FlowLayout.CENTER, ACTION_GAP, 0));
+            wrapper.setOpaque(false);
+
+            for (TableAction action : tableActions) {
+                wrapper.add(buildActionComponent(action));
+            }
+
+            container.add(wrapper, new GridBagConstraints());
+            return container;
+        }
+
+        private JPanel buildActionComponent(TableAction action) {
+            JPanel p = new JPanel(new GridBagLayout()) {
+                @Override
+                protected void paintComponent(Graphics g) {
+                    if (action.getBackgroundColor() != null) {
+                        Graphics2D g2 = (Graphics2D) g.create();
+                        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
+                                RenderingHints.VALUE_ANTIALIAS_ON);
+                        g2.setColor(action.getBackgroundColor());
+                        g2.fillRoundRect(0, 0, getWidth(), getHeight(),
+                                action.getCornerRadius(), action.getCornerRadius());
+                        g2.dispose();
+                    }
+                    super.paintComponent(g);
+                }
+            };
+            p.setOpaque(false);
+            p.setPreferredSize(new Dimension(action.getBgSize(), action.getBgSize()));
+
+            ImageIcon icon = loadIcon(action.getIconPath(), action.getIconSize());
+            JLabel iconLabel = new JLabel(icon);
+            p.add(iconLabel);
+            return p;
+        }
+    }
+
+    // ── Icon loader: BICUBIC scale + white tint ───────────────────
+
+    private static ImageIcon loadIcon(String path, int size) {
+        try {
+            Image src = new ImageIcon(path).getImage();
+            BufferedImage scaled = new BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB);
+            Graphics2D g2d = scaled.createGraphics();
+            g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION,
+                    RenderingHints.VALUE_INTERPOLATION_BICUBIC);
+
+            // 1. Draw original icon scaled
+            g2d.drawImage(src, 0, 0, size, size, null);
+
+            // 2. Tint every opaque pixel white while preserving alpha
+            g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_IN));
+            g2d.setColor(Color.WHITE);
+            g2d.fillRect(0, 0, size, size);
+
+            g2d.dispose();
+            return new ImageIcon(scaled);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // Header & Pagination (unchanged)
+    // ═══════════════════════════════════════════════════════════════
 
     private JPanel buildHeader() {
         JPanel header = new JPanel(new BorderLayout());
@@ -155,7 +377,6 @@ public class RecentReportsPanel extends GlassPanel {
         pageLabel.setFont(new Font("Arial", Font.PLAIN, 12));
         pageLabel.setForeground(new Color(120, 120, 130));
 
-        // Jump field
         jumpField = new JTextField(3) {
             @Override
             protected void paintComponent(Graphics g) {
@@ -296,11 +517,19 @@ public class RecentReportsPanel extends GlassPanel {
 
     // ── Pagination Logic ──────────────────────────────────────────
     private int getTotalPages() {
-        return Math.max(1, (int) Math.ceil((double) allData.size() / rowsPerPage));
+        if (allData.isEmpty())
+            return 0;
+        return (int) Math.ceil((double) allData.size() / rowsPerPage);
     }
 
     private void goToPage(int page) {
-        currentPage = Math.max(0, Math.min(page, getTotalPages() - 1));
+        int total = getTotalPages();
+        if (total == 0) {
+            currentPage = 0;
+            refreshPage();
+            return;
+        }
+        currentPage = Math.max(0, Math.min(page, total - 1));
         refreshPage();
     }
 
@@ -322,18 +551,18 @@ public class RecentReportsPanel extends GlassPanel {
 
         int total = getTotalPages();
 
-        // Toggle pagination bar visibility
         boolean showPagination = total > 1;
         paginationBar.setVisible(showPagination);
-
-        // When only 1 page, stretch table to fill the space
         table.setFillsViewportHeight(!showPagination);
 
-        pageLabel.setText("Page " + (currentPage + 1) + " of " + total);
-        prevButton.setEnabled(currentPage > 0);
-        nextButton.setEnabled(currentPage < total - 1);
+        if (total == 0) {
+            pageLabel.setText("No data");
+        } else {
+            pageLabel.setText("Page " + (currentPage + 1) + " of " + total);
+        }
+        prevButton.setEnabled(currentPage > 0 && total > 0);
+        nextButton.setEnabled(total > 0 && currentPage < total - 1);
 
-        // Force re-layout so the CENTER region expands/contracts immediately
         revalidate();
         repaint();
     }

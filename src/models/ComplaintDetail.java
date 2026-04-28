@@ -8,6 +8,9 @@ public class ComplaintDetail {
     private Timestamp dateTime, lastUpdateTimestamp;
     private double longitude, latitude;
     private int CD_ID;
+    private String photoName;
+    private String photoType;
+    private Integer photoSize;
 
     public ComplaintDetail(int CD_ID, String currentStatus, String subject, String type, Timestamp dateTime,
             double longitude,
@@ -133,6 +136,30 @@ public class ComplaintDetail {
 
     public Timestamp getLastUpdateTimestamp() {
         return lastUpdateTimestamp;
+    }
+
+    public String getPhotoName() {
+        return photoName;
+    }
+
+    public void setPhotoName(String photoName) {
+        this.photoName = photoName;
+    }
+
+    public String getPhotoType() {
+        return photoType;
+    }
+
+    public void setPhotoType(String photoType) {
+        this.photoType = photoType;
+    }
+
+    public Integer getPhotoSize() {
+        return photoSize;
+    }
+
+    public void setPhotoSize(Integer photoSize) {
+        this.photoSize = photoSize;
     }
 
 }

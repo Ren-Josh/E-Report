@@ -1,17 +1,23 @@
 package features.submit;
 
 import java.awt.Color;
+import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.awt.event.MouseMotionAdapter;
+import java.awt.event.MouseWheelEvent;
+import java.awt.event.MouseWheelListener;
 import java.awt.geom.Ellipse2D;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URI;
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -30,11 +36,18 @@ public class SubmitReportMapPanel extends JPanel {
         void onAddressResolved(String addressText);
     }
 
-    private final int zoom = 16;
+    private int zoom = SubmitReportConstants.DEFAULT_MAP_ZOOM;
+    private static final int MIN_ZOOM = 3;
+    private static final int MAX_ZOOM = 19;
     private double centerLat = SubmitReportConstants.DEFAULT_MAP_LATITUDE;
     private double centerLon = SubmitReportConstants.DEFAULT_MAP_LONGITUDE;
     private Double pinLat;
     private Double pinLon;
+    private boolean panning;
+    private int dragStartX;
+    private int dragStartY;
+    private double dragStartCenterWorldX;
+    private double dragStartCenterWorldY;
     private final Map<String, BufferedImage> tileCache = new ConcurrentHashMap<>();
     private final Listener listener;
 
@@ -48,12 +61,58 @@ public class SubmitReportMapPanel extends JPanel {
         addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
-                double worldX = lonToWorldX(centerLon) - (getWidth() / 2.0) + e.getX();
-                double worldY = latToWorldY(centerLat) - (getHeight() / 2.0) + e.getY();
+                if (!panning) {
+                    double worldX = lonToWorldX(centerLon) - (getWidth() / 2.0) + e.getX();
+                    double worldY = latToWorldY(centerLat) - (getHeight() / 2.0) + e.getY();
 
-                double lon = worldXToLon(worldX);
-                double lat = worldYToLat(worldY);
-                setPin(lat, lon);
+                    double lon = worldXToLon(worldX);
+                    double lat = worldYToLat(worldY);
+                    setPin(lat, lon);
+                }
+            }
+
+            @Override
+            public void mousePressed(MouseEvent e) {
+                panning = true;
+                dragStartX = e.getX();
+                dragStartY = e.getY();
+                dragStartCenterWorldX = lonToWorldX(centerLon);
+                dragStartCenterWorldY = latToWorldY(centerLat);
+                setCursor(Cursor.getPredefinedCursor(Cursor.MOVE_CURSOR));
+            }
+
+            @Override
+            public void mouseReleased(MouseEvent e) {
+                panning = false;
+                setCursor(Cursor.getDefaultCursor());
+            }
+        });
+
+        addMouseMotionListener(new MouseMotionAdapter() {
+            @Override
+            public void mouseDragged(MouseEvent e) {
+                if (!panning) {
+                    return;
+                }
+
+                double deltaX = e.getX() - dragStartX;
+                double deltaY = e.getY() - dragStartY;
+                double worldX = dragStartCenterWorldX - deltaX;
+                double worldY = dragStartCenterWorldY - deltaY;
+                centerLon = worldXToLon(worldX);
+                centerLat = worldYToLat(worldY);
+                repaint();
+            }
+        });
+
+        addMouseWheelListener(new MouseWheelListener() {
+            @Override
+            public void mouseWheelMoved(MouseWheelEvent e) {
+                if (e.getWheelRotation() < 0) {
+                    zoomIn();
+                } else {
+                    zoomOut();
+                }
             }
         });
     }
@@ -62,6 +121,99 @@ public class SubmitReportMapPanel extends JPanel {
         centerLat = lat;
         centerLon = lon;
         setPin(lat, lon);
+    }
+
+    public void setCenter(double lat, double lon) {
+        centerLat = lat;
+        centerLon = lon;
+        repaint();
+    }
+
+    public void zoomIn() {
+        setZoom(zoom + 1);
+    }
+
+    public void zoomOut() {
+        setZoom(zoom - 1);
+    }
+
+    public void setZoom(int newZoom) {
+        if (newZoom < MIN_ZOOM || newZoom > MAX_ZOOM) {
+            return;
+        }
+        if (newZoom == zoom) {
+            return;
+        }
+        zoom = newZoom;
+        tileCache.clear();
+        repaint();
+    }
+
+    public void resetView() {
+        centerLat = SubmitReportConstants.DEFAULT_MAP_LATITUDE;
+        centerLon = SubmitReportConstants.DEFAULT_MAP_LONGITUDE;
+        zoom = SubmitReportConstants.DEFAULT_MAP_ZOOM;
+        tileCache.clear();
+        clearPin();
+        repaint();
+        listener.onStatusChanged("Map reset to service area center.");
+    }
+
+    public int getZoom() {
+        return zoom;
+    }
+
+    public Double getPinnedLatitude() {
+        return pinLat;
+    }
+
+    public Double getPinnedLongitude() {
+        return pinLon;
+    }
+
+    public void searchLocation(String query) {
+        if (query == null || query.trim().isEmpty()) {
+            listener.onStatusChanged("Enter a search term first.");
+            return;
+        }
+
+        String encoded = URLEncoder.encode(query.trim(), StandardCharsets.UTF_8);
+        listener.onStatusChanged("Searching for: " + query.trim());
+
+        new Thread(() -> {
+            try {
+                String api = "https://nominatim.openstreetmap.org/search?format=jsonv2&q=" + encoded + "&limit=1";
+                HttpURLConnection connection = (HttpURLConnection) URI.create(api).toURL().openConnection();
+                connection.setRequestMethod("GET");
+                connection.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) E-Report/1.0");
+                connection.setRequestProperty("Accept", "application/json");
+                connection.setConnectTimeout(8000);
+                connection.setReadTimeout(8000);
+
+                String response = new String(connection.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
+                String latString = extractJsonNumber(response, "lat");
+                String lonString = extractJsonNumber(response, "lon");
+                String displayName = extractJsonString(response, "display_name");
+
+                if (latString.isBlank() || lonString.isBlank()) {
+                    SwingUtilities.invokeLater(() -> listener.onStatusChanged("Search returned no results."));
+                    return;
+                }
+
+                double lat = Double.parseDouble(latString);
+                double lon = Double.parseDouble(lonString);
+                SwingUtilities.invokeLater(() -> {
+                    setCenter(lat, lon);
+                    listener.onStatusChanged("Search centered to: "
+                            + (displayName.isBlank() ? latString + ", " + lonString : displayName));
+                    if (!displayName.isBlank()) {
+                        listener.onAddressResolved(displayName);
+                    }
+                });
+            } catch (IOException ignored) {
+                SwingUtilities.invokeLater(() -> listener.onStatusChanged("Search failed. Try another query."));
+            }
+        }).start();
     }
 
     public void clearPin() {
@@ -108,6 +260,7 @@ public class SubmitReportMapPanel extends JPanel {
         try {
             g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
             drawTiles(g2);
+            drawServiceArea(g2);
             drawPin(g2);
         } finally {
             g2.dispose();
@@ -161,10 +314,20 @@ public class SubmitReportMapPanel extends JPanel {
         new Thread(() -> {
             try {
                 String tileUrl = "https://tile.openstreetmap.org/" + zoom + "/" + tileX + "/" + tileY + ".png";
-                BufferedImage img = ImageIO.read(URI.create(tileUrl).toURL());
-                if (img != null) {
-                    tileCache.put(key, img);
-                    SwingUtilities.invokeLater(this::repaint);
+                HttpURLConnection connection = (HttpURLConnection) URI.create(tileUrl).toURL().openConnection();
+                connection.setRequestMethod("GET");
+                connection.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) E-Report/1.0");
+                connection.setRequestProperty("Accept", "image/png,image/*;q=0.8,*/*;q=0.5");
+                connection.setRequestProperty("Referer", "https://www.openstreetmap.org/");
+                connection.setConnectTimeout(10000);
+                connection.setReadTimeout(10000);
+
+                try (InputStream input = connection.getInputStream()) {
+                    BufferedImage img = ImageIO.read(input);
+                    if (img != null) {
+                        tileCache.put(key, img);
+                        SwingUtilities.invokeLater(this::repaint);
+                    }
                 }
             } catch (IOException ignored) {
                 // Ignore tile failures and keep rendering placeholders.
@@ -172,6 +335,32 @@ public class SubmitReportMapPanel extends JPanel {
         }).start();
 
         return null;
+    }
+
+    private void drawServiceArea(Graphics2D g2) {
+        double worldCenterX = lonToWorldX(centerLon);
+        double worldCenterY = latToWorldY(centerLat);
+        double defaultWorldX = lonToWorldX(SubmitReportConstants.DEFAULT_MAP_LONGITUDE);
+        double defaultWorldY = latToWorldY(SubmitReportConstants.DEFAULT_MAP_LATITUDE);
+
+        double dx = defaultWorldX - worldCenterX;
+        double dy = defaultWorldY - worldCenterY;
+        double screenX = (getWidth() / 2.0) + dx;
+        double screenY = (getHeight() / 2.0) + dy;
+
+        double metersPerPixel = 156543.03392 * Math.cos(Math.toRadians(SubmitReportConstants.DEFAULT_MAP_LATITUDE))
+                / (1 << zoom);
+        double radius = SubmitReportConstants.SERVICE_AREA_RADIUS_METERS / metersPerPixel;
+
+        if (radius > 10 && radius < Math.max(getWidth(), getHeight()) * 2) {
+            g2.setColor(new Color(33, 150, 243, 60));
+            g2.fillOval((int) Math.round(screenX - radius), (int) Math.round(screenY - radius),
+                    (int) Math.round(radius * 2), (int) Math.round(radius * 2));
+            g2.setColor(new Color(33, 150, 243, 180));
+            g2.setStroke(new java.awt.BasicStroke(2f));
+            g2.drawOval((int) Math.round(screenX - radius), (int) Math.round(screenY - radius),
+                    (int) Math.round(radius * 2), (int) Math.round(radius * 2));
+        }
     }
 
     private void drawPin(Graphics2D g2) {
@@ -218,6 +407,25 @@ public class SubmitReportMapPanel extends JPanel {
         int scale = 1 << zoom;
         double y = 0.5 - (worldY / (scale * tileSize));
         return 90 - 360 * Math.atan(Math.exp(-y * 2 * Math.PI)) / Math.PI;
+    }
+
+    private String extractJsonNumber(String json, String key) {
+        String token = "\"" + key + "\":";
+        int idx = json.indexOf(token);
+        if (idx < 0) {
+            return "";
+        }
+        int start = idx + token.length();
+        int end = start;
+        while (end < json.length()) {
+            char ch = json.charAt(end);
+            if ((ch >= '0' && ch <= '9') || ch == '-' || ch == '.' || ch == '+') {
+                end++;
+            } else {
+                break;
+            }
+        }
+        return json.substring(start, end);
     }
 
     private String extractJsonString(String json, String key) {

@@ -172,11 +172,8 @@ public class AccountInfoCard extends UICard {
     }
 
     public void setFieldsEditable(boolean editable) {
-        nameField.setEditable(editable);
         phoneField.setEditable(editable);
         emailField.setEditable(editable);
-        addressField.setEditable(editable);
-        purokField.setEditable(editable);
         usernameField.setEditable(editable);
     }
 

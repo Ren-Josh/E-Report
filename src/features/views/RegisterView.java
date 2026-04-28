@@ -29,11 +29,9 @@ public class RegisterView extends JPanel {
         this.app = app;
         setLayout(new BorderLayout());
 
-        // Background
         BackgroundPanel bgPanel = new BackgroundPanel(UIConfig.BACKGROUND_PATH);
         bgPanel.setLayout(new BorderLayout());
 
-        // Header
         JPanel headerPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 20, 20));
         headerPanel.setOpaque(false);
 
@@ -47,7 +45,6 @@ public class RegisterView extends JPanel {
 
         bgPanel.add(headerPanel, BorderLayout.NORTH);
 
-        // Center wrapper
         JPanel centerWrapper = new JPanel(new GridBagLayout());
         centerWrapper.setOpaque(false);
 
@@ -89,9 +86,12 @@ public class RegisterView extends JPanel {
 
         String[] streets = { "Select Street", "Main St.", "Rizal St.", "Mabini St." };
         cbStreet = new UIComboBox<>(streets);
+        UIComboBox.applyPreset(cbStreet, UIConfig.COMBOBOX_WIDTH_STANDARD);
 
         String[] puroks = { "Select Purok", "Purok 1", "Purok 2", "Purok 3", "Purok 4", "Purok 5" };
         cbPurok = new UIComboBox<>(puroks);
+        UIComboBox.applyPreset(cbPurok, UIConfig.COMBOBOX_WIDTH_STANDARD);
+        cbPurok.applySizePreset(UIComboBox.SizePreset.LARGE);
 
         rbgSex = new UIRadioButtonGroup(new String[] { "Male", "Female" });
 
@@ -111,9 +111,12 @@ public class RegisterView extends JPanel {
         txtHouseNum.setPlaceholder("123");
         txtHouseNum.setLimit(5, true);
 
-        txtUsername = new UIInput(15);
-        txtPassword = new UIPasswordInput(15);
-        txtConfirmPassword = new UIPasswordInput(15);
+        txtUsername = new UIInput(10);
+        txtUsername.setPlaceholder("Provide a username");
+        txtPassword = new UIPasswordInput(10);
+        txtPassword.setPlaceholder("Provide a password");
+        txtConfirmPassword = new UIPasswordInput(10);
+        txtConfirmPassword.setPlaceholder("Re-enter your password");
         txtConfirmPassword.setMatchTarget(txtPassword);
 
         addInputGroup(panel, "First Name", txtFName, gbc, 0, 1);
@@ -154,6 +157,7 @@ public class RegisterView extends JPanel {
                 hasError = true;
             }
 
+            // Turned off for easy access on credentials panel, turn back on after testing
             if (hasError)
                 return;
 
@@ -203,6 +207,7 @@ public class RegisterView extends JPanel {
         panel.add(lblTitle, gbc);
 
         gbc.gridwidth = 2;
+        gbc.insets = new Insets(40, 0, 40, 0);
 
         addInputGroup(panel, "Username", txtUsername, gbc, 0, 1);
         addInputGroup(panel, "Password", txtPassword, gbc, 0, 3);
@@ -217,10 +222,10 @@ public class RegisterView extends JPanel {
         panel.add(btnFinish, gbc);
 
         JButton btnBack = new JButton("← Back to Personal Info");
-        btnBack.setFont(new Font("SansSerif", Font.PLAIN, 14));
+        btnBack.setFont(UIConfig.SMALL);
         btnBack.setContentAreaFilled(false);
         btnBack.setBorderPainted(false);
-        btnBack.setForeground(Color.GRAY);
+        btnBack.setForeground(UIConfig.TEXT_MUTED);
         btnBack.setCursor(new Cursor(Cursor.HAND_CURSOR));
         btnBack.addActionListener(e -> cardLayout.show(formContainer, "personal"));
 

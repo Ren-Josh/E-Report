@@ -1,16 +1,14 @@
 package features.layout.common;
 
-import features.components.RoundedLineBorder;
 import features.components.UIButton;
 import features.components.UICard;
+import features.components.UIPasswordInput;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
 
 public class SecurityCard extends UICard {
-    // FIX: neutral gray border instead of bright green
-    private static final Color BORDER_COLOR = new Color(210, 215, 225);
     private static final Color TEXT_PRIMARY = new Color(15, 23, 42);
     private static final Color TEXT_SECONDARY = new Color(100, 116, 139);
     private static final int SPACING_SM = 8;
@@ -18,9 +16,8 @@ public class SecurityCard extends UICard {
     private static final int SPACING_XS = 4;
     private static final int FIELD_HEIGHT = 42;
 
-    private final JPasswordField currentPassField, newPassField, confirmPassField;
+    private final UIPasswordInput currentPassField, newPassField, confirmPassField;
     private final UIButton savePassButton;
-    private final JCheckBox showPasswordsCheckbox;
     private final JProgressBar passwordStrengthBar;
     private final JLabel passwordStrengthLabel;
 
@@ -30,7 +27,6 @@ public class SecurityCard extends UICard {
         setShowBorder(true);
         setBorderColor(new Color(226, 232, 240));
 
-        // FIX: proper header panel to match AccountInfoCard alignment
         JPanel header = new JPanel(new BorderLayout());
         header.setOpaque(false);
         header.setBorder(new EmptyBorder(SPACING_MD, SPACING_MD, SPACING_MD, SPACING_MD));
@@ -45,9 +41,12 @@ public class SecurityCard extends UICard {
         form.setOpaque(false);
         form.setBorder(new EmptyBorder(0, SPACING_MD, SPACING_MD, SPACING_MD));
 
-        currentPassField = createPasswordField();
-        newPassField = createPasswordField();
-        confirmPassField = createPasswordField();
+        currentPassField = createPasswordField("Enter current password");
+        newPassField = createPasswordField("Enter new password");
+        confirmPassField = createPasswordField("Confirm new password");
+
+        // Wire confirm field to validate against new field
+        confirmPassField.setMatchTarget(newPassField);
 
         passwordStrengthBar = new JProgressBar(0, 100);
         passwordStrengthBar.setPreferredSize(new Dimension(1, 4));
@@ -57,11 +56,6 @@ public class SecurityCard extends UICard {
         passwordStrengthLabel = new JLabel();
         passwordStrengthLabel.setFont(new Font("Segoe UI", Font.PLAIN, 11));
         passwordStrengthLabel.setForeground(TEXT_SECONDARY);
-
-        showPasswordsCheckbox = new JCheckBox("Show passwords");
-        showPasswordsCheckbox.setOpaque(false);
-        showPasswordsCheckbox.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-        showPasswordsCheckbox.setForeground(TEXT_SECONDARY);
 
         savePassButton = new UIButton("Save Changes", new Color(37, 99, 235),
                 new Dimension(120, 40), new Font("Segoe UI", Font.BOLD, 13), 8,
@@ -86,12 +80,7 @@ public class SecurityCard extends UICard {
         gbc.gridy = 2;
         form.add(createPasswordRow("Confirm Password", confirmPassField), gbc);
 
-        // FIX: slightly more breathing room above the checkbox
         gbc.gridy = 3;
-        gbc.insets = new Insets(SPACING_XS, 0, SPACING_MD, 0);
-        form.add(showPasswordsCheckbox, gbc);
-
-        gbc.gridy = 4;
         gbc.anchor = GridBagConstraints.EAST;
         gbc.fill = GridBagConstraints.NONE;
         gbc.insets = new Insets(SPACING_MD, 0, 0, 0);
@@ -100,20 +89,14 @@ public class SecurityCard extends UICard {
         add(form, BorderLayout.CENTER);
     }
 
-    private JPasswordField createPasswordField() {
-        JPasswordField f = new JPasswordField();
-        f.setFont(new Font("Segoe UI", Font.PLAIN, 13));
-        f.setBorder(BorderFactory.createCompoundBorder(
-                new RoundedLineBorder(BORDER_COLOR, 6),
-                new EmptyBorder(8, 12, 8, 12)));
-        f.setBackground(Color.WHITE);
-        f.setEchoChar('\u2022');
-        f.setSelectionColor(new Color(186, 230, 253));
+    private UIPasswordInput createPasswordField(String placeholder) {
+        UIPasswordInput f = new UIPasswordInput(20);
+        f.setPlaceholder(placeholder);
         f.setPreferredSize(new Dimension(f.getPreferredSize().width, FIELD_HEIGHT));
         return f;
     }
 
-    private JPanel createPasswordRow(String label, JPasswordField field) {
+    private JPanel createPasswordRow(String label, UIPasswordInput field) {
         JPanel row = new JPanel(new BorderLayout(0, SPACING_XS));
         row.setOpaque(false);
         JLabel lbl = new JLabel(label);
@@ -133,24 +116,20 @@ public class SecurityCard extends UICard {
         return panel;
     }
 
-    public JPasswordField getCurrentPassField() {
+    public UIPasswordInput getCurrentPassField() {
         return currentPassField;
     }
 
-    public JPasswordField getNewPassField() {
+    public UIPasswordInput getNewPassField() {
         return newPassField;
     }
 
-    public JPasswordField getConfirmPassField() {
+    public UIPasswordInput getConfirmPassField() {
         return confirmPassField;
     }
 
     public JButton getSavePassButton() {
         return savePassButton;
-    }
-
-    public JCheckBox getShowPasswordsCheckbox() {
-        return showPasswordsCheckbox;
     }
 
     public JProgressBar getPasswordStrengthBar() {

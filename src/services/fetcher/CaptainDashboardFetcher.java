@@ -101,8 +101,10 @@ public class CaptainDashboardFetcher extends AbstractDashboardFetcher {
 
     private String determineGroupBy(TimeFilter timeFilter) {
         if (timeFilter == null)
-            return "MONTH";
+            return "YEAR";
         switch (timeFilter.getFilterType()) {
+            case ALL_TIME:
+                return "YEAR";
             case SPAN_OF_YEARS:
                 return "YEAR";
             case SINGLE_YEAR:
@@ -114,7 +116,39 @@ public class CaptainDashboardFetcher extends AbstractDashboardFetcher {
             case SINGLE_WEEK:
                 return "DAY";
             default:
-                return "MONTH";
+                return "YEAR";
+        }
+    }
+
+    /**
+     * Dynamic title based on the exact filter type the user selected.
+     *
+     * All Time → "All Case Graph"
+     * Span of Years → "Yearly Case Graph"
+     * Single Year → "Monthly Case Graph"
+     * Span of Months → "Monthly Case Graph"
+     * Single Month → "Weekly Case Graph"
+     * Single Week → "Daily Case Graph"
+     */
+    public String getLineGraphTitle() {
+        if (currentTimeFilter == null) {
+            return "All Case Graph";
+        }
+        switch (currentTimeFilter.getFilterType()) {
+            case ALL_TIME:
+                return "All Case Graph";
+            case SPAN_OF_YEARS:
+                return "Yearly Case Graph";
+            case SINGLE_YEAR:
+                return "Monthly Case Graph";
+            case SPAN_OF_MONTHS:
+                return "Monthly Case Graph";
+            case SINGLE_MONTH:
+                return "Weekly Case Graph";
+            case SINGLE_WEEK:
+                return "Daily Case Graph";
+            default:
+                return "Case Graph";
         }
     }
 

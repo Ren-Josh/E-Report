@@ -2,6 +2,9 @@ package features.layout.common;
 
 import app.E_Report;
 import features.components.RoundedLineBorder;
+import models.UserInfo;
+import models.UserSession;
+import services.controller.UserServiceController;
 
 import javax.swing.*;
 import javax.swing.border.*;
@@ -21,7 +24,6 @@ public class ProfilePanel extends JPanel {
     private static final Color SUCCESS = new Color(34, 197, 94);
     private static final Color ERROR = new Color(239, 68, 68);
     private static final Color WARNING = new Color(234, 179, 8);
-    // FIX: gray border for validation so valid fields don't flash green
     private static final Color BORDER_COLOR = new Color(210, 215, 225);
 
     private static final int SPACING_MD = 16;
@@ -136,14 +138,6 @@ public class ProfilePanel extends JPanel {
             }
         });
 
-        securityCard.getShowPasswordsCheckbox().addActionListener(e -> {
-            boolean show = securityCard.getShowPasswordsCheckbox().isSelected();
-            char echoChar = show ? 0 : '\u2022';
-            securityCard.getCurrentPassField().setEchoChar(echoChar);
-            securityCard.getNewPassField().setEchoChar(echoChar);
-            securityCard.getConfirmPassField().setEchoChar(echoChar);
-        });
-
         registerKeyboardAction(
                 e -> toggleEditMode(),
                 KeyStroke.getKeyStroke(KeyEvent.VK_E, KeyEvent.CTRL_DOWN_MASK),
@@ -256,9 +250,9 @@ public class ProfilePanel extends JPanel {
     }
 
     private void savePassword() {
-        String cur = new String(securityCard.getCurrentPassField().getPassword());
-        String nw = new String(securityCard.getNewPassField().getPassword());
-        String cf = new String(securityCard.getConfirmPassField().getPassword());
+        String cur = securityCard.getCurrentPassField().getValue();
+        String nw = securityCard.getNewPassField().getValue();
+        String cf = securityCard.getConfirmPassField().getValue();
 
         if (cur.isEmpty() || nw.isEmpty() || cf.isEmpty()) {
             showStatus("All password fields are required", ERROR);
@@ -283,7 +277,7 @@ public class ProfilePanel extends JPanel {
     }
 
     private void updatePasswordStrength() {
-        String password = new String(securityCard.getNewPassField().getPassword());
+        String password = securityCard.getNewPassField().getValue();
         if (password.isEmpty()) {
             securityCard.getPasswordStrengthBar().setVisible(false);
             securityCard.getPasswordStrengthLabel().setText("");
@@ -328,20 +322,61 @@ public class ProfilePanel extends JPanel {
         statusBar.showStatus(message, color);
     }
 
+    /**
+     * Loads user information from the app session.
+     * If UserInfo is not yet cached in the app but a UserSession exists,
+     * it fetches the data from the database via UserServiceController.
+     */
     public void loadFromApp() {
-        if (app == null)
+        if (app == null) {
+            showStatus("App reference not available", ERROR);
             return;
-        try {
-            String name = "";
-            String phone = "";
-            String email = "";
-            String address = "";
-            String purok = "";
-            String username = "";
-            String role = "User";
+        }
 
-            setProfileData(name, phone, email, address, purok, username, role);
-            showStatus("Profile loaded successfully", TEXT_SECONDARY);
+        try {
+            UserInfo ui = app.getUserInfo();
+            UserSession us = app.getUserSession();
+
+            // Fetch from DB if not cached but session exists
+            if (ui == null && us != null) {
+                UserServiceController service = new UserServiceController();
+                ui = service.getUserInfo(us.getUserId());
+                if (ui != null) {
+                    app.setUserInfo(ui);
+                }
+            }
+
+            if (ui != null && us != null) {
+                // Build full name from first, middle, last
+                StringBuilder nameBuilder = new StringBuilder();
+                if (notEmpty(ui.getFName()))
+                    nameBuilder.append(ui.getFName()).append(" ");
+                if (notEmpty(ui.getMName()))
+                    nameBuilder.append(ui.getMName()).append(" ");
+                if (notEmpty(ui.getLName()))
+                    nameBuilder.append(ui.getLName());
+                String fullName = nameBuilder.toString().trim();
+
+                String phone = safeString(ui.getContact());
+                String email = safeString(ui.getEmail());
+
+                // Combine house number and street for address
+                StringBuilder addrBuilder = new StringBuilder();
+                if (notEmpty(ui.getHouseNum()))
+                    addrBuilder.append(ui.getHouseNum()).append(" ");
+                if (notEmpty(ui.getStreet()))
+                    addrBuilder.append(ui.getStreet());
+                String address = addrBuilder.toString().trim();
+
+                String purok = safeString(ui.getPurok());
+                String username = (app.getCredential() != null) ? safeString(app.getCredential().getUsername()) : "";
+                String role = safeString(us.getRole());
+
+                setProfileData(fullName, phone, email, address, purok, username, role);
+                showStatus("Profile loaded successfully", TEXT_SECONDARY);
+            } else {
+                showStatus("No user session found. Please log in.", WARNING);
+            }
         } catch (Exception e) {
             showStatus("Error loading profile data", ERROR);
             e.printStackTrace();
@@ -368,6 +403,14 @@ public class ProfilePanel extends JPanel {
 
     private boolean isValidPhone(String phone) {
         return phone.matches("^\\+?[0-9\\-\\s\\(\\)]{10,}$");
+    }
+
+    private String safeString(String value) {
+        return (value != null) ? value : "";
+    }
+
+    private boolean notEmpty(String value) {
+        return value != null && !value.trim().isEmpty();
     }
 
     private class DocumentChangeListener implements DocumentListener {

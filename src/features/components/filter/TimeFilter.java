@@ -7,30 +7,6 @@ import java.util.Date;
  * TimeFilter
  * 
  * A backend-accessible data model representing structured time-based filtering.
- * This class encapsulates all time filter parameters and provides utility
- * methods
- * to generate concrete Date ranges for database queries.
- * 
- * Supported filter types:
- * - SPAN_OF_YEARS: Multiple consecutive years (e.g., 2020-2023)
- * - SINGLE_YEAR: One specific year (e.g., 2024)
- * - SPAN_OF_MONTHS: Multiple consecutive months within a year
- * - SINGLE_MONTH: One specific month within a year
- * - SINGLE_WEEK: One specific week within a month
- * 
- * All filter types default to the current system year when not explicitly set.
- * 
- * Backend Usage:
- * 1. Receive TimeFilter from frontend via FilterListener or SearchListener
- * 2. Call getStartDate() and getEndDate() to get Date objects for SQL BETWEEN
- * queries
- * 3. Or call getSqlStartDateString() / getSqlEndDateString() for JDBC prepared
- * statements
- * 
- * Example:
- * TimeFilter filter = TimeFilter.forSingleYear(2024);
- * Date start = filter.getStartDate(); // Jan 1, 2024 00:00:00
- * Date end = filter.getEndDate(); // Dec 31, 2024 23:59:59
  */
 public class TimeFilter {
 
@@ -38,15 +14,13 @@ public class TimeFilter {
     // ENUMS
     // ========================================================================
 
-    /**
-     * Defines the granularity/type of time filtering available.
-     */
     public enum FilterType {
-        SPAN_OF_YEARS, // e.g., 2020 to 2023
-        SINGLE_YEAR, // e.g., 2024
-        SPAN_OF_MONTHS, // e.g., Jan to Jun within a year
-        SINGLE_MONTH, // e.g., March 2024
-        SINGLE_WEEK // e.g., Week 2 of March 2024
+        ALL_TIME,
+        SPAN_OF_YEARS,
+        SINGLE_YEAR,
+        SPAN_OF_MONTHS,
+        SINGLE_MONTH,
+        SINGLE_WEEK
     }
 
     // ========================================================================
@@ -55,12 +29,12 @@ public class TimeFilter {
 
     private final FilterType filterType;
     private final int startYear;
-    private final int endYear; // Used for SPAN_OF_YEARS
-    private final int year; // Used for SINGLE_YEAR, MONTH, WEEK
-    private final int startMonth; // 0-based: 0=Jan, 11=Dec. Used for SPAN_OF_MONTHS
-    private final int endMonth; // 0-based. Used for SPAN_OF_MONTHS
-    private final int month; // 0-based. Used for SINGLE_MONTH, SINGLE_WEEK
-    private final int weekOfMonth; // 1-based. Used for SINGLE_WEEK
+    private final int endYear;
+    private final int year;
+    private final int startMonth;
+    private final int endMonth;
+    private final int month;
+    private final int weekOfMonth;
 
     // ========================================================================
     // CONSTRUCTORS (Private - use factory methods)
@@ -82,69 +56,34 @@ public class TimeFilter {
     // FACTORY METHODS
     // ========================================================================
 
-    /**
-     * Creates a filter for a span of years.
-     * 
-     * @param startYear First year in the span (inclusive)
-     * @param endYear   Last year in the span (inclusive)
-     * @return TimeFilter configured for year span
-     */
+    /** Creates an "All Time" filter — start/end dates are null (no restriction). */
+    public static TimeFilter forAllTime() {
+        return new TimeFilter(FilterType.ALL_TIME, 0, 0, 0, 0, 0, 0, 0);
+    }
+
     public static TimeFilter forYearSpan(int startYear, int endYear) {
         return new TimeFilter(FilterType.SPAN_OF_YEARS, startYear, endYear,
                 startYear, 0, 0, 0, 0);
     }
 
-    /**
-     * Creates a filter for a single year.
-     * Defaults to current year if 0 or negative.
-     * 
-     * @param year The target year
-     * @return TimeFilter configured for single year
-     */
     public static TimeFilter forSingleYear(int year) {
         int effectiveYear = (year <= 0) ? getCurrentYear() : year;
         return new TimeFilter(FilterType.SINGLE_YEAR, 0, 0,
                 effectiveYear, 0, 0, 0, 0);
     }
 
-    /**
-     * Creates a filter for a span of months within a year.
-     * Defaults to current year if year is 0 or negative.
-     * 
-     * @param year       The target year
-     * @param startMonth Start month (0-based: 0=Jan, 11=Dec)
-     * @param endMonth   End month (0-based, inclusive)
-     * @return TimeFilter configured for month span
-     */
     public static TimeFilter forMonthSpan(int year, int startMonth, int endMonth) {
         int effectiveYear = (year <= 0) ? getCurrentYear() : year;
         return new TimeFilter(FilterType.SPAN_OF_MONTHS, 0, 0,
                 effectiveYear, startMonth, endMonth, 0, 0);
     }
 
-    /**
-     * Creates a filter for a single month within a year.
-     * Defaults to current year if year is 0 or negative.
-     * 
-     * @param year  The target year
-     * @param month Month (0-based: 0=Jan, 11=Dec)
-     * @return TimeFilter configured for single month
-     */
     public static TimeFilter forSingleMonth(int year, int month) {
         int effectiveYear = (year <= 0) ? getCurrentYear() : year;
         return new TimeFilter(FilterType.SINGLE_MONTH, 0, 0,
                 effectiveYear, 0, 0, month, 0);
     }
 
-    /**
-     * Creates a filter for a single week within a month.
-     * Defaults to current year if year is 0 or negative.
-     * 
-     * @param year        The target year
-     * @param month       Month (0-based: 0=Jan, 11=Dec)
-     * @param weekOfMonth Week number (1-based, as per Calendar.WEEK_OF_MONTH)
-     * @return TimeFilter configured for single week
-     */
     public static TimeFilter forSingleWeek(int year, int month, int weekOfMonth) {
         int effectiveYear = (year <= 0) ? getCurrentYear() : year;
         return new TimeFilter(FilterType.SINGLE_WEEK, 0, 0,
@@ -155,13 +94,11 @@ public class TimeFilter {
     // DATE COMPUTATION METHODS (Backend API)
     // ========================================================================
 
-    /**
-     * Computes the start date for this filter.
-     * Time is set to 00:00:00.000 of the start day.
-     * 
-     * @return Date representing the inclusive start boundary
-     */
     public Date getStartDate() {
+        if (filterType == FilterType.ALL_TIME) {
+            return null;
+        }
+
         Calendar cal = Calendar.getInstance();
         cal.clear();
 
@@ -187,18 +124,19 @@ public class TimeFilter {
                 cal.set(Calendar.WEEK_OF_MONTH, weekOfMonth);
                 cal.set(Calendar.DAY_OF_WEEK, cal.getFirstDayOfWeek());
                 break;
+
+            default:
+                return null;
         }
 
         return cal.getTime();
     }
 
-    /**
-     * Computes the end date for this filter.
-     * Time is set to 23:59:59.999 of the last day.
-     * 
-     * @return Date representing the inclusive end boundary
-     */
     public Date getEndDate() {
+        if (filterType == FilterType.ALL_TIME) {
+            return null;
+        }
+
         Calendar cal = Calendar.getInstance();
         cal.clear();
 
@@ -244,41 +182,31 @@ public class TimeFilter {
                     cal.set(Calendar.MILLISECOND, 999);
                 }
                 break;
+
+            default:
+                return null;
         }
 
         return cal.getTime();
     }
 
-    /**
-     * Returns a SQL-friendly formatted start date string (yyyy-MM-dd HH:mm:ss).
-     * Useful for JDBC prepared statements or raw SQL construction.
-     * 
-     * @return Formatted start date string
-     */
     public String getSqlStartDateString() {
-        return formatForSql(getStartDate());
+        Date d = getStartDate();
+        return d != null ? formatForSql(d) : null;
     }
 
-    /**
-     * Returns a SQL-friendly formatted end date string (yyyy-MM-dd HH:mm:ss).
-     * 
-     * @return Formatted end date string
-     */
     public String getSqlEndDateString() {
-        return formatForSql(getEndDate());
+        Date d = getEndDate();
+        return d != null ? formatForSql(d) : null;
     }
 
-    /**
-     * Useful for UI labels or report headers.
-     * 
-     * @return Description string (e.g., "March 2024", "2020-2023", "Week 2 of March
-     *         2024")
-     */
     public String getDescription() {
         String[] months = { "Jan", "Feb", "Mar", "Apr", "May", "Jun",
                 "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" };
 
         switch (filterType) {
+            case ALL_TIME:
+                return "All Time";
             case SPAN_OF_YEARS:
                 return startYear + " - " + endYear;
             case SINGLE_YEAR:

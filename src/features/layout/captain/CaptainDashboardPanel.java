@@ -49,9 +49,11 @@ public class CaptainDashboardPanel extends JPanel {
         updateInfoCards(fetcher.getTotal(), fetcher.getPending(),
                 fetcher.getInProgress(), fetcher.getResolved());
 
-        lineGraphPanel.updateData(fetcher.getLineValues(),
+        lineGraphPanel.updateData(
+                fetcher.getLineValues(),
                 fetcher.getLineLabels(),
-                fetcher.getLineDetails());
+                fetcher.getLineDetails(),
+                fetcher.getLineGraphTitle());
 
         donutChartPanel.updateData("Case Trends Category",
                 fetcher.getCategoryLabels(),
