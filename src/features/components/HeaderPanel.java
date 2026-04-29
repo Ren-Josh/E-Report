@@ -10,13 +10,9 @@ import java.io.IOException;
 
 import app.E_Report;
 import config.UIConfig;
-import models.UserInfo;
-import models.UserSession;
 
 public class HeaderPanel extends JPanel {
-    protected E_Report app;
-    private UserInfo ui;
-    private UserSession us;
+    private final E_Report app;
 
     private JLabel userNameLabel;
     private JLabel userRoleLabel;
@@ -29,29 +25,16 @@ public class HeaderPanel extends JPanel {
     private JPanel disclosureContent;
     private boolean disclosureVisible = false;
 
-    private String currentUserRole;
-    private String currentUserName;
-
     private float glassOpacity = 0.9f;
     private Color glassBorderColor = new Color(255, 255, 255, 180);
     private Color shadowColor = new Color(0, 0, 0, 30);
 
     public HeaderPanel(E_Report app) {
         this.app = app;
-        this.ui = app.getUserInfo();
-        this.us = app.getUserSession();
         setOpaque(false);
         setLayout(new BorderLayout());
         setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
         setPreferredSize(new Dimension(720, 70));
-
-        if (ui == null) {
-            currentUserName = "Guest";
-            currentUserRole = "Visitor";
-        } else {
-            currentUserName = ui.getFName() + "  " + ui.getLName();
-            currentUserRole = us.getRole();
-        }
 
         // Left side: Logo and Title
         JPanel leftPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 15, 0));
@@ -75,20 +58,17 @@ public class HeaderPanel extends JPanel {
         gbc.anchor = GridBagConstraints.CENTER;
         gbc.insets = new Insets(0, 0, 0, 0);
 
-        // User info panel (vertical: name on top, role below)
         JPanel userInfoPanel = new JPanel();
         userInfoPanel.setLayout(new BoxLayout(userInfoPanel, BoxLayout.Y_AXIS));
         userInfoPanel.setOpaque(false);
 
-        // User Name
-        userNameLabel = new JLabel(currentUserName);
+        userNameLabel = new JLabel(app.getCurrentUserFullName());
         userNameLabel.setFont(new Font("Arial", Font.BOLD, 16));
         userNameLabel.setForeground(new Color(50, 50, 50));
         userNameLabel.setAlignmentX(Component.RIGHT_ALIGNMENT);
         userNameLabel.setHorizontalAlignment(SwingConstants.RIGHT);
 
-        // User Role - below the name
-        userRoleLabel = new JLabel(currentUserRole);
+        userRoleLabel = new JLabel(app.getCurrentUserRole());
         userRoleLabel.setFont(new Font("Arial", Font.PLAIN, 13));
         userRoleLabel.setForeground(new Color(120, 120, 120));
         userRoleLabel.setAlignmentX(Component.RIGHT_ALIGNMENT);
@@ -102,13 +82,11 @@ public class HeaderPanel extends JPanel {
         gbc.insets = new Insets(0, 0, 0, 10);
         rightPanel.add(userInfoPanel, gbc);
 
-        // User Icon
         userIconLabel = createResizableIconLabel(UIConfig.USER_ICON_PATH, 35, 35);
         gbc.gridx = 1;
         gbc.insets = new Insets(0, 0, 0, 6);
         rightPanel.add(userIconLabel, gbc);
 
-        // Dropdown arrow
         arrowLabel = new JLabel("▼");
         arrowLabel.setFont(new Font("Arial", Font.BOLD, 10));
         arrowLabel.setForeground(new Color(100, 100, 100));
@@ -118,10 +96,8 @@ public class HeaderPanel extends JPanel {
 
         add(rightPanel, BorderLayout.EAST);
 
-        // Create disclosure popup
         createDisclosurePopup();
 
-        // Add click listeners to all trigger components
         MouseAdapter toggleListener = new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
@@ -150,7 +126,6 @@ public class HeaderPanel extends JPanel {
         userInfoPanel.addMouseListener(toggleListener);
         rightPanel.addMouseListener(toggleListener);
 
-        // Global click listener to close disclosure when clicking outside
         Toolkit.getDefaultToolkit().addAWTEventListener(event -> {
             if (event instanceof MouseEvent && disclosureVisible) {
                 MouseEvent me = (MouseEvent) event;
@@ -170,6 +145,8 @@ public class HeaderPanel extends JPanel {
             }
         }, AWTEvent.MOUSE_EVENT_MASK);
     }
+
+    // ==================== Disclosure Popup ====================
 
     private void createDisclosurePopup() {
         disclosurePopup = new JWindow(app);
@@ -232,7 +209,6 @@ public class HeaderPanel extends JPanel {
         disclosurePopup.add(disclosureContent);
         disclosurePopup.pack();
 
-        // Follow the main frame when moved
         app.addComponentListener(new ComponentAdapter() {
             @Override
             public void componentMoved(ComponentEvent e) {
@@ -264,21 +240,13 @@ public class HeaderPanel extends JPanel {
         arrowLabel.setText("▼");
     }
 
-    /**
-     * Positions the popup exactly below the userInfoPanel, right-aligned with it.
-     * The popup follows the main JFrame when it moves.
-     */
     private void updateDisclosurePosition() {
-        // Get the userInfoPanel's bounds relative to the screen
         Point userInfoLoc = userNameLabel.getLocationOnScreen();
-        Dimension userInfoSize = userNameLabel.getParent().getSize(); // userInfoPanel size
-
+        Dimension userInfoSize = userNameLabel.getParent().getSize();
         Dimension popupSize = disclosurePopup.getPreferredSize();
 
-        // Right-align: popup's right edge aligns with userInfoPanel's right edge
         int x = userInfoLoc.x + userInfoSize.width - (popupSize.width / 2);
-        // Below: popup sits directly under the userInfoPanel
-        int y = userInfoLoc.y + userInfoSize.height + 5; // +5px gap
+        int y = userInfoLoc.y + userInfoSize.height + 5;
 
         disclosurePopup.setLocation(x, y);
     }
@@ -328,10 +296,8 @@ public class HeaderPanel extends JPanel {
     }
 
     protected void onProfileClicked() {
-        System.out.println("Profile clicked");
         if (app != null) {
             app.navigate("profile");
-            ;
         }
     }
 
@@ -340,6 +306,8 @@ public class HeaderPanel extends JPanel {
             app.logout();
         }
     }
+
+    // ==================== Painting & Layout ====================
 
     @Override
     protected void paintComponent(Graphics g) {
@@ -372,9 +340,19 @@ public class HeaderPanel extends JPanel {
         g2.dispose();
     }
 
+    /**
+     * Refresh labels from the centralized app data. Call after login / profile
+     * update.
+     */
+    public void refresh() {
+        userNameLabel.setText(app.getCurrentUserFullName());
+        userRoleLabel.setText(app.getCurrentUserRole());
+        revalidate();
+        repaint();
+    }
+
+    /** Direct label override (does NOT touch the app model). */
     public void setUserInfo(String fullName, String role) {
-        this.currentUserName = fullName;
-        this.currentUserRole = role;
         userNameLabel.setText(fullName);
         userRoleLabel.setText(role);
         revalidate();
@@ -382,7 +360,6 @@ public class HeaderPanel extends JPanel {
     }
 
     public void setUserRole(String role) {
-        this.currentUserRole = role;
         userRoleLabel.setText(role);
         revalidate();
         repaint();

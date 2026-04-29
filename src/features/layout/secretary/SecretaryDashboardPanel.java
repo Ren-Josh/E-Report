@@ -4,6 +4,7 @@ import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
 import javax.swing.*;
+
 import app.E_Report;
 import config.UIConfig;
 import features.core.RecentReportsPanel;
@@ -11,21 +12,17 @@ import features.core.dashboardpanel.DashboardInfoCardsPanel;
 import features.core.dashboardpanel.captain.ActivityItem;
 import features.core.dashboardpanel.captain.RecentActivitiesPanel;
 import features.core.dashboardpanel.secretary.TaskNotesPanel;
-import models.UserSession;
 import services.controller.RecentActivityController;
 import services.fetcher.SecretaryDashboardFetcher;
 
 public class SecretaryDashboardPanel extends JPanel {
-    protected E_Report app;
+    private final E_Report app;
     private DashboardInfoCardsPanel statsCards;
     private RecentReportsPanel reportsPanel;
     private RecentActivitiesPanel activitiesPanel;
     private TaskNotesPanel taskNotesPanel;
     private SecretaryDashboardFetcher fetcher;
 
-    private String[] statIconPaths;
-    private int[] statValues;
-    private List<Object[]> reportDataList;
     private List<ActivityItem> activityList;
 
     private static final String[] REPORT_TABLE_COLUMNS = {
@@ -40,9 +37,8 @@ public class SecretaryDashboardPanel extends JPanel {
 
     public SecretaryDashboardPanel(E_Report app) {
         this.app = app;
-        this.statIconPaths = UIConfig.STAT_ICON_PATHS;
-        this.statValues = new int[4];
-        this.reportDataList = new ArrayList<>();
+        app.setSecretaryDashboardStats(0, 0, 0, 0);
+        app.setSecretaryReportDataList(new ArrayList<>());
         this.activityList = new ArrayList<>();
 
         initializeUI();
@@ -53,18 +49,17 @@ public class SecretaryDashboardPanel extends JPanel {
 
     private void onDataChanged() {
         int[] stats = fetcher.getStatValues();
+        app.setSecretaryDashboardStats(stats[0], stats[1], stats[2], stats[3]);
         statsCards.updateValues(stats[0], stats[1], stats[2], stats[3]);
 
-        reportDataList.clear();
-        reportDataList.addAll(fetcher.getReports());
+        List<Object[]> fetchedReports = fetcher.getReports();
+        app.setSecretaryReportDataList(fetchedReports);
         refreshReportsTable();
 
         RecentActivityController rac = new RecentActivityController();
         activityList.clear();
         activityList.addAll(rac.getRecentActivities(app.getUserSession(), 7));
         refreshActivities();
-
-        // Task notes are self-persisting; no fetcher sync needed
     }
 
     private void initializeUI() {
@@ -80,8 +75,10 @@ public class SecretaryDashboardPanel extends JPanel {
         JPanel statsRow = new JPanel(new BorderLayout());
         statsRow.setOpaque(false);
         statsRow.setAlignmentX(Component.LEFT_ALIGNMENT);
+        int[] initialStats = app.getSecretaryDashboardStats();
         statsCards = new DashboardInfoCardsPanel(
-                statValues[0], statValues[1], statValues[2], statValues[3], statIconPaths);
+                initialStats[0], initialStats[1], initialStats[2], initialStats[3],
+                UIConfig.STAT_ICON_PATHS);
         statsRow.add(statsCards, BorderLayout.CENTER);
         wrapper.add(statsRow);
         wrapper.add(Box.createRigidArea(new Dimension(0, SECTION_GAP)));
@@ -113,8 +110,7 @@ public class SecretaryDashboardPanel extends JPanel {
         rgbc.weightx = 1.0;
 
         RecentActivityController rac = new RecentActivityController();
-        UserSession us = app.getUserSession();
-        activityList = rac.getRecentActivities(us, 7);
+        activityList = rac.getRecentActivities(app.getUserSession(), 7);
         activitiesPanel = new RecentActivitiesPanel("Recent Activities", activityList);
 
         rgbc.gridy = 0;
@@ -139,22 +135,24 @@ public class SecretaryDashboardPanel extends JPanel {
     }
 
     private void handleReportAction(int row) {
-        if (row >= 0 && row < reportDataList.size()) {
-            String reportId = (String) reportDataList.get(row)[0];
+        List<Object[]> reports = app.getSecretaryReportDataList();
+        if (row >= 0 && row < reports.size()) {
+            String reportId = (String) reports.get(row)[0];
             JOptionPane.showMessageDialog(this, "Viewing Report: " + reportId);
         }
     }
 
     public void updateStatValue(int cardIndex, int value) {
-        statValues[cardIndex] = value;
-        statsCards.updateCardValue(cardIndex, value);
+        int[] stats = app.getSecretaryDashboardStats();
+        if (cardIndex >= 0 && cardIndex < stats.length) {
+            stats[cardIndex] = value;
+            app.setSecretaryDashboardStats(stats[0], stats[1], stats[2], stats[3]);
+            statsCards.updateCardValue(cardIndex, value);
+        }
     }
 
     public void updateAllStatValues(int total, int pending, int inProgress, int resolved) {
-        statValues[0] = total;
-        statValues[1] = pending;
-        statValues[2] = inProgress;
-        statValues[3] = resolved;
+        app.setSecretaryDashboardStats(total, pending, inProgress, resolved);
         statsCards.updateValues(total, pending, inProgress, resolved);
     }
 
@@ -172,32 +170,36 @@ public class SecretaryDashboardPanel extends JPanel {
         } else {
             throw new IllegalArgumentException("Invalid report data length. Expected 6 or 7 columns.");
         }
-        reportDataList.add(finalData);
+
+        List<Object[]> reports = new ArrayList<>(app.getSecretaryReportDataList());
+        reports.add(finalData);
+        app.setSecretaryReportDataList(reports);
         reportsPanel.addReport(finalData);
     }
 
     public void removeReport(int index) {
-        if (index >= 0 && index < reportDataList.size()) {
-            reportDataList.remove(index);
+        List<Object[]> reports = new ArrayList<>(app.getSecretaryReportDataList());
+        if (index >= 0 && index < reports.size()) {
+            reports.remove(index);
+            app.setSecretaryReportDataList(reports);
             refreshReportsTable();
         }
     }
 
     public void setReports(List<Object[]> reports) {
-        reportDataList.clear();
-        reportDataList.addAll(reports);
+        app.setSecretaryReportDataList(reports);
         refreshReportsTable();
     }
 
     public void refreshReportsTable() {
         reportsPanel.clearReports();
-        for (Object[] report : reportDataList) {
+        for (Object[] report : app.getSecretaryReportDataList()) {
             reportsPanel.addReport(report);
         }
     }
 
     public List<Object[]> getReportDataList() {
-        return new ArrayList<>(reportDataList);
+        return app.getSecretaryReportDataList();
     }
 
     public void addActivity(String activity) {
@@ -249,7 +251,7 @@ public class SecretaryDashboardPanel extends JPanel {
     // ── Global clear ────────────────────────────────────────────
 
     public void clearAllData() {
-        reportDataList.clear();
+        app.setSecretaryReportDataList(new ArrayList<>());
         activityList.clear();
         refreshReportsTable();
         refreshActivities();
@@ -257,7 +259,8 @@ public class SecretaryDashboardPanel extends JPanel {
     }
 
     public boolean isEmpty() {
-        return reportDataList.isEmpty() && activityList.isEmpty()
+        return app.getSecretaryReportDataList().isEmpty()
+                && activityList.isEmpty()
                 && getTaskNotesText().trim().isEmpty();
     }
 }

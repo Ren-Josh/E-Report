@@ -252,10 +252,25 @@ public class MyReportPanel extends JPanel {
     }
 
     private void handleReportAction(int row) {
-        if (row >= 0 && row < filteredDataList.size()) {
-            String reportId = (String) filteredDataList.get(row)[0];
-            JOptionPane.showMessageDialog(this, "Viewing Report: " + reportId);
+        if (row < 0 || row >= filteredDataList.size())
+            return;
+
+        int reportId = Integer.parseInt((String) filteredDataList.get(row)[0]);
+        ComplaintDetail cd = findComplaintById(reportId);
+
+        if (cd != null) {
+            app.setCurrentComplaint(cd);
+            app.setReturnRoute("myreport");
+            app.navigate("complaintdetail");
         }
+    }
+
+    private ComplaintDetail findComplaintById(int id) {
+        for (ComplaintDetail cd : allComplaints) {
+            if (cd.getComplaintId() == id)
+                return cd;
+        }
+        return null;
     }
 
     // ============================================================

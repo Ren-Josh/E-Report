@@ -8,26 +8,21 @@ import features.core.BackgroundPanel;
 import features.layout.captain.CaptainDashboardPanel;
 import features.layout.secretary.SecretaryDashboardPanel;
 import features.layout.ResidentDashboardPanel;
-import models.UserInfo;
 import models.UserSession;
 
 import javax.swing.*;
 import java.awt.*;
 
 public class DashboardView extends JPanel {
-    private E_Report app;
+    private final E_Report app;
     private HeaderPanel header;
     private NavPanel nav;
     private CaptainDashboardPanel cdp;
     private SecretaryDashboardPanel sdp;
     private ResidentDashboardPanel rdp;
-    private UserSession us;
-    private UserInfo ui;
 
     public DashboardView(E_Report app) {
         this.app = app;
-        this.us = app.getUserSession();
-        this.ui = app.getUserInfo();
         setLayout(new BorderLayout());
 
         BackgroundPanel bgPanel = new BackgroundPanel(UIConfig.BACKGROUND_PATH);
@@ -40,15 +35,21 @@ public class DashboardView extends JPanel {
         bgPanel.add(header, BorderLayout.NORTH);
         bgPanel.add(nav, BorderLayout.WEST);
 
-        if (us.getRole().equalsIgnoreCase("captain")) {
+        UserSession us = app.getUserSession(); // local var only — not stored
+        if (us == null) {
+            throw new IllegalStateException("No active session when loading Dashboard");
+        }
+
+        String role = us.getRole();
+        if (role.equalsIgnoreCase("captain")) {
             cdp = new CaptainDashboardPanel(app);
             nav.setCaptainMenus(route -> app.navigate(route));
             bgPanel.add(cdp, BorderLayout.CENTER);
-        } else if (us.getRole().equalsIgnoreCase("secretary")) {
+        } else if (role.equalsIgnoreCase("secretary")) {
             sdp = new SecretaryDashboardPanel(app);
             nav.setSecretaryMenus(route -> app.navigate(route));
             bgPanel.add(sdp, BorderLayout.CENTER);
-        } else if (us.getRole().equalsIgnoreCase("resident")) {
+        } else if (role.equalsIgnoreCase("resident")) {
             rdp = new ResidentDashboardPanel(app);
             nav.setResidentMenus(route -> app.navigate(route));
             bgPanel.add(rdp, BorderLayout.CENTER);

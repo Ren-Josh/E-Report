@@ -8,7 +8,6 @@ import features.core.BackgroundPanel;
 import features.core.usermanagement.EditUserPanel;
 import features.core.usermanagement.UserData;
 import features.core.usermanagement.UserManagementPanel;
-import models.UserSession;
 import services.fetcher.UserManagementFetcher;
 
 import javax.swing.*;
@@ -16,8 +15,7 @@ import java.awt.*;
 
 public class UserManagementView extends JPanel {
 
-    private E_Report app;
-    private UserSession us;
+    private final E_Report app;
 
     private HeaderPanel header;
     private NavPanel nav;
@@ -29,7 +27,6 @@ public class UserManagementView extends JPanel {
 
     public UserManagementView(E_Report app) {
         this.app = app;
-        this.us = app.getUserSession();
         setLayout(new BorderLayout());
 
         BackgroundPanel bgPanel = new BackgroundPanel(UIConfig.BACKGROUND_PATH);
@@ -54,7 +51,7 @@ public class UserManagementView extends JPanel {
 
         bgPanel.add(contentPanel, BorderLayout.CENTER);
 
-        String role = us.getRole().toLowerCase();
+        String role = app.getUserSession().getRole().toLowerCase();
         if (role.equals("captain")) {
             nav.setCaptainMenus(route -> app.navigate(route));
         } else if (role.equals("secretary")) {
@@ -82,7 +79,6 @@ public class UserManagementView extends JPanel {
                 if (UserManagementFetcher.toggleBanStatus(user)) {
                     panel.refreshDisplayedData();
                 } else {
-                    // Rollback local state if DB failed
                     user.setBanned(currentlyBanned);
                 }
             }

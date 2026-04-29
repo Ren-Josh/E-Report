@@ -104,6 +104,9 @@ public class RecentActivitiesPanel extends BaseCardPanel {
 
         revalidate();
         repaint();
+
+        /* ── NEW: force scrollbar to the top so latest activity is visible ── */
+        SwingUtilities.invokeLater(() -> scroll.getViewport().setViewPosition(new Point(0, 0)));
     }
 
     private JPanel createRow(ActivityItem item) {
@@ -216,11 +219,6 @@ public class RecentActivitiesPanel extends BaseCardPanel {
         return h;
     }
 
-    /**
-     * Tells JScrollPane: “make me exactly as wide as the viewport”. *
-     * The scrollbar width is automatically excluded, so we never have to *
-     * manually pad for it.
-     */
     private static class ScrollableListPanel extends JPanel implements Scrollable {
         public ScrollableListPanel() {
             super();

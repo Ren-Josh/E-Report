@@ -12,7 +12,7 @@ import javax.swing.*;
 import java.awt.*;
 
 public class MyReportsView extends JPanel {
-    private E_Report app;
+    private final E_Report app;
     private HeaderPanel header;
     private NavPanel nav;
     private MyReportPanel myReportsPanel;
@@ -29,7 +29,6 @@ public class MyReportsView extends JPanel {
         nav = new NavPanel();
         myReportsPanel = new MyReportPanel(app);
 
-        // Set nav menus based on role
         UserSession us = app.getUserSession();
         if (us.getRole().equalsIgnoreCase("captain")) {
             nav.setCaptainMenus(route -> app.navigate(route));

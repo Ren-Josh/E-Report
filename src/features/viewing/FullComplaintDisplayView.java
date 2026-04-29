@@ -15,6 +15,9 @@ import java.awt.Image;
 import java.awt.Insets;
 import javax.swing.JDialog;
 import javax.swing.SwingUtilities;
+
+import app.E_Report;
+
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Timestamp;
@@ -34,7 +37,6 @@ import javax.swing.JTextArea;
 import javax.swing.SwingConstants;
 import models.ComplaintDetail;
 import models.ComplaintHistoryDetail;
-import services.controller.ComplaintServiceController;
 
 public class FullComplaintDisplayView extends JPanel {
 
@@ -57,15 +59,20 @@ public class FullComplaintDisplayView extends JPanel {
     private final JTextArea staffCommentArea;
     private final JTextArea historyArea;
     private int currentComplaintId = -1;
+    private E_Report app;
 
-    public FullComplaintDisplayView(String currentRole, ComplaintDetail complaint, Runnable backCallback) {
-        this.backCallback = backCallback;
+    public FullComplaintDisplayView(E_Report app) {
+        this.app = app;
+
+        ComplaintDetail complaint = app.getCurrentComplaint();
+        String currentRole = app.getUserSession().getRole();
+
+        this.backCallback = () -> app.navigate(app.getReturnRoute());
         this.currentRole = currentRole != null ? currentRole : "Resident";
+
         String normalizedRole = this.currentRole.toLowerCase();
-        this.canComment = normalizedRole.contains("resident")
-                || normalizedRole.contains("secretary");
-        this.canUpdateStatus = normalizedRole.contains("secretary")
-                || normalizedRole.contains("captain");
+        this.canComment = normalizedRole.contains("resident") || normalizedRole.contains("secretary");
+        this.canUpdateStatus = normalizedRole.contains("secretary") || normalizedRole.contains("captain");
 
         setOpaque(false);
         setLayout(new BorderLayout(18, 18));
@@ -413,47 +420,28 @@ public class FullComplaintDisplayView extends JPanel {
     }
 
     private void saveStatusUpdate() {
-        if (!canComment) {
+        if (!canComment)
             return;
-        }
 
-        String selectedStatus = statusCombo.getSelectedItem() != null ? statusCombo.getSelectedItem().toString() : "";
+        String selectedStatus = (String) statusCombo.getSelectedItem();
         String note = staffCommentArea.getText().trim();
-        if (selectedStatus.isBlank()) {
-            JOptionPane.showMessageDialog(this,
-                    "Please choose a status before saving.",
-                    "Validation Required",
-                    JOptionPane.WARNING_MESSAGE);
+
+        if (selectedStatus == null || selectedStatus.isBlank()) {
+            JOptionPane.showMessageDialog(this, "Please choose a status.", "Required", JOptionPane.WARNING_MESSAGE);
             return;
         }
 
-        if (note.isBlank()) {
-            int result = JOptionPane.showConfirmDialog(this,
-                    "No comment was entered. Continue saving status update without a note?",
-                    "Confirm Save",
-                    JOptionPane.YES_NO_OPTION,
-                    JOptionPane.QUESTION_MESSAGE);
-            if (result != JOptionPane.YES_OPTION) {
-                return;
-            }
-        }
+        // Use your new controller
+        services.controller.ComplaintStatusController ctrl = new services.controller.ComplaintStatusController();
+        boolean saved = ctrl.updateComplaintStatus(currentComplaintId, selectedStatus, note, app.getUserSession());
 
-        ComplaintServiceController controller = new ComplaintServiceController();
-        boolean saved = controller.updateComplaintStatus(this.currentComplaintId, selectedStatus, note,
-                this.currentRole);
         if (saved) {
-            JOptionPane.showMessageDialog(this,
-                    "Status update successfully saved.",
-                    "Update Complete",
-                    JOptionPane.INFORMATION_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Status updated.", "Success", JOptionPane.INFORMATION_MESSAGE);
             statusValue.setText(selectedStatus);
-            loadHistory(this.currentComplaintId);
+            loadHistory(currentComplaintId);
             staffCommentArea.setText("");
         } else {
-            JOptionPane.showMessageDialog(this,
-                    "Unable to save the update. Please try again.",
-                    "Save Failed",
-                    JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Update failed.", "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
 

@@ -4,21 +4,18 @@ import javax.swing.*;
 import java.awt.*;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.List;
 
 import app.E_Report;
 import features.components.FilterBarPanel;
 import features.core.dashboardpanel.DashboardInfoCardsPanel;
 import features.core.dashboardpanel.captain.*;
-import models.UserSession;
 import services.controller.RecentActivityController;
 import services.controller.ReportStatisticsController;
 import services.fetcher.CaptainDashboardFetcher;
 import features.components.filter.TimeFilter;
 
 public class CaptainDashboardPanel extends JPanel {
-    private E_Report app;
-    private UserSession us;
+    private final E_Report app;
     private DashboardInfoCardsPanel infoCardsPanel;
     private FilterBarPanel filterBarPanel;
     private ReportStatisticsController rsc;
@@ -33,7 +30,6 @@ public class CaptainDashboardPanel extends JPanel {
 
     public CaptainDashboardPanel(E_Report app) {
         this.app = app;
-        this.us = app.getUserSession();
         rsc = new ReportStatisticsController();
         setLayout(new BorderLayout());
         setOpaque(false);
@@ -46,32 +42,49 @@ public class CaptainDashboardPanel extends JPanel {
     }
 
     private void onDataChanged() {
-        updateInfoCards(fetcher.getTotal(), fetcher.getPending(),
-                fetcher.getInProgress(), fetcher.getResolved());
+        int total = fetcher.getTotal();
+        int pending = fetcher.getPending();
+        int inProgress = fetcher.getInProgress();
+        int resolved = fetcher.getResolved();
 
-        lineGraphPanel.updateData(
+        app.setCaptainDashboardStats(total, pending, inProgress, resolved);
+        updateInfoCards(total, pending, inProgress, resolved);
+
+        app.setCaptainLineGraphData(
                 fetcher.getLineValues(),
                 fetcher.getLineLabels(),
                 fetcher.getLineDetails(),
                 fetcher.getLineGraphTitle());
+        lineGraphPanel.updateData(
+                app.getCaptainLineValues(),
+                app.getCaptainLineLabels(),
+                app.getCaptainLineDetails(),
+                app.getCaptainLineGraphTitle());
 
+        app.setCaptainCategoryData(fetcher.getCategoryLabels(), fetcher.getCategoryValues());
         donutChartPanel.updateData("Case Trends Category",
-                fetcher.getCategoryLabels(),
-                fetcher.getCategoryValues(),
+                app.getCaptainCategoryLabels(),
+                app.getCaptainCategoryValues(),
                 getDefaultDonutColors());
 
-        stackedBarChartPanel.updateData("Case Status",
+        app.setCaptainStatusData(
                 fetcher.getStatusLabels(),
                 fetcher.getBackgroundTotals(),
                 fetcher.getStatusValues(),
+                fetcher.getTotal());
+        stackedBarChartPanel.updateData("Case Status",
+                app.getCaptainStatusLabels(),
+                app.getCaptainStatusBackgroundTotals(),
+                app.getCaptainStatusValues(),
                 getDefaultStatusColors(),
-                fetcher.getTotal());
+                app.getCaptainStatusTotal());
 
+        app.setCaptainSourceData(fetcher.getSourceLabels(), fetcher.getSourceValues(), fetcher.getTotal());
         barChartPanel.updateData("Report Source",
-                fetcher.getSourceLabels(),
-                fetcher.getSourceValues(),
+                app.getCaptainSourceLabels(),
+                app.getCaptainSourceValues(),
                 getDefaultSourceColors(),
-                fetcher.getTotal());
+                app.getCaptainSourceTotal());
     }
 
     private JScrollPane createScrollableDashboard() {
@@ -173,7 +186,7 @@ public class CaptainDashboardPanel extends JPanel {
         panel.setOpaque(false);
 
         RecentActivityController rac = new RecentActivityController();
-        List<ActivityItem> activities = rac.getRecentActivities(us, 7);
+        var activities = rac.getRecentActivities(app.getUserSession(), 7);
         panel.add(new RecentActivitiesPanel("Recent Activities", activities));
 
         barChartPanel = new BarChartPanel("Report Source", new String[0], new int[0],

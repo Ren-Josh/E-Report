@@ -13,8 +13,6 @@ import java.awt.*;
 
 /**
  * MyProfileView - A dedicated view for user profile management.
- * Features a fixed header and navigation panel with the ProfilePanel as main
- * content.
  */
 public class MyProfileView extends JPanel {
     private final E_Report app;
@@ -25,28 +23,21 @@ public class MyProfileView extends JPanel {
     public MyProfileView(E_Report app) {
         this.app = app;
 
-        // Initialize components
         header = new HeaderPanel(app);
         nav = new NavPanel();
         profilePanel = new ProfilePanel(app);
 
-        // Setup layout and navigation
         initializeLayout();
         setupNavigation();
     }
 
-    /**
-     * Initializes the main layout structure with background panel
-     */
     private void initializeLayout() {
         setLayout(new BorderLayout());
 
-        // Create background panel with consistent styling from DashboardView
         BackgroundPanel bgPanel = new BackgroundPanel(UIConfig.BACKGROUND_PATH);
         bgPanel.setLayout(new BorderLayout(15, 15));
         bgPanel.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
 
-        // Add components to background panel
         bgPanel.add(header, BorderLayout.NORTH);
         bgPanel.add(nav, BorderLayout.WEST);
         bgPanel.add(profilePanel, BorderLayout.CENTER);
@@ -54,9 +45,6 @@ public class MyProfileView extends JPanel {
         add(bgPanel, BorderLayout.CENTER);
     }
 
-    /**
-     * Setup role-based navigation menus
-     */
     private void setupNavigation() {
         UserSession session = app.getUserSession();
         if (session == null)
@@ -72,8 +60,6 @@ public class MyProfileView extends JPanel {
         }
     }
 
-    // ==================== Getters ====================
-
     public HeaderPanel getHeader() {
         return header;
     }
@@ -86,13 +72,8 @@ public class MyProfileView extends JPanel {
         return profilePanel;
     }
 
-    // ==================== Public API ====================
-
-    /**
-     * Refreshes the profile data from the application model
-     * Call this when navigating to the view to ensure data is current
-     */
     public void refreshProfile() {
         profilePanel.loadFromApp();
+        header.refresh(); // sync header with latest app data
     }
 }
