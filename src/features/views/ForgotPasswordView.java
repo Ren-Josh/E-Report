@@ -3,6 +3,7 @@ package features.views;
 import app.E_Report;
 import config.UIConfig;
 import features.components.UIButton;
+import features.components.UIPasswordInput;
 import features.core.BackgroundPanel;
 import features.core.FormLayoutUtils;
 import services.controller.PasswordResetController;
@@ -148,7 +149,7 @@ public class ForgotPasswordView extends JPanel {
 
         // Back to login
         JPanel footer = FormLayoutUtils.createFooterLink(
-                "Remember your password? ",
+                "Remembered your password? ",
                 "Login here",
                 UIConfig.PRIMARY,
                 () -> app.navigate("login"));
@@ -264,21 +265,13 @@ public class ForgotPasswordView extends JPanel {
         gbc.insets = new Insets(0, 40, 20, 40);
         panel.add(lblInstr, gbc);
 
-        txtNewPassword = new JPasswordField(20);
+        txtNewPassword = new UIPasswordInput(20);
         txtNewPassword.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        txtNewPassword.setPreferredSize(new Dimension(340, 45));
-        txtNewPassword.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(new Color(200, 200, 200), 1, true),
-                new EmptyBorder(10, 15, 10, 15)));
         gbc.gridy = 2;
         FormLayoutUtils.addInputGroup(panel, "New Password", txtNewPassword, gbc, 0, 2);
 
-        txtConfirmPassword = new JPasswordField(20);
+        txtConfirmPassword = new UIPasswordInput(20);
         txtConfirmPassword.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        txtConfirmPassword.setPreferredSize(new Dimension(340, 45));
-        txtConfirmPassword.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(new Color(200, 200, 200), 1, true),
-                new EmptyBorder(10, 15, 10, 15)));
         gbc.gridy = 4;
         FormLayoutUtils.addInputGroup(panel, "Confirm Password", txtConfirmPassword, gbc, 0, 4);
 

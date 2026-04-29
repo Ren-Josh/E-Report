@@ -88,10 +88,17 @@ public class LoginView extends JPanel {
         loginCard.add(btnLogin, gbc);
 
         // Forgot password
-        JLabel lblForgot = new JLabel("Forgot password?");
+        JLabel lblForgot = new JLabel("<html><u>Forgot password?</u></html>");
         lblForgot.setFont(UIConfig.CAPTION);
-        lblForgot.setForeground(Color.GRAY);
+        lblForgot.setForeground(UIConfig.PRIMARY);
         lblForgot.setHorizontalAlignment(SwingConstants.CENTER);
+        lblForgot.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        lblForgot.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseClicked(java.awt.event.MouseEvent e) {
+                app.navigate("forgotpassword");
+            }
+        });
         gbc.gridy = 7;
         gbc.insets = new Insets(10, 40, 20, 40);
         loginCard.add(lblForgot, gbc);
@@ -134,6 +141,7 @@ public class LoginView extends JPanel {
 
             if (session != null) {
                 app.setUserSession(session);
+                session.setUsername(txtUser.getValue());
                 ui = new UserServiceController().getUserInfo(session.getUserId());
                 if (ui != null) {
                     app.setUserInfo(ui);

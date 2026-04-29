@@ -17,11 +17,13 @@ import features.views.AllReportsView;
 import features.views.ComplaintDetailView;
 import features.views.ComplaintStatusUpdateView;
 import features.views.DashboardView;
+import features.views.ForgotPasswordView;
 import features.views.HomepageView;
 import features.views.LoginView;
 import features.views.MyProfileView;
 import features.views.MyReportsView;
 import features.views.RegisterView;
+import features.views.SecurityPasswordChangePanel;
 import features.views.SubmitReportView;
 import features.views.UserManagementView;
 import services.controller.DatabaseController;
@@ -106,6 +108,8 @@ public class E_Report extends JFrame {
             case "submitreport" -> add(new SubmitReportView(this));
             case "updatestatus" -> add(new ComplaintStatusUpdateView(this));
             case "complaintdetail" -> add(new ComplaintDetailView(this));
+            case "forgotpassword" -> add(new ForgotPasswordView(this));
+            case "securitypassword" -> add(new SecurityPasswordChangePanel(this));
         }
 
         revalidate();

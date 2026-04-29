@@ -18,27 +18,6 @@ import java.util.List;
 
 /**
  * Complaint View & Update Panel
- *
- * Layout:
- * ┌─────────────────────────────────────────────────────────────┐
- * │ [← Back] │
- * │ [STATUS BADGE] Report #001 – Environmental [Update Status] │
- * ├─────────────────────────────────────────────────────────────┤
- * │ 1 ─────── 2 ─────── 3 │
- * │ Submitted In Progress Resolved │
- * ├─────────────────────────────────────────────────────────────┤
- * │ [Update Panel - compact, appears below timeline] │
- * ├─────────────────────────────────────────────────────────────┤
- * │ Title [________________________] │
- * │ Description [ ] │
- * │ Location [________________________] │
- * │ Purok [____] Coordinates [____] │
- * │ Date Submitted [____] Last Update [____] │
- * │ Attachments [________________________] │
- * ├─────────────────────────────────────────────────────────────┤
- * │ Actions Taken │
- * │ Date - Time Status Notes / Action │
- * └─────────────────────────────────────────────────────────────┘
  */
 public class ComplaintContentPanel extends JPanel {
 
@@ -58,6 +37,7 @@ public class ComplaintContentPanel extends JPanel {
     private static final Color C_CARD = new Color(255, 255, 255, 245);
     private static final Color C_BORDER = new Color(226, 232, 240);
     private static final Color C_BG_FIELD = new Color(248, 250, 252);
+    private static final Color C_BG_EDITABLE = new Color(255, 255, 255);
     private static final Color C_TEXT_MUTED = new Color(100, 116, 139);
     private static final Color C_TIMELINE_INACTIVE = new Color(203, 213, 225);
 
@@ -91,6 +71,13 @@ public class ComplaintContentPanel extends JPanel {
     private JComboBox<String> cmbStatus;
     private JTextArea txtProcessNotes;
 
+    // Pending Review panel (validation mode)
+    private JPanel pendingReviewPanel;
+    private JTextField txtPendingTitle;
+    private JTextField txtPendingType;
+    private JTextField txtPendingOfficer;
+    private JTextArea txtPendingNotes;
+
     // In Progress panel
     private JPanel inProgressPanel;
     private JTextField txtInProgressOfficer;
@@ -105,7 +92,9 @@ public class ComplaintContentPanel extends JPanel {
 
     private final ComplaintStatusController statusController;
     private static final String[] TIMELINE_LABELS = { "Submitted", "In Progress", "Resolved" };
-    private String returnRoute = null;
+
+    /** Route to return to when Back is clicked */
+    private String returnRoute = "dashboard";
 
     public ComplaintContentPanel(E_Report app) {
         this.app = app;
@@ -124,6 +113,10 @@ public class ComplaintContentPanel extends JPanel {
         }
     }
 
+    public void setReturnRoute(String route) {
+        this.returnRoute = (route != null && !route.isBlank()) ? route : "dashboard";
+    }
+
     // ==================== MAIN SCROLL PANEL ====================
 
     private JScrollPane createMainScrollPanel() {
@@ -138,8 +131,8 @@ public class ComplaintContentPanel extends JPanel {
         backRow.setAlignmentX(Component.LEFT_ALIGNMENT);
         btnBackTop = createGhostButton("← Back");
         btnBackTop.addActionListener(e -> app.navigate(returnRoute));
-        mainContent.add(backRow);
         backRow.add(btnBackTop);
+        mainContent.add(backRow);
         mainContent.add(Box.createVerticalStrut(8));
 
         // Header row
@@ -189,7 +182,6 @@ public class ComplaintContentPanel extends JPanel {
         headerRow.setOpaque(false);
         headerRow.setMaximumSize(new Dimension(Integer.MAX_VALUE, 42));
 
-        // Left: Status badge + Title
         JPanel left = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
         left.setOpaque(false);
 
@@ -207,7 +199,6 @@ public class ComplaintContentPanel extends JPanel {
         left.add(lblStatusBadge);
         left.add(lblTitle);
 
-        // Right: Update button (staff only)
         JPanel right = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
         right.setOpaque(false);
 
@@ -343,14 +334,12 @@ public class ComplaintContentPanel extends JPanel {
         gbc.insets = new Insets(6, 0, 6, 12);
         gbc.anchor = GridBagConstraints.NORTHWEST;
 
-        // Row 0: Title
         gbc.gridx = 0;
         gbc.gridy = 0;
         gbc.gridwidth = 4;
         gbc.weightx = 1.0;
         panel.add(createFieldRow("Title", txtTitle = createReadOnlyField()), gbc);
 
-        // Row 1: Description
         gbc.gridy = 1;
         gbc.weighty = 1.0;
         gbc.fill = GridBagConstraints.BOTH;
@@ -369,13 +358,11 @@ public class ComplaintContentPanel extends JPanel {
         descScroll.getViewport().setOpaque(false);
         panel.add(createFieldRow("Description", descScroll), gbc);
 
-        // Row 2: Location
         gbc.gridy = 2;
         gbc.weighty = 0;
         gbc.fill = GridBagConstraints.HORIZONTAL;
         panel.add(createFieldRow("Location", txtLocation = createReadOnlyField()), gbc);
 
-        // Row 3: Purok | Coordinates
         gbc.gridy = 3;
         gbc.gridwidth = 2;
         gbc.weightx = 0.5;
@@ -384,14 +371,12 @@ public class ComplaintContentPanel extends JPanel {
         gbc.gridx = 2;
         panel.add(createFieldRow("Coordinates", txtCoords = createReadOnlyField()), gbc);
 
-        // Row 4: Date Submitted | Last Update
         gbc.gridy = 4;
         gbc.gridx = 0;
         panel.add(createFieldRow("Date Submitted", txtDateSubmitted = createReadOnlyField()), gbc);
         gbc.gridx = 2;
         panel.add(createFieldRow("Last Update", txtLastUpdate = createReadOnlyField()), gbc);
 
-        // Row 5: Attachments
         gbc.gridy = 5;
         gbc.gridx = 0;
         gbc.gridwidth = 4;
@@ -443,7 +428,6 @@ public class ComplaintContentPanel extends JPanel {
                 BorderFactory.createLineBorder(new Color(59, 130, 246, 90), 1, true),
                 new EmptyBorder(16, 20, 16, 20)));
 
-        // Header
         JPanel header = new JPanel(new BorderLayout());
         header.setOpaque(false);
         header.setMaximumSize(new Dimension(Integer.MAX_VALUE, 28));
@@ -453,7 +437,7 @@ public class ComplaintContentPanel extends JPanel {
         title.setFont(new Font("Segoe UI", Font.BOLD, 16));
         title.setForeground(UIConfig.TEXT_PRIMARY);
 
-        JButton btnClose = new JButton("✕");
+        JButton btnClose = new JButton("Close");
         btnClose.setFont(new Font("Segoe UI", Font.BOLD, 14));
         btnClose.setForeground(C_TEXT_MUTED);
         btnClose.setContentAreaFilled(false);
@@ -467,7 +451,6 @@ public class ComplaintContentPanel extends JPanel {
         panel.add(header);
         panel.add(Box.createVerticalStrut(12));
 
-        // Current status
         JPanel currentRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
         currentRow.setOpaque(false);
         currentRow.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -493,7 +476,6 @@ public class ComplaintContentPanel extends JPanel {
         gbc.insets = new Insets(0, 0, 0, 10);
         gbc.anchor = GridBagConstraints.NORTHWEST;
 
-        // Status dropdown
         JPanel statusWrap = new JPanel(new BorderLayout(0, 4));
         statusWrap.setOpaque(false);
         JLabel lblStatus = new JLabel("New Status *");
@@ -514,7 +496,6 @@ public class ComplaintContentPanel extends JPanel {
         gbc.fill = GridBagConstraints.HORIZONTAL;
         formGrid.add(statusWrap, gbc);
 
-        // Notes
         JPanel notesWrap = new JPanel(new BorderLayout(0, 4));
         notesWrap.setOpaque(false);
         JLabel lblNotes = new JLabel("Process / Notes");
@@ -542,6 +523,11 @@ public class ComplaintContentPanel extends JPanel {
         panel.add(Box.createVerticalStrut(10));
 
         // Conditional panels
+        pendingReviewPanel = createPendingReviewFields();
+        pendingReviewPanel.setVisible(false);
+        pendingReviewPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        panel.add(pendingReviewPanel);
+
         inProgressPanel = createInProgressFields();
         inProgressPanel.setVisible(false);
         inProgressPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -580,6 +566,100 @@ public class ComplaintContentPanel extends JPanel {
         panel.add(btnRow);
 
         return panel;
+    }
+
+    // ==================== PENDING REVIEW PANEL ====================
+
+    private JPanel createPendingReviewFields() {
+        JPanel panel = new JPanel();
+        panel.setOpaque(false);
+        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+        panel.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createMatteBorder(1, 0, 0, 0, C_PENDING),
+                new EmptyBorder(12, 0, 0, 0)));
+
+        JLabel lblHeader = new JLabel("Complaint Validation");
+        lblHeader.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        lblHeader.setForeground(C_PENDING);
+        lblHeader.setAlignmentX(Component.LEFT_ALIGNMENT);
+        panel.add(lblHeader);
+        panel.add(Box.createVerticalStrut(10));
+
+        // Editable Title
+        txtPendingTitle = new JTextField();
+        txtPendingTitle.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        txtPendingTitle.setBackground(C_BG_EDITABLE);
+        txtPendingTitle.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(C_BORDER, 1, true),
+                new EmptyBorder(8, 10, 8, 10)));
+        JPanel titleWrap = createLabeledFieldPanel("Title (editable)", txtPendingTitle);
+        titleWrap.setAlignmentX(Component.LEFT_ALIGNMENT);
+        panel.add(titleWrap);
+        panel.add(Box.createVerticalStrut(8));
+
+        // Editable Type
+        txtPendingType = new JTextField();
+        txtPendingType.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        txtPendingType.setBackground(C_BG_EDITABLE);
+        txtPendingType.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(C_BORDER, 1, true),
+                new EmptyBorder(8, 10, 8, 10)));
+        JPanel typeWrap = createLabeledFieldPanel("Type / Category (editable)", txtPendingType);
+        typeWrap.setAlignmentX(Component.LEFT_ALIGNMENT);
+        panel.add(typeWrap);
+        panel.add(Box.createVerticalStrut(8));
+
+        // Officer assigned
+        txtPendingOfficer = new JTextField();
+        txtPendingOfficer.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        txtPendingOfficer.setBackground(C_BG_EDITABLE);
+        txtPendingOfficer.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(C_BORDER, 1, true),
+                new EmptyBorder(8, 10, 8, 10)));
+        JPanel officerWrap = createLabeledFieldPanel("Officer / Personnel Assigned", txtPendingOfficer);
+        officerWrap.setAlignmentX(Component.LEFT_ALIGNMENT);
+        panel.add(officerWrap);
+        panel.add(Box.createVerticalStrut(8));
+
+        // Notes
+        txtPendingNotes = new JTextArea(3, 20);
+        txtPendingNotes.setLineWrap(true);
+        txtPendingNotes.setWrapStyleWord(true);
+        txtPendingNotes.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        txtPendingNotes.setBackground(C_BG_EDITABLE);
+        txtPendingNotes.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(C_BORDER, 1, true),
+                new EmptyBorder(8, 10, 8, 10)));
+        JScrollPane notesScroll = new JScrollPane(txtPendingNotes);
+        notesScroll.setBorder(null);
+        notesScroll.setOpaque(false);
+        notesScroll.getViewport().setOpaque(false);
+        JPanel notesWrap = createLabeledFieldPanel("Validation Notes", notesScroll);
+        notesWrap.setAlignmentX(Component.LEFT_ALIGNMENT);
+        panel.add(notesWrap);
+        panel.add(Box.createVerticalStrut(12));
+
+        // Reject button (danger action)
+        JPanel rejectRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        rejectRow.setOpaque(false);
+        rejectRow.setAlignmentX(Component.LEFT_ALIGNMENT);
+        JButton btnReject = createDangerButton("Reject Complaint");
+        btnReject.addActionListener(e -> rejectComplaint());
+        rejectRow.add(btnReject);
+        panel.add(rejectRow);
+
+        return panel;
+    }
+
+    private JPanel createLabeledFieldPanel(String labelText, JComponent field) {
+        JPanel wrap = new JPanel(new BorderLayout(0, 4));
+        wrap.setOpaque(false);
+        JLabel lbl = new JLabel(labelText);
+        lbl.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        lbl.setForeground(C_TEXT_MUTED);
+        wrap.add(lbl, BorderLayout.NORTH);
+        wrap.add(field, BorderLayout.CENTER);
+        return wrap;
     }
 
     // ==================== IN PROGRESS PANEL ====================
@@ -664,7 +744,6 @@ public class ComplaintContentPanel extends JPanel {
         panel.add(title);
         panel.add(Box.createVerticalStrut(10));
 
-        // Table header
         JPanel header = new JPanel(new BorderLayout(0, 0));
         header.setOpaque(false);
         header.setMaximumSize(new Dimension(Integer.MAX_VALUE, 26));
@@ -694,7 +773,6 @@ public class ComplaintContentPanel extends JPanel {
         panel.add(header);
         panel.add(Box.createVerticalStrut(6));
 
-        // Content area for history
         JPanel historyContent = new JPanel();
         historyContent.setName("historyContent");
         historyContent.setOpaque(false);
@@ -744,6 +822,18 @@ public class ComplaintContentPanel extends JPanel {
         return btn;
     }
 
+    private JButton createDangerButton(String text) {
+        JButton btn = new JButton(text);
+        btn.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        btn.setBackground(C_REJECTED);
+        btn.setForeground(Color.WHITE);
+        btn.setOpaque(true);
+        btn.setFocusPainted(false);
+        btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btn.setBorder(BorderFactory.createEmptyBorder(8, 16, 8, 16));
+        return btn;
+    }
+
     // ==================== UPDATE PANEL CONTROL ====================
 
     private void toggleUpdatePanel() {
@@ -756,14 +846,27 @@ public class ComplaintContentPanel extends JPanel {
             txtProcessNotes.setText("");
             txtOIC.setText(app.getCurrentUserFullName());
             txtInProgressOfficer.setText(app.getCurrentUserFullName());
+            txtPendingOfficer.setText(app.getCurrentUserFullName());
             txtResolutionDate.setText(new java.sql.Date(System.currentTimeMillis()).toString());
             txtInProgressAssignedDate.setText(new java.sql.Date(System.currentTimeMillis()).toString());
+
+            // Pre-fill pending fields with current values
+            if (currentComplaint != null) {
+                txtPendingTitle.setText(safe(currentComplaint.getSubject()));
+                txtPendingType.setText(safe(currentComplaint.getType()));
+            }
+
             resolutionPanel.setVisible(false);
             inProgressPanel.setVisible(false);
+            pendingReviewPanel.setVisible(false);
 
             populateStatusDropdown();
 
-            // Update current status label
+            // Auto-show pending review panel if current status is Pending
+            if (currentComplaint != null && "Pending".equals(currentComplaint.getCurrentStatus())) {
+                pendingReviewPanel.setVisible(true);
+            }
+
             for (Component c : updatePanel.getComponents()) {
                 if (c instanceof JPanel) {
                     for (Component cc : ((JPanel) c).getComponents()) {
@@ -794,12 +897,14 @@ public class ComplaintContentPanel extends JPanel {
 
         switch (current) {
             case "Pending" -> {
+                // For Pending: only forward options (no "Pending" in dropdown since we're
+                // reviewing it)
                 cmbStatus.addItem("In Progress");
                 cmbStatus.addItem("Transferred");
                 cmbStatus.addItem("Resolved");
             }
             case "In Progress" -> {
-                cmbStatus.addItem("In Progress"); // Allow updating notes while keeping status
+                cmbStatus.addItem("In Progress");
                 cmbStatus.addItem("Resolved");
                 cmbStatus.addItem("Transferred");
             }
@@ -833,11 +938,46 @@ public class ComplaintContentPanel extends JPanel {
         boolean isResolved = "Resolved".equals(status);
         boolean isInProgress = "In Progress".equals(status);
 
+        // When status changes from dropdown, hide pending review (it's only for initial
+        // Pending state)
+        // and show the appropriate panel for the selected status
+        pendingReviewPanel.setVisible(false);
         resolutionPanel.setVisible(isResolved);
         inProgressPanel.setVisible(isInProgress);
 
         mainContent.revalidate();
         mainContent.repaint();
+    }
+
+    // ==================== REJECT COMPLAINT ====================
+
+    private void rejectComplaint() {
+        int confirm = JOptionPane.showConfirmDialog(this,
+                "Are you sure you want to reject this complaint?\nThis action cannot be undone.",
+                "Confirm Rejection", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+
+        if (confirm != JOptionPane.YES_OPTION) {
+            return;
+        }
+
+        String note = txtPendingNotes.getText().trim();
+        if (note.isEmpty()) {
+            note = "Complaint rejected during validation";
+        }
+
+        boolean saved = statusController.updateComplaintStatus(
+                currentCdId, "Rejected", note, app.getUserSession());
+
+        if (!saved) {
+            JOptionPane.showMessageDialog(this, "Failed to reject complaint.", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        JOptionPane.showMessageDialog(this, "Complaint rejected successfully.", "Rejected",
+                JOptionPane.INFORMATION_MESSAGE);
+        currentComplaint.setCurrentStatus("Rejected");
+        loadComplaint(currentComplaint);
+        hideUpdatePanel();
     }
 
     // ==================== SAVE ====================
@@ -851,14 +991,53 @@ public class ComplaintContentPanel extends JPanel {
             return;
         }
 
-        // Validate conditional fields
-        if ("In Progress".equals(newStatus)) {
+        // Pending validation → In Progress
+        if ("In Progress".equals(newStatus) && "Pending".equals(currentComplaint.getCurrentStatus())) {
+            String title = txtPendingTitle.getText().trim();
+            String type = txtPendingType.getText().trim();
+            String officer = txtPendingOfficer.getText().trim();
+
+            if (title.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Title is required.", "Required", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            if (type.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Type / Category is required.", "Required",
+                        JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            if (officer.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Officer / Personnel Assigned is required.", "Required",
+                        JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+
+            // Build note with validation details
+            StringBuilder sb = new StringBuilder();
+            if (!note.isEmpty())
+                sb.append(note).append("\n");
+            sb.append("[Validated by: ").append(app.getCurrentUserFullName()).append("]");
+            sb.append(" [Title: ").append(title).append("]");
+            sb.append(" [Type: ").append(type).append("]");
+            sb.append(" [Assigned to: ").append(officer).append("]");
+            String pendingNotes = txtPendingNotes.getText().trim();
+            if (!pendingNotes.isEmpty()) {
+                sb.append(" [Notes: ").append(pendingNotes).append("]");
+            }
+            note = sb.toString();
+
+            // Update complaint data
+            currentComplaint.setSubject(title);
+            currentComplaint.setType(type);
+        }
+
+        // Normal In Progress update
+        else if ("In Progress".equals(newStatus)) {
             if (txtInProgressOfficer.getText().trim().isEmpty()) {
                 JOptionPane.showMessageDialog(this, "Officer / Personnel Assigned is required.", "Required",
                         JOptionPane.WARNING_MESSAGE);
                 return;
             }
-            // Append history detail info to note
             String officer = txtInProgressOfficer.getText().trim();
             String date = txtInProgressAssignedDate.getText().trim();
             note += "\n[Assigned to: " + officer + (date.isEmpty() ? "" : " | Date: " + date) + "]";
@@ -918,13 +1097,11 @@ public class ComplaintContentPanel extends JPanel {
         this.currentComplaint = cd;
         this.currentCdId = cd.getComplaintId();
 
-        // Header
         String status = safe(cd.getCurrentStatus());
         lblStatusBadge.setText(status.toUpperCase());
         lblStatusBadge.setBackground(getStatusColor(status));
         lblTitle.setText("Report #" + String.format("%03d", cd.getComplaintId()) + " – " + safe(cd.getType()));
 
-        // Form fields
         txtTitle.setText(safe(cd.getSubject()));
         txtDescription.setText(safe(cd.getDetails()));
         txtLocation.setText(safe(cd.getStreet()));
@@ -932,10 +1109,8 @@ public class ComplaintContentPanel extends JPanel {
         txtCoords.setText(String.format("%.6f, %.6f", cd.getLatitude(), cd.getLongitude()));
         txtDateSubmitted.setText(cd.getDateTime() != null ? cd.getDateTime().toString() : "N/A");
 
-        // Timeline
         updateTimeline(status);
 
-        // Photo
         byte[] photo = cd.getPhotoAttachmentBytes();
         if (photo != null && photo.length > 0) {
             ImageIcon icon = new ImageIcon(photo);
@@ -947,10 +1122,8 @@ public class ComplaintContentPanel extends JPanel {
             lblAttachment.setText("No attachments");
         }
 
-        // Update button visibility
         btnUpdateHeader.setVisible(canUpdateStatus);
 
-        // Load history (also sets Last Update)
         loadHistory(cd.getComplaintId());
     }
 
@@ -977,7 +1150,6 @@ public class ComplaintContentPanel extends JPanel {
                 historyContent.add(empty);
                 txtLastUpdate.setText("—");
             } else {
-                // Find most recent update for "Last Update" field
                 Timestamp mostRecent = null;
                 for (ComplaintHistoryDetail h : history) {
                     if (h.getDateTimeUpdated() != null) {

@@ -67,4 +67,12 @@ public class ResidentDashboardFetcher extends AbstractDashboardFetcher {
     public List<ComplaintDetail> getRawComplaints() {
         return new ArrayList<>(rawComplaints);
     }
+
+    /**
+     * Returns the raw ComplaintDetail list for row-click mapping in the dashboard
+     * table.
+     */
+    public List<ComplaintDetail> getComplaintDetails() {
+        return new ArrayList<>(rawComplaints);
+    }
 }

@@ -107,7 +107,7 @@ public class EmailService {
                 <body>
                     <div class="container">
                         <h2>🔒 Password Reset Request</h2>
-                        <p>Hello,</p>
+                        <p>Hello, </p>
                         <p>We received a request to reset your password for the <strong>Barangay Malacañang E-Reporting System</strong>.</p>
                         <p>Use the following One-Time Password (OTP) to proceed:</p>
                         <div class="otp-box">%s</div>

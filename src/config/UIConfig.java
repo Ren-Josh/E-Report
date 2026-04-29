@@ -34,7 +34,9 @@ public class UIConfig {
         public static final String EYE_OFF_ICON_PATH = "src/assets/icons/eye_off_icon.png";
         public static final String SUSPEND_ICON_PATH = "src/assets/icons/suspend_icon.png";
         public static final String EDIT_ICON_PATH = "src/assets/icons/edit_icon.png";
-        public static final String SAVE_ICON_PATH = "src/assets/icons/save_icon.png";
+        public static final String SECURITY_LOCK_ICON_PATH = "src/assets/icons/lock_icon.png";
+        public static final int SECURITY_LOCK_ICON_SIZE = 48;
+
         public static final String[] STAT_ICON_PATHS = {
                         "src/assets/icons/total_report_icon.png",
                         "src/assets/icons/pending_icon.png",

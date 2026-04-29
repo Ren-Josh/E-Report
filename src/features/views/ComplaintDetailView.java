@@ -22,6 +22,12 @@ public class ComplaintDetailView extends JPanel {
     private NavPanel nav;
     private ComplaintContentPanel contentPanel;
 
+    /**
+     * Route to navigate back to when Back is clicked (e.g., "dashboard",
+     * "myreport", "reports")
+     */
+    private String returnRoute = "dashboard";
+
     public ComplaintDetailView(E_Report app) {
         this.app = app;
         setLayout(new BorderLayout());
@@ -44,6 +50,21 @@ public class ComplaintDetailView extends JPanel {
         bgPanel.add(contentPanel, BorderLayout.CENTER);
 
         add(bgPanel, BorderLayout.CENTER);
+    }
+
+    /**
+     * Set the route to return to when the user clicks Back.
+     * Call this BEFORE navigating to this view.
+     */
+    public void setReturnRoute(String route) {
+        this.returnRoute = (route != null && !route.isBlank()) ? route : "dashboard";
+        if (contentPanel != null) {
+            contentPanel.setReturnRoute(this.returnRoute);
+        }
+    }
+
+    public String getReturnRoute() {
+        return returnRoute;
     }
 
     private void setupNavigation() {

@@ -70,23 +70,41 @@ public class ProfilePanel extends JPanel {
         setBackground(BG_MAIN);
 
         add(headerPanel, BorderLayout.NORTH);
+        add(statusBar, BorderLayout.SOUTH);
 
-        JPanel content = new JPanel();
-        content.setLayout(new BoxLayout(content, BoxLayout.Y_AXIS));
+        // Main content with equal padding on all sides
+        JPanel content = new JPanel(new GridBagLayout());
         content.setOpaque(false);
         content.setBorder(new EmptyBorder(SPACING_LG, SPACING_LG, SPACING_LG, SPACING_LG));
 
-        content.add(profileInfoCard);
-        content.add(Box.createVerticalStrut(SPACING_MD));
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.weightx = 1.0;
+        gbc.gridx = 0;
+        gbc.insets = new Insets(0, 0, SPACING_MD, 0);
 
-        JPanel twoColumnPanel = new JPanel(new GridLayout(1, 2, SPACING_MD, 0));
-        twoColumnPanel.setOpaque(false);
-        twoColumnPanel.setMaximumSize(new Dimension(1200, 500));
-        twoColumnPanel.add(accountInfoCard);
-        twoColumnPanel.add(securityCard);
+        // Row 0: Profile info card (full width)
+        gbc.gridy = 0;
+        gbc.gridwidth = 2;
+        content.add(profileInfoCard, gbc);
 
-        content.add(twoColumnPanel);
-        content.add(Box.createVerticalGlue());
+        // Row 1: Two cards side by side — 75% / 25% split
+        gbc.gridy = 1;
+        gbc.gridwidth = 1;
+        gbc.fill = GridBagConstraints.BOTH;
+        gbc.weighty = 1.0;
+
+        // Account Information: 3/4 width
+        gbc.gridx = 0;
+        gbc.weightx = 0.75;
+        gbc.insets = new Insets(0, 0, 0, SPACING_MD / 2);
+        content.add(accountInfoCard, gbc);
+
+        // Security: 1/4 width
+        gbc.gridx = 1;
+        gbc.weightx = 0.25;
+        gbc.insets = new Insets(0, SPACING_MD / 2, 0, 0);
+        content.add(securityCard, gbc);
 
         JScrollPane scroll = new JScrollPane(content);
         scroll.setOpaque(false);
@@ -100,7 +118,6 @@ public class ProfilePanel extends JPanel {
         verticalBar.setPreferredSize(new Dimension(8, 0));
 
         add(scroll, BorderLayout.CENTER);
-        add(statusBar, BorderLayout.SOUTH);
     }
 
     @Override
@@ -120,23 +137,7 @@ public class ProfilePanel extends JPanel {
         accountInfoCard.getEditButton().addActionListener(e -> toggleEditMode());
         accountInfoCard.getCancelButton().addActionListener(e -> cancelEdit());
 
-        securityCard.getSavePassButton().addActionListener(e -> savePassword());
-        securityCard.getNewPassField().getDocument().addDocumentListener(new DocumentListener() {
-            @Override
-            public void insertUpdate(DocumentEvent e) {
-                updatePasswordStrength();
-            }
-
-            @Override
-            public void removeUpdate(DocumentEvent e) {
-                updatePasswordStrength();
-            }
-
-            @Override
-            public void changedUpdate(DocumentEvent e) {
-                updatePasswordStrength();
-            }
-        });
+        securityCard.getChangePasswordButton().addActionListener(e -> app.navigate("securitypassword"));
 
         registerKeyboardAction(
                 e -> toggleEditMode(),
@@ -249,84 +250,10 @@ public class ProfilePanel extends JPanel {
         profileInfoCard.setDisplayRole("User");
     }
 
-    private void savePassword() {
-        String cur = securityCard.getCurrentPassField().getValue();
-        String nw = securityCard.getNewPassField().getValue();
-        String cf = securityCard.getConfirmPassField().getValue();
-
-        if (cur.isEmpty() || nw.isEmpty() || cf.isEmpty()) {
-            showStatus("All password fields are required", ERROR);
-            return;
-        }
-
-        if (!nw.equals(cf)) {
-            showStatus("New passwords do not match", ERROR);
-            return;
-        }
-
-        if (nw.length() < 8) {
-            showStatus("Password must be at least 8 characters", ERROR);
-            return;
-        }
-
-        securityCard.getCurrentPassField().setText("");
-        securityCard.getNewPassField().setText("");
-        securityCard.getConfirmPassField().setText("");
-
-        showStatus("Password updated successfully!", SUCCESS);
-    }
-
-    private void updatePasswordStrength() {
-        String password = securityCard.getNewPassField().getValue();
-        if (password.isEmpty()) {
-            securityCard.getPasswordStrengthBar().setVisible(false);
-            securityCard.getPasswordStrengthLabel().setText("");
-            return;
-        }
-
-        securityCard.getPasswordStrengthBar().setVisible(true);
-        int strength = calculatePasswordStrength(password);
-        securityCard.getPasswordStrengthBar().setValue(strength);
-
-        if (strength < 30) {
-            securityCard.getPasswordStrengthBar().setForeground(ERROR);
-            securityCard.getPasswordStrengthLabel().setText("Weak password");
-            securityCard.getPasswordStrengthLabel().setForeground(ERROR);
-        } else if (strength < 60) {
-            securityCard.getPasswordStrengthBar().setForeground(WARNING);
-            securityCard.getPasswordStrengthLabel().setText("Medium strength");
-            securityCard.getPasswordStrengthLabel().setForeground(WARNING);
-        } else {
-            securityCard.getPasswordStrengthBar().setForeground(SUCCESS);
-            securityCard.getPasswordStrengthLabel().setText("Strong password");
-            securityCard.getPasswordStrengthLabel().setForeground(SUCCESS);
-        }
-    }
-
-    private int calculatePasswordStrength(String password) {
-        int score = 0;
-        if (password.length() >= 8)
-            score += 25;
-        if (password.matches(".*[a-z].*"))
-            score += 20;
-        if (password.matches(".*[A-Z].*"))
-            score += 20;
-        if (password.matches(".*\\d.*"))
-            score += 15;
-        if (password.matches(".*[!@#$%^&*()].*"))
-            score += 20;
-        return Math.min(score, 100);
-    }
-
     private void showStatus(String message, Color color) {
         statusBar.showStatus(message, color);
     }
 
-    /**
-     * Loads user information from the app session.
-     * If UserInfo is not yet cached in the app but a UserSession exists,
-     * it fetches the data from the database via UserServiceController.
-     */
     public void loadFromApp() {
         if (app == null) {
             showStatus("App reference not available", ERROR);
@@ -337,7 +264,6 @@ public class ProfilePanel extends JPanel {
             UserInfo ui = app.getUserInfo();
             UserSession us = app.getUserSession();
 
-            // Fetch from DB if not cached but session exists
             if (ui == null && us != null) {
                 UserServiceController service = new UserServiceController();
                 ui = service.getUserInfo(us.getUserId());
@@ -347,7 +273,6 @@ public class ProfilePanel extends JPanel {
             }
 
             if (ui != null && us != null) {
-                // Build full name from first, middle, last
                 StringBuilder nameBuilder = new StringBuilder();
                 if (notEmpty(ui.getFName()))
                     nameBuilder.append(ui.getFName()).append(" ");
@@ -360,7 +285,6 @@ public class ProfilePanel extends JPanel {
                 String phone = safeString(ui.getContact());
                 String email = safeString(ui.getEmail());
 
-                // Combine house number and street for address
                 StringBuilder addrBuilder = new StringBuilder();
                 if (notEmpty(ui.getHouseNum()))
                     addrBuilder.append(ui.getHouseNum()).append(" ");
@@ -369,7 +293,7 @@ public class ProfilePanel extends JPanel {
                 String address = addrBuilder.toString().trim();
 
                 String purok = safeString(ui.getPurok());
-                String username = (app.getCredential() != null) ? safeString(app.getCredential().getUsername()) : "";
+                String username = (app.getUserSession() != null) ? safeString(app.getUserSession().getUsername()) : "";
                 String role = safeString(us.getRole());
 
                 setProfileData(fullName, phone, email, address, purok, username, role);
