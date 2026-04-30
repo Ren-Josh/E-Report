@@ -15,6 +15,7 @@ public class SecurityCard extends UICard {
 
     private final UIButton changePasswordButton;
     private final JLabel lblIcon;
+    private Runnable onChangePasswordAction;
 
     public SecurityCard() {
         super(12, Color.WHITE);
@@ -22,7 +23,6 @@ public class SecurityCard extends UICard {
         setShowBorder(true);
         setBorderColor(new Color(226, 232, 240));
 
-        // Header
         JPanel header = new JPanel(new BorderLayout());
         header.setOpaque(false);
         header.setBorder(new EmptyBorder(SPACING_MD, SPACING_MD, SPACING_MD, SPACING_MD));
@@ -33,17 +33,13 @@ public class SecurityCard extends UICard {
         header.add(title, BorderLayout.WEST);
         add(header, BorderLayout.NORTH);
 
-        // Center panel with true centering via GridBagLayout
         JPanel centerPanel = new JPanel(new GridBagLayout());
         centerPanel.setOpaque(false);
 
-        // Icon — auto-sized from AppConfig path, falls back to emoji if path is
-        // null/empty
         lblIcon = new JLabel();
         lblIcon.setHorizontalAlignment(SwingConstants.CENTER);
         loadIcon();
 
-        // Description — centered text, proper wrapping
         JLabel lblInfo = new JLabel(
                 "<html><div style='text-align: center; width: 180px;'>"
                         + "Secure your account by changing your password periodically. "
@@ -53,14 +49,18 @@ public class SecurityCard extends UICard {
         lblInfo.setForeground(TEXT_SECONDARY);
         lblInfo.setHorizontalAlignment(SwingConstants.CENTER);
 
-        // Button
         changePasswordButton = new UIButton("Change Password", new Color(37, 99, 235),
                 new Dimension(160, 40), new Font("Segoe UI", Font.BOLD, 13), 8,
                 UIButton.ButtonType.PRIMARY);
         changePasswordButton.setHoverBg(new Color(29, 78, 216));
         changePasswordButton.setPressedBg(new Color(30, 64, 175));
 
-        // Layout: single column, centered
+        changePasswordButton.addActionListener(e -> {
+            if (onChangePasswordAction != null) {
+                onChangePasswordAction.run();
+            }
+        });
+
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.gridx = 0;
         gbc.insets = new Insets(0, 0, 12, 0);
@@ -80,10 +80,6 @@ public class SecurityCard extends UICard {
         add(centerPanel, BorderLayout.CENTER);
     }
 
-    /**
-     * Loads the lock icon from AppConfig. If no path is set or image fails to load,
-     * falls back to a Unicode lock emoji.
-     */
     private void loadIcon() {
         String iconPath = UIConfig.LOCK_ICON_PATH;
         int iconSize = UIConfig.SECURITY_LOCK_ICON_SIZE;
@@ -100,9 +96,12 @@ public class SecurityCard extends UICard {
             }
         }
 
-        // Fallback: Unicode lock emoji
         lblIcon.setText("🔒");
         lblIcon.setFont(new Font("Segoe UI", Font.PLAIN, iconSize));
+    }
+
+    public void setOnChangePasswordAction(Runnable action) {
+        this.onChangePasswordAction = action;
     }
 
     public JButton getChangePasswordButton() {

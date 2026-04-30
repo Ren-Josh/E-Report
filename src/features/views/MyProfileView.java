@@ -25,7 +25,8 @@ public class MyProfileView extends JPanel {
 
         header = new HeaderPanel(app);
         nav = new NavPanel();
-        profilePanel = new ProfilePanel(app);
+
+        profilePanel = new ProfilePanel(app, () -> app.navigate("securitypassword"));
 
         initializeLayout();
         setupNavigation();
@@ -74,6 +75,6 @@ public class MyProfileView extends JPanel {
 
     public void refreshProfile() {
         profilePanel.loadFromApp();
-        header.refresh(); // sync header with latest app data
+        header.refresh();
     }
 }

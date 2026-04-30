@@ -17,6 +17,11 @@ public class AppConfig {
     public static final String SMTP_FROM_NAME = "Barangay E-Reporting System";
     public static final boolean SMTP_USE_TLS = true;
 
+    // ==================== COMPLAINT TYPES / CATEGORIES ====================
+    public static final String[] COMPLAINT_TYPES = {
+            "Garbage", "Theft", "Robbery"
+    };
+
     // Connection Timeout (in seconds)
     public static final int DB_TIMEOUT = 5;
 

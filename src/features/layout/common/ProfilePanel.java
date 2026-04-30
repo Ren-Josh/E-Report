@@ -30,6 +30,7 @@ public class ProfilePanel extends JPanel {
     private static final int SPACING_LG = 24;
 
     private final E_Report app;
+    private final Runnable onChangePassword;
     private boolean isEditing = false;
     private boolean hasUnsavedChanges = false;
     private Map<String, String> originalValues = new HashMap<>();
@@ -40,8 +41,9 @@ public class ProfilePanel extends JPanel {
     private final SecurityCard securityCard;
     private final ProfileStatusBar statusBar;
 
-    public ProfilePanel(E_Report app) {
+    public ProfilePanel(E_Report app, Runnable onChangePassword) {
         this.app = app;
+        this.onChangePassword = onChangePassword;
 
         headerPanel = new ProfileHeaderPanel("Profile Settings", () -> {
             if (hasUnsavedChanges) {
@@ -59,6 +61,9 @@ public class ProfilePanel extends JPanel {
         securityCard = new SecurityCard();
         statusBar = new ProfileStatusBar();
 
+        // Wire the security card callback right here — decoupled, no panel references
+        securityCard.setOnChangePasswordAction(onChangePassword);
+
         setupUI();
         setupEvents();
         loadFromApp();
@@ -72,7 +77,6 @@ public class ProfilePanel extends JPanel {
         add(headerPanel, BorderLayout.NORTH);
         add(statusBar, BorderLayout.SOUTH);
 
-        // Main content with equal padding on all sides
         JPanel content = new JPanel(new GridBagLayout());
         content.setOpaque(false);
         content.setBorder(new EmptyBorder(SPACING_LG, SPACING_LG, SPACING_LG, SPACING_LG));
@@ -83,24 +87,20 @@ public class ProfilePanel extends JPanel {
         gbc.gridx = 0;
         gbc.insets = new Insets(0, 0, SPACING_MD, 0);
 
-        // Row 0: Profile info card (full width)
         gbc.gridy = 0;
         gbc.gridwidth = 2;
         content.add(profileInfoCard, gbc);
 
-        // Row 1: Two cards side by side — 75% / 25% split
         gbc.gridy = 1;
         gbc.gridwidth = 1;
         gbc.fill = GridBagConstraints.BOTH;
         gbc.weighty = 1.0;
 
-        // Account Information: 3/4 width
         gbc.gridx = 0;
         gbc.weightx = 0.75;
         gbc.insets = new Insets(0, 0, 0, SPACING_MD / 2);
         content.add(accountInfoCard, gbc);
 
-        // Security: 1/4 width
         gbc.gridx = 1;
         gbc.weightx = 0.25;
         gbc.insets = new Insets(0, SPACING_MD / 2, 0, 0);
@@ -137,7 +137,9 @@ public class ProfilePanel extends JPanel {
         accountInfoCard.getEditButton().addActionListener(e -> toggleEditMode());
         accountInfoCard.getCancelButton().addActionListener(e -> cancelEdit());
 
-        securityCard.getChangePasswordButton().addActionListener(e -> app.navigate("securitypassword"));
+        // REMOVED: securityCard.getChangePasswordButton().addActionListener(...)
+        // The callback is already wired in the constructor via
+        // setOnChangePasswordAction()
 
         registerKeyboardAction(
                 e -> toggleEditMode(),

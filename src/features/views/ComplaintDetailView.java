@@ -45,9 +45,16 @@ public class ComplaintDetailView extends JPanel {
         setupNavigation();
         bgPanel.add(nav, BorderLayout.WEST);
 
-        // Main content - handles both view and update modes
+        // Main content - wrap in a scroll pane to handle overflow
         contentPanel = new ComplaintContentPanel(app);
-        bgPanel.add(contentPanel, BorderLayout.CENTER);
+        JScrollPane contentScroll = new JScrollPane(contentPanel);
+        contentScroll.setOpaque(false);
+        contentScroll.getViewport().setOpaque(false);
+        contentScroll.setBorder(null);
+        contentScroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+        contentScroll.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
+        contentScroll.getVerticalScrollBar().setUnitIncrement(16);
+        bgPanel.add(contentScroll, BorderLayout.CENTER);
 
         add(bgPanel, BorderLayout.CENTER);
     }

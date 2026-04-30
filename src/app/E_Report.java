@@ -72,6 +72,9 @@ public class E_Report extends JFrame {
 
     private String returnRoute = "dashboard";
 
+    // ==================== Reusable Panels ====================
+    private SecurityPasswordChangePanel securityPasswordChangePanel;
+
     public E_Report() {
         DatabaseController.initializeDatabase();
 
@@ -86,6 +89,9 @@ public class E_Report extends JFrame {
         container = new JPanel(cardLayout);
 
         container.add(new HomepageView(this), "home");
+
+        // Create once and reuse — preparePanel() is called on every navigate to it
+        securityPasswordChangePanel = new SecurityPasswordChangePanel(this);
 
         add(container);
 
@@ -109,13 +115,14 @@ public class E_Report extends JFrame {
             case "updatestatus" -> add(new ComplaintStatusUpdateView(this));
             case "complaintdetail" -> add(new ComplaintDetailView(this));
             case "forgotpassword" -> add(new ForgotPasswordView(this));
-            case "securitypassword" -> add(new SecurityPasswordChangePanel(this));
+            case "securitypassword" -> {
+                securityPasswordChangePanel.preparePanel(); // auto-fill username + email
+                add(securityPasswordChangePanel);
+            }
         }
 
         revalidate();
-
         repaint();
-
     }
 
     public void logout() {
