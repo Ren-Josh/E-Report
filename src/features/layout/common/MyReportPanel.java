@@ -115,6 +115,18 @@ public class MyReportPanel extends JPanel {
         allComplaints.clear();
 
         if (complaints != null && !complaints.isEmpty()) {
+            complaints.sort((a, b) -> {
+                Timestamp ta = a.getLastUpdateTimestamp() != null ? a.getLastUpdateTimestamp() : a.getDateTime();
+                Timestamp tb = b.getLastUpdateTimestamp() != null ? b.getLastUpdateTimestamp() : b.getDateTime();
+                if (ta == null && tb == null)
+                    return 0;
+                if (ta == null)
+                    return 1;
+                if (tb == null)
+                    return -1;
+                return tb.compareTo(ta);
+            });
+
             allComplaints.addAll(complaints);
         } else {
             System.out.println("[MyReportPanel] No complaints returned (null or empty)");
