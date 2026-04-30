@@ -106,6 +106,10 @@ public class ComplaintContentPanel extends JPanel {
     /** Route to return to when Back is clicked */
     private String returnRoute = "dashboard";
 
+    // DEBUG: Layout debugger panel
+    private JPanel debugPanel;
+    private JLabel lblDebugInfo;
+
     public ComplaintContentPanel(E_Report app) {
         this.app = app;
         this.currentComplaint = app.getCurrentComplaint();
@@ -118,68 +122,117 @@ public class ComplaintContentPanel extends JPanel {
 
         add(createMainContent(), BorderLayout.CENTER);
 
+        // DEBUG: Add debug panel at bottom
+        debugPanel = createDebugPanel();
+        add(debugPanel, BorderLayout.SOUTH);
+
         if (currentComplaint != null) {
             loadComplaint(currentComplaint);
         }
+    }
+
+    // ==================== WIDTH CONSTRAINT FIX ====================
+    // This is the KEY fix - prevents panel from exceeding viewport width
+
+    @Override
+    public Dimension getMaximumSize() {
+        Container parent = getParent();
+        if (parent instanceof JViewport viewport) {
+            // Never exceed the viewport width
+            Dimension viewportSize = viewport.getSize();
+            return new Dimension(viewportSize.width, Integer.MAX_VALUE);
+        }
+        return super.getMaximumSize();
+    }
+
+    @Override
+    public Dimension getPreferredSize() {
+        Container parent = getParent();
+        if (parent instanceof JViewport viewport) {
+            // Preferred width should match viewport width
+            Dimension viewportSize = viewport.getSize();
+            Dimension pref = super.getPreferredSize();
+            return new Dimension(Math.min(pref.width, viewportSize.width), pref.height);
+        }
+        return super.getPreferredSize();
     }
 
     public void setReturnRoute(String route) {
         this.returnRoute = (route != null && !route.isBlank()) ? route : "dashboard";
     }
 
+    // ==================== DEBUG PANEL ====================
+
+    private JPanel createDebugPanel() {
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setOpaque(true);
+        panel.setBackground(new Color(30, 41, 59));
+        panel.setBorder(BorderFactory.createEmptyBorder(8, 12, 8, 12));
+        panel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 80));
+
+        lblDebugInfo = new JLabel("Debug info will appear here...");
+        lblDebugInfo.setFont(new Font("Consolas", Font.PLAIN, 11));
+        lblDebugInfo.setForeground(new Color(148, 163, 184));
+        panel.add(lblDebugInfo, BorderLayout.CENTER);
+
+        return panel;
+    }
+
     // ==================== MAIN CONTENT ====================
+    // FIX: Use GridBagLayout instead of BoxLayout to properly constrain widths
 
     private JPanel createMainContent() {
-        mainContent = new JPanel();
+        mainContent = new JPanel(new GridBagLayout());
         mainContent.setOpaque(false);
-        mainContent.setLayout(new BoxLayout(mainContent, BoxLayout.Y_AXIS));
         mainContent.setBorder(new EmptyBorder(0, 4, 12, 4));
+
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.gridx = 0;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.anchor = GridBagConstraints.NORTHWEST;
+        gbc.insets = new Insets(0, 0, 0, 0);
+        gbc.weightx = 1.0;
 
         // Back button row (top)
         JPanel backRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
         backRow.setOpaque(false);
-        backRow.setAlignmentX(Component.LEFT_ALIGNMENT);
-        backRow.setMaximumSize(new Dimension(Short.MAX_VALUE, 32));
         btnBackTop = createGhostButton("← Back");
         btnBackTop.addActionListener(e -> app.navigate(returnRoute));
         backRow.add(btnBackTop);
-        mainContent.add(backRow);
-        mainContent.add(Box.createVerticalStrut(8));
+        gbc.gridy = 0;
+        gbc.weighty = 0;
+        mainContent.add(backRow, gbc);
 
         // Header row
         JPanel header = createHeaderRow();
-        header.setAlignmentX(Component.LEFT_ALIGNMENT);
-        header.setMaximumSize(new Dimension(Short.MAX_VALUE, 42));
-        mainContent.add(header);
-        mainContent.add(Box.createVerticalStrut(12));
+        gbc.gridy = 1;
+        gbc.insets = new Insets(8, 0, 0, 0);
+        mainContent.add(header, gbc);
 
         // Status timeline
         JPanel timeline = createStatusTimeline();
-        timeline.setAlignmentX(Component.LEFT_ALIGNMENT);
-        timeline.setMaximumSize(new Dimension(Short.MAX_VALUE, 90));
-        mainContent.add(timeline);
-        mainContent.add(Box.createVerticalStrut(12));
+        gbc.gridy = 2;
+        gbc.insets = new Insets(12, 0, 0, 0);
+        mainContent.add(timeline, gbc);
 
-        // Update panel (hidden by default) - NO maximum size, let it size naturally
+        // Update panel (hidden by default)
         updatePanel = createUpdatePanel();
         updatePanel.setVisible(false);
-        updatePanel.setAlignmentX(Component.LEFT_ALIGNMENT);
-        mainContent.add(updatePanel);
-        mainContent.add(Box.createVerticalStrut(12));
+        gbc.gridy = 3;
+        mainContent.add(updatePanel, gbc);
 
         // Main form card
         JPanel formCard = createFormCard();
-        formCard.setAlignmentX(Component.LEFT_ALIGNMENT);
-        mainContent.add(formCard);
-        mainContent.add(Box.createVerticalStrut(12));
+        gbc.gridy = 4;
+        gbc.insets = new Insets(12, 0, 0, 0);
+        mainContent.add(formCard, gbc);
 
         // Actions Taken section
         actionsTakenPanel = createActionsTakenPanel();
-        actionsTakenPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
-        mainContent.add(actionsTakenPanel);
-
-        // GLUE: absorbs all extra vertical space, prevents components from stretching
-        mainContent.add(Box.createVerticalGlue());
+        gbc.gridy = 5;
+        gbc.insets = new Insets(12, 0, 0, 0);
+        gbc.weighty = 1.0; // Push everything up
+        mainContent.add(actionsTakenPanel, gbc);
 
         return mainContent;
     }
@@ -189,7 +242,6 @@ public class ComplaintContentPanel extends JPanel {
     private JPanel createHeaderRow() {
         JPanel headerRow = new JPanel(new BorderLayout(16, 0));
         headerRow.setOpaque(false);
-        headerRow.setMaximumSize(new Dimension(Short.MAX_VALUE, 42));
 
         JPanel left = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
         left.setOpaque(false);
@@ -321,8 +373,6 @@ public class ComplaintContentPanel extends JPanel {
                 timelineSteps[i].setBackground(activeColor);
                 timelineSteps[i].setForeground(Color.WHITE);
                 timelineLabels[i].setForeground(activeColor);
-                // FIX: Use "\u2714" (heavy checkmark) instead of "✓" to avoid rendering as
-                // square/box
                 timelineSteps[i].setText(i < activeIndex ? "\u2714" : String.valueOf(i + 1));
             } else {
                 timelineSteps[i].setBackground(C_TIMELINE_INACTIVE);
@@ -383,7 +433,6 @@ public class ComplaintContentPanel extends JPanel {
         descScroll.setBorder(null);
         descScroll.setOpaque(false);
         descScroll.getViewport().setOpaque(false);
-        // FIX: Prevent nested scroll pane from capturing mouse wheel events
         descScroll.setWheelScrollingEnabled(false);
         panel.add(createFieldRow("Description", descScroll), gbc);
 
@@ -456,8 +505,6 @@ public class ComplaintContentPanel extends JPanel {
         panel.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(new Color(59, 130, 246, 90), 1, true),
                 new EmptyBorder(16, 20, 16, 20)));
-        // REMOVED: setMaximumSize(Integer.MAX_VALUE, Integer.MAX_VALUE) — this was
-        // causing infinite expansion
 
         // Title only (no close button)
         JPanel header = new JPanel(new BorderLayout());
@@ -478,7 +525,6 @@ public class ComplaintContentPanel extends JPanel {
         currentRow.setMaximumSize(new Dimension(Short.MAX_VALUE, 24));
         JLabel lblCurrentPrefix = new JLabel("Current Status:");
         lblCurrentPrefix.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-        // FIX: Store direct reference instead of relying on fragile name-based lookup
         lblUpdateCurrentStatus = new JLabel("—");
         lblUpdateCurrentStatus.setFont(new Font("Segoe UI", Font.BOLD, 12));
         lblUpdateCurrentStatus.setForeground(C_IN_PROGRESS);
@@ -533,7 +579,6 @@ public class ComplaintContentPanel extends JPanel {
         notesScroll.setBorder(null);
         notesScroll.setOpaque(false);
         notesScroll.getViewport().setOpaque(false);
-        // FIX: Prevent nested scroll pane from capturing mouse wheel events
         notesScroll.setWheelScrollingEnabled(false);
         notesWrap.add(lblNotes, BorderLayout.NORTH);
         notesWrap.add(notesScroll, BorderLayout.CENTER);
@@ -641,7 +686,6 @@ public class ComplaintContentPanel extends JPanel {
         notesScroll.setBorder(null);
         notesScroll.setOpaque(false);
         notesScroll.getViewport().setOpaque(false);
-        // FIX: Prevent nested scroll pane from capturing mouse wheel events
         notesScroll.setWheelScrollingEnabled(false);
         JPanel notesWrap = createLabeledFieldPanel("Validation Notes", notesScroll);
         notesWrap.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -662,10 +706,12 @@ public class ComplaintContentPanel extends JPanel {
     }
 
     // ==================== IN PROGRESS PANEL ====================
+    // FIX: Changed from GridLayout to BoxLayout + max size constraints
 
     private JPanel createInProgressFields() {
-        JPanel panel = new JPanel(new GridLayout(3, 1, 8, 8));
+        JPanel panel = new JPanel();
         panel.setOpaque(false);
+        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
         panel.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createMatteBorder(1, 0, 0, 0, C_IN_PROGRESS),
                 new EmptyBorder(10, 0, 0, 0)));
@@ -673,22 +719,34 @@ public class ComplaintContentPanel extends JPanel {
         JLabel lblHeader = new JLabel("Complaint History Detail");
         lblHeader.setFont(new Font("Segoe UI", Font.BOLD, 13));
         lblHeader.setForeground(C_IN_PROGRESS);
+        lblHeader.setAlignmentX(Component.LEFT_ALIGNMENT);
         panel.add(lblHeader);
+        panel.add(Box.createVerticalStrut(10));
 
         txtInProgressOfficer = new JTextField();
         txtInProgressAssignedDate = new JTextField();
 
-        panel.add(createLabeledField("Officer / Personnel Assigned", txtInProgressOfficer));
-        panel.add(createLabeledField("Date Assigned (YYYY-MM-DD)", txtInProgressAssignedDate));
+        JPanel officerWrap = createLabeledField("Officer / Personnel Assigned", txtInProgressOfficer);
+        officerWrap.setAlignmentX(Component.LEFT_ALIGNMENT);
+        officerWrap.setMaximumSize(new Dimension(Short.MAX_VALUE, 60));
+        panel.add(officerWrap);
+        panel.add(Box.createVerticalStrut(8));
+
+        JPanel dateWrap = createLabeledField("Date Assigned (YYYY-MM-DD)", txtInProgressAssignedDate);
+        dateWrap.setAlignmentX(Component.LEFT_ALIGNMENT);
+        dateWrap.setMaximumSize(new Dimension(Short.MAX_VALUE, 60));
+        panel.add(dateWrap);
 
         return panel;
     }
 
     // ==================== RESOLUTION PANEL ====================
+    // FIX: Changed from GridLayout to BoxLayout + max size constraints
 
     private JPanel createResolutionFields() {
-        JPanel panel = new JPanel(new GridLayout(5, 1, 6, 6));
+        JPanel panel = new JPanel();
         panel.setOpaque(false);
+        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
         panel.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createMatteBorder(1, 0, 0, 0, new Color(16, 185, 129)),
                 new EmptyBorder(10, 0, 0, 0)));
@@ -696,17 +754,37 @@ public class ComplaintContentPanel extends JPanel {
         JLabel lblHeader = new JLabel("Resolution Actioned");
         lblHeader.setFont(new Font("Segoe UI", Font.BOLD, 13));
         lblHeader.setForeground(new Color(16, 185, 129));
+        lblHeader.setAlignmentX(Component.LEFT_ALIGNMENT);
         panel.add(lblHeader);
+        panel.add(Box.createVerticalStrut(10));
 
         txtActionTaken = new JTextField();
         txtRecommendation = new JTextField();
         txtOIC = new JTextField();
         txtResolutionDate = new JTextField();
 
-        panel.add(createLabeledField("Action Taken *", txtActionTaken));
-        panel.add(createLabeledField("Recommendation", txtRecommendation));
-        panel.add(createLabeledField("Officer in Charge", txtOIC));
-        panel.add(createLabeledField("Resolution Date (YYYY-MM-DD)", txtResolutionDate));
+        JPanel actionWrap = createLabeledField("Action Taken *", txtActionTaken);
+        actionWrap.setAlignmentX(Component.LEFT_ALIGNMENT);
+        actionWrap.setMaximumSize(new Dimension(Short.MAX_VALUE, 60));
+        panel.add(actionWrap);
+        panel.add(Box.createVerticalStrut(6));
+
+        JPanel recWrap = createLabeledField("Recommendation", txtRecommendation);
+        recWrap.setAlignmentX(Component.LEFT_ALIGNMENT);
+        recWrap.setMaximumSize(new Dimension(Short.MAX_VALUE, 60));
+        panel.add(recWrap);
+        panel.add(Box.createVerticalStrut(6));
+
+        JPanel oicWrap = createLabeledField("Officer in Charge", txtOIC);
+        oicWrap.setAlignmentX(Component.LEFT_ALIGNMENT);
+        oicWrap.setMaximumSize(new Dimension(Short.MAX_VALUE, 60));
+        panel.add(oicWrap);
+        panel.add(Box.createVerticalStrut(6));
+
+        JPanel dateWrap = createLabeledField("Resolution Date (YYYY-MM-DD)", txtResolutionDate);
+        dateWrap.setAlignmentX(Component.LEFT_ALIGNMENT);
+        dateWrap.setMaximumSize(new Dimension(Short.MAX_VALUE, 60));
+        panel.add(dateWrap);
 
         return panel;
     }
@@ -993,11 +1071,11 @@ public class ComplaintContentPanel extends JPanel {
                 currentCdId, "Rejected", note, app.getUserSession());
 
         if (!saved) {
-            JOptionPane.showMessageDialog(this, "Failed to reject complaint.", "Error", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(app, "Failed to reject complaint.", "Error", JOptionPane.ERROR_MESSAGE);
             return;
         }
 
-        JOptionPane.showMessageDialog(this, "Complaint rejected successfully.", "Rejected",
+        JOptionPane.showMessageDialog(app, "Complaint rejected successfully.", "Rejected",
                 JOptionPane.INFORMATION_MESSAGE);
         currentComplaint.setCurrentStatus("Rejected");
         loadComplaint(currentComplaint);
@@ -1011,7 +1089,7 @@ public class ComplaintContentPanel extends JPanel {
         String note = txtProcessNotes.getText().trim();
 
         if (newStatus == null || newStatus.isBlank()) {
-            JOptionPane.showMessageDialog(this, "Please select a status.", "Required", JOptionPane.WARNING_MESSAGE);
+            JOptionPane.showMessageDialog(app, "Please select a status.", "Required", JOptionPane.WARNING_MESSAGE);
             return;
         }
 
@@ -1024,17 +1102,17 @@ public class ComplaintContentPanel extends JPanel {
 
             // STRICT validation: reject placeholder and blank
             if (title.isBlank() || "—".equals(title)) {
-                JOptionPane.showMessageDialog(this, "Title is required.", "Required", JOptionPane.WARNING_MESSAGE);
+                JOptionPane.showMessageDialog(app, "Title is required.", "Required", JOptionPane.WARNING_MESSAGE);
                 return;
             }
             if (type.isBlank() || "—".equals(type)) {
-                JOptionPane.showMessageDialog(this, "Type / Category is required.", "Required",
+                JOptionPane.showMessageDialog(app, "Type / Category is required.", "Required",
                         JOptionPane.WARNING_MESSAGE);
                 return;
             }
             String officer = txtPendingOfficer.getText().trim();
             if (officer.isBlank()) {
-                JOptionPane.showMessageDialog(this, "Officer / Personnel Assigned is required.", "Required",
+                JOptionPane.showMessageDialog(app, "Officer / Personnel Assigned is required.", "Required",
                         JOptionPane.WARNING_MESSAGE);
                 return;
             }
@@ -1059,7 +1137,7 @@ public class ComplaintContentPanel extends JPanel {
 
             // UPDATE DATABASE with new title and type
             if (!updateComplaintDetail(currentCdId, title, type)) {
-                JOptionPane.showMessageDialog(this, "Failed to save complaint details.", "Database Error",
+                JOptionPane.showMessageDialog(app, "Failed to save complaint details.", "Database Error",
                         JOptionPane.ERROR_MESSAGE);
                 return;
             }
@@ -1068,7 +1146,7 @@ public class ComplaintContentPanel extends JPanel {
         // Normal In Progress update
         else if ("In Progress".equals(newStatus)) {
             if (txtInProgressOfficer.getText().trim().isEmpty()) {
-                JOptionPane.showMessageDialog(this, "Officer / Personnel Assigned is required.", "Required",
+                JOptionPane.showMessageDialog(app, "Officer / Personnel Assigned is required.", "Required",
                         JOptionPane.WARNING_MESSAGE);
                 return;
             }
@@ -1087,11 +1165,11 @@ public class ComplaintContentPanel extends JPanel {
                 currentCdId, newStatus, note, app.getUserSession());
 
         if (!saved) {
-            JOptionPane.showMessageDialog(this, "Failed to update status.", "Error", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(app, "Failed to update status.", "Error", JOptionPane.ERROR_MESSAGE);
             return;
         }
 
-        JOptionPane.showMessageDialog(this, "Status updated successfully!", "Success", JOptionPane.INFORMATION_MESSAGE);
+        JOptionPane.showMessageDialog(app, "Status updated successfully!", "Success", JOptionPane.INFORMATION_MESSAGE);
         currentComplaint.setCurrentStatus(newStatus);
         loadComplaint(currentComplaint);
         hideUpdatePanel();
@@ -1181,6 +1259,7 @@ public class ComplaintContentPanel extends JPanel {
         btnUpdateHeader.setVisible(canUpdateStatus && !isFinalStatus);
 
         loadHistory(cd.getComplaintId());
+
     }
 
     private void loadHistory(int complaintId) {
