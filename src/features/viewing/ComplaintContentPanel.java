@@ -97,6 +97,12 @@ public class ComplaintContentPanel extends JPanel {
     private final ComplaintStatusController statusController;
     private static final String[] TIMELINE_LABELS = { "Submitted", "In Progress", "Resolved" };
 
+    /**
+     * Direct reference to the current status label in update panel (avoids fragile
+     * component tree search)
+     */
+    private JLabel lblUpdateCurrentStatus;
+
     /** Route to return to when Back is clicked */
     private String returnRoute = "dashboard";
 
@@ -315,7 +321,9 @@ public class ComplaintContentPanel extends JPanel {
                 timelineSteps[i].setBackground(activeColor);
                 timelineSteps[i].setForeground(Color.WHITE);
                 timelineLabels[i].setForeground(activeColor);
-                timelineSteps[i].setText(i < activeIndex ? "✓" : String.valueOf(i + 1));
+                // FIX: Use "\u2714" (heavy checkmark) instead of "✓" to avoid rendering as
+                // square/box
+                timelineSteps[i].setText(i < activeIndex ? "\u2714" : String.valueOf(i + 1));
             } else {
                 timelineSteps[i].setBackground(C_TIMELINE_INACTIVE);
                 timelineSteps[i].setForeground(Color.WHITE);
@@ -375,6 +383,8 @@ public class ComplaintContentPanel extends JPanel {
         descScroll.setBorder(null);
         descScroll.setOpaque(false);
         descScroll.getViewport().setOpaque(false);
+        // FIX: Prevent nested scroll pane from capturing mouse wheel events
+        descScroll.setWheelScrollingEnabled(false);
         panel.add(createFieldRow("Description", descScroll), gbc);
 
         gbc.gridy = 2;
@@ -468,12 +478,12 @@ public class ComplaintContentPanel extends JPanel {
         currentRow.setMaximumSize(new Dimension(Short.MAX_VALUE, 24));
         JLabel lblCurrentPrefix = new JLabel("Current Status:");
         lblCurrentPrefix.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-        JLabel lblCurrent = new JLabel("—");
-        lblCurrent.setName("lblCurrentStatus");
-        lblCurrent.setFont(new Font("Segoe UI", Font.BOLD, 12));
-        lblCurrent.setForeground(C_IN_PROGRESS);
+        // FIX: Store direct reference instead of relying on fragile name-based lookup
+        lblUpdateCurrentStatus = new JLabel("—");
+        lblUpdateCurrentStatus.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        lblUpdateCurrentStatus.setForeground(C_IN_PROGRESS);
         currentRow.add(lblCurrentPrefix);
-        currentRow.add(lblCurrent);
+        currentRow.add(lblUpdateCurrentStatus);
         panel.add(currentRow);
         panel.add(Box.createVerticalStrut(12));
 
@@ -523,6 +533,8 @@ public class ComplaintContentPanel extends JPanel {
         notesScroll.setBorder(null);
         notesScroll.setOpaque(false);
         notesScroll.getViewport().setOpaque(false);
+        // FIX: Prevent nested scroll pane from capturing mouse wheel events
+        notesScroll.setWheelScrollingEnabled(false);
         notesWrap.add(lblNotes, BorderLayout.NORTH);
         notesWrap.add(notesScroll, BorderLayout.CENTER);
 
@@ -629,6 +641,8 @@ public class ComplaintContentPanel extends JPanel {
         notesScroll.setBorder(null);
         notesScroll.setOpaque(false);
         notesScroll.getViewport().setOpaque(false);
+        // FIX: Prevent nested scroll pane from capturing mouse wheel events
+        notesScroll.setWheelScrollingEnabled(false);
         JPanel notesWrap = createLabeledFieldPanel("Validation Notes", notesScroll);
         notesWrap.setAlignmentX(Component.LEFT_ALIGNMENT);
         panel.add(notesWrap);
@@ -883,16 +897,8 @@ public class ComplaintContentPanel extends JPanel {
                 btnRejectHeader.setVisible(false);
             }
 
-            for (Component c : updatePanel.getComponents()) {
-                if (c instanceof JPanel) {
-                    for (Component cc : ((JPanel) c).getComponents()) {
-                        if ("lblCurrentStatus".equals(cc.getName()) && cc instanceof JLabel) {
-                            ((JLabel) cc).setText(currentComplaint != null ? currentComplaint.getCurrentStatus() : "—");
-                            break;
-                        }
-                    }
-                }
-            }
+            // FIX: Use direct reference instead of fragile nested component search
+            lblUpdateCurrentStatus.setText(currentComplaint != null ? currentComplaint.getCurrentStatus() : "—");
         } else {
             btnRejectHeader.setVisible(false);
         }

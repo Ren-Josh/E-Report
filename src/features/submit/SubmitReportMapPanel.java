@@ -26,6 +26,8 @@ import javax.swing.BorderFactory;
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
 
+import config.AppConfig;
+
 public class SubmitReportMapPanel extends JPanel {
 
     public interface Listener {
@@ -36,11 +38,11 @@ public class SubmitReportMapPanel extends JPanel {
         void onAddressResolved(String addressText);
     }
 
-    private int zoom = SubmitReportConstants.DEFAULT_MAP_ZOOM;
+    private int zoom = AppConfig.REPORT_DEFAULT_MAP_ZOOM;
     private static final int MIN_ZOOM = 3;
     private static final int MAX_ZOOM = 19;
-    private double centerLat = SubmitReportConstants.DEFAULT_MAP_LATITUDE;
-    private double centerLon = SubmitReportConstants.DEFAULT_MAP_LONGITUDE;
+    private double centerLat = AppConfig.REPORT_DEFAULT_MAP_LATITUDE;
+    private double centerLon = AppConfig.REPORT_DEFAULT_MAP_LONGITUDE;
     private Double pinLat;
     private Double pinLon;
     private boolean panning;
@@ -161,9 +163,9 @@ public class SubmitReportMapPanel extends JPanel {
     }
 
     public void resetView() {
-        centerLat = SubmitReportConstants.DEFAULT_MAP_LATITUDE;
-        centerLon = SubmitReportConstants.DEFAULT_MAP_LONGITUDE;
-        zoom = SubmitReportConstants.DEFAULT_MAP_ZOOM;
+        centerLat = AppConfig.REPORT_DEFAULT_MAP_LATITUDE;
+        centerLon = AppConfig.REPORT_DEFAULT_MAP_LONGITUDE;
+        zoom = AppConfig.REPORT_DEFAULT_MAP_ZOOM;
         tileCache.clear();
         clearPin();
         repaint();
@@ -351,17 +353,17 @@ public class SubmitReportMapPanel extends JPanel {
     private void drawServiceArea(Graphics2D g2) {
         double worldCenterX = lonToWorldX(centerLon);
         double worldCenterY = latToWorldY(centerLat);
-        double defaultWorldX = lonToWorldX(SubmitReportConstants.DEFAULT_MAP_LONGITUDE);
-        double defaultWorldY = latToWorldY(SubmitReportConstants.DEFAULT_MAP_LATITUDE);
+        double defaultWorldX = lonToWorldX(AppConfig.REPORT_DEFAULT_MAP_LONGITUDE);
+        double defaultWorldY = latToWorldY(AppConfig.REPORT_DEFAULT_MAP_LATITUDE);
 
         double dx = defaultWorldX - worldCenterX;
         double dy = defaultWorldY - worldCenterY;
         double screenX = (getWidth() / 2.0) + dx;
         double screenY = (getHeight() / 2.0) + dy;
 
-        double metersPerPixel = 156543.03392 * Math.cos(Math.toRadians(SubmitReportConstants.DEFAULT_MAP_LATITUDE))
+        double metersPerPixel = 156543.03392 * Math.cos(Math.toRadians(AppConfig.REPORT_DEFAULT_MAP_LATITUDE))
                 / (1 << zoom);
-        double radius = SubmitReportConstants.SERVICE_AREA_RADIUS_METERS / metersPerPixel;
+        double radius = AppConfig.REPORT_SERVICE_AREA_RADIUS_METERS / metersPerPixel;
 
         if (radius > 10 && radius < Math.max(getWidth(), getHeight()) * 2) {
             g2.setColor(new Color(33, 150, 243, 60));

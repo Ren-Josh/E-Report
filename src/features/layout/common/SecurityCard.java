@@ -96,7 +96,7 @@ public class SecurityCard extends UICard {
             }
         }
 
-        lblIcon.setText("🔒");
+        lblIcon.setText("Change Password");
         lblIcon.setFont(new Font("Segoe UI", Font.PLAIN, iconSize));
     }
 

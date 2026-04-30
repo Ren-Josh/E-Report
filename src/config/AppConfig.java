@@ -19,10 +19,11 @@ public class AppConfig {
 
     // ==================== COMPLAINT TYPES / CATEGORIES ====================
     public static final String[] COMPLAINT_TYPES = {
-            "Garbage", "Theft", "Robbery"
+            "Select Category", "Garbage", "Theft", "Robbery"
     };
 
     public static final String[] REPORT_PUROK_OPTIONS = {
+            "Select Purok",
             "Purok 1",
             "Purok 2",
             "Purok 3",
@@ -44,10 +45,10 @@ public class AppConfig {
     };
 
     // Default map center for the e-report service coverage
-    public static final double REPORT_DEFAULT_MAP_LATITUDE = 15.4807;
-    public static final double REPORT_DEFAULT_MAP_LONGITUDE = 121.0894;
+    public static final double REPORT_DEFAULT_MAP_LATITUDE = 15.479997;
+    public static final double REPORT_DEFAULT_MAP_LONGITUDE = 121.086568;
     public static final int REPORT_DEFAULT_MAP_ZOOM = 16;
-    public static final int REPORT_SERVICE_AREA_RADIUS_METERS = 5000;
+    public static final int REPORT_SERVICE_AREA_RADIUS_METERS = 1000;
 
     // UI Placeholders
     public static final String REPORT_CATEGORY_PLACEHOLDER = "Choose category of issue";

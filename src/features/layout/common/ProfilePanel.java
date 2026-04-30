@@ -198,7 +198,7 @@ public class ProfilePanel extends JPanel {
 
         passwordDialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this),
                 "Confirm Changes", true);
-        passwordDialog.setSize(400, 300);
+        passwordDialog.setSize(400, 400);
         passwordDialog.setLocationRelativeTo(this);
         passwordDialog.setResizable(false);
 
@@ -223,7 +223,12 @@ public class ProfilePanel extends JPanel {
                 "Confirm Your Identity",
                 "Enter your password to save changes to email, phone, or username");
 
-        passwordDialog.add(passwordPanel);
+        // Add insets/padding around the panel to match the screenshot spacing
+        JPanel wrapper = new JPanel(new BorderLayout());
+        wrapper.setBorder(BorderFactory.createEmptyBorder(20, 14, 20, 14)); // top, left, bottom, right insets
+        wrapper.add(passwordPanel, BorderLayout.CENTER);
+
+        passwordDialog.add(wrapper);
         passwordDialog.setVisible(true);
     }
 
