@@ -11,7 +11,7 @@ public class RecentActivitiesPanel extends BaseCardPanel {
     private final String panelTitle;
     private List<ActivityItem> activities;
     private boolean compact = false;
-    private int lastPanelWidth = 400; // best-guess until first layout
+    private int lastPanelWidth = 400;
 
     public RecentActivitiesPanel(String title, List<ActivityItem> activities) {
         super(title);
@@ -31,8 +31,6 @@ public class RecentActivitiesPanel extends BaseCardPanel {
                     compact = nowCompact;
                     rebuild();
                 } else {
-                    // width changed but mode stayed the same – just relayout so rows
-                    // recalculate their wrapped heights against the new width
                     revalidate();
                     repaint();
                 }
@@ -47,11 +45,6 @@ public class RecentActivitiesPanel extends BaseCardPanel {
         rebuild();
     }
 
-    /* ------------------------------------------------------------------ */
-    /* Call this from a button / timer after the UI is visible so you */
-    /* can paste the console output back for diagnosis. */
-    /* ------------------------------------------------------------------ */
-
     private void rebuild() {
         removeAll();
 
@@ -59,6 +52,19 @@ public class RecentActivitiesPanel extends BaseCardPanel {
         titleLabel.setFont(compact ? UIConfig.ACTIVITY_TITLE_FONT_COMPACT : UIConfig.ACTIVITY_TITLE_FONT);
         titleLabel.setForeground(UIConfig.TEXT_DARK);
         add(titleLabel, BorderLayout.NORTH);
+
+        // ── EMPTY STATE: show fallback label when no activities ──
+        if (activities == null || activities.isEmpty()) {
+            JLabel emptyLabel = new JLabel("No recent activities", SwingConstants.CENTER);
+            emptyLabel.setFont(compact ? UIConfig.ACTIVITY_DESC_FONT_COMPACT : UIConfig.ACTIVITY_DESC_FONT);
+            emptyLabel.setForeground(UIConfig.TEXT_MUTED);
+            emptyLabel.setOpaque(false);
+            add(emptyLabel, BorderLayout.CENTER);
+
+            revalidate();
+            repaint();
+            return;
+        }
 
         ScrollableListPanel listPanel = new ScrollableListPanel();
         listPanel.setLayout(new GridBagLayout());
