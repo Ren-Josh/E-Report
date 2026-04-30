@@ -84,12 +84,12 @@ public class AppConfig {
 
     public static final String CREATE_CREDENTIAL_TABLE = """
             CREATE TABLE IF NOT EXISTS Credential(
-                Cred_ID INT AUTO_INCREMENT PRIMARY KEY NOT NULL,
+                Cred_ID INT AUTO_INCREMENT PRIMARY KEY,
                 UI_ID INT NOT NULL,
                 username VARCHAR(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin UNIQUE NOT NULL,
                 password VARCHAR(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,
                 role VARCHAR(20) NOT NULL,
-                is_verified BOOLEAN NOT NULL,
+                is_verified BOOLEAN,
                 date_created TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
                 FOREIGN KEY (UI_ID) REFERENCES User_Info(UI_ID)
             );
@@ -99,8 +99,8 @@ public class AppConfig {
             CREATE TABLE IF NOT EXISTS Complaint_Detail(
                 CD_ID INT AUTO_INCREMENT PRIMARY KEY NOT NULL,
                 current_status VARCHAR(20) NOT NULL,
-                subject VARCHAR(50) NOT NULL,
-                type VARCHAR(50) NOT NULL,
+                subject VARCHAR(50),
+                type VARCHAR(50),
                 date_time DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL,
                 street VARCHAR(50) NOT NULL,
                 purok VARCHAR(50) NOT NULL,
@@ -108,7 +108,7 @@ public class AppConfig {
                 latitude DECIMAL(10,8) NOT NULL,
                 persons_involved TEXT NOT NULL,
                 details TEXT NOT NULL,
-                photo_attachment MEDIUMBLOB NOT NULL,
+                photo_attachment MEDIUMBLOB,
                 date_time_created TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
             );
             """;
