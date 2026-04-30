@@ -4,6 +4,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.List;
 
 import javax.swing.JOptionPane;
@@ -27,16 +28,37 @@ public class RecentActivityController {
         RecentActivityDao dao = new RecentActivityDao();
         List<ActivityItem> activities = new ArrayList<>();
 
+        // Calculate cutoff: 2 days ago at midnight (00:00:00)
+        // Dynamically based on current date — always rolls with the calendar
+        Calendar cal = Calendar.getInstance();
+        cal.add(Calendar.DAY_OF_YEAR, -2); // go back 2 days
+        cal.set(Calendar.HOUR_OF_DAY, 0); // midnight
+        cal.set(Calendar.MINUTE, 0);
+        cal.set(Calendar.SECOND, 0);
+        cal.set(Calendar.MILLISECOND, 0);
+        java.sql.Timestamp cutoff = new java.sql.Timestamp(cal.getTimeInMillis());
+
         try (Connection con = DBConnection.connect()) {
-            List<Object[]> rows = dao.getRecentStatusUpdates(con, limit);
+            List<Object[]> rows = dao.getRecentStatusUpdates(con, limit, cutoff);
 
             for (Object[] row : rows) {
                 int cId = (Integer) row[0];
                 String status = (String) row[1];
                 java.sql.Timestamp ts = (java.sql.Timestamp) row[2];
-                String updatedBy = (String) row[3];
+                String role = (String) row[3];
+                String userName = (String) row[4];
+                Integer userId = (Integer) row[5];
 
-                String actor = (updatedBy != null && !updatedBy.isEmpty()) ? updatedBy : "System";
+                // Format: Role: Name (ID: value)
+                String actor;
+                if (role != null && userName != null && userId != null) {
+                    actor = role + ": " + userName + " (ID: " + userId + ")";
+                } else if (role != null && userName != null) {
+                    actor = role + ": " + userName;
+                } else {
+                    actor = (role != null && !role.isEmpty()) ? role : "System";
+                }
+
                 String title = "Report Status Updated";
                 String desc = actor + " updated Report #" + cId + " (ID: C" + cId + ") to " + status;
                 String time = TIME_FMT.format(ts);

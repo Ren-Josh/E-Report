@@ -14,35 +14,45 @@ public class RecentActivityDao {
     public RecentActivityDao() {
         queryRecentStatusUpdates = """
                 SELECT
-                    c.C_ID,
-                    chd.status,
+                    cd.CD_ID AS complaint_id,
+                    cd.current_status,
                     chd.date_time_updated,
-                    chd.updated_by
-                FROM Complaint_History ch
-                INNER JOIN Complaint_History_Detail chd ON ch.CHD_ID = chd.CHD_ID
-                INNER JOIN Complaint c ON ch.CD_ID = c.CD_ID
+                    cr.role AS updated_by_role,
+                    CONCAT(ui.first_name, ' ', ui.last_name) AS user_name,
+                    ui.UI_ID AS user_id
+                FROM Complaint_History_Detail chd
+                JOIN Complaint_History ch ON chd.CHD_ID = ch.CHD_ID
+                JOIN Complaint_Detail cd ON ch.CD_ID = cd.CD_ID
+                JOIN Complaint c ON cd.CD_ID = c.CD_ID
+                JOIN User_Info ui ON c.UI_ID = ui.UI_ID
+                JOIN Credential cr ON ui.UI_ID = cr.UI_ID
+                WHERE chd.status = cd.current_status
+                  AND chd.date_time_updated >= ?
                 ORDER BY chd.date_time_updated DESC
                 LIMIT ?
                 """;
     }
 
-    public List<Object[]> getRecentStatusUpdates(Connection con, int limit) {
-        List<Object[]> list = new ArrayList<>();
+    public List<Object[]> getRecentStatusUpdates(Connection con, int limit, java.sql.Timestamp cutoff) {
+        List<Object[]> results = new ArrayList<>();
         try (PreparedStatement stmt = con.prepareStatement(queryRecentStatusUpdates)) {
-            stmt.setInt(1, limit);
+            stmt.setTimestamp(1, cutoff);
+            stmt.setInt(2, limit);
             ResultSet rs = stmt.executeQuery();
             while (rs.next()) {
-                list.add(new Object[] {
-                        rs.getInt("C_ID"),
-                        rs.getString("status"),
-                        rs.getTimestamp("date_time_updated"),
-                        rs.getString("updated_by")
-                });
+                Object[] row = new Object[6];
+                row[0] = rs.getInt("complaint_id");
+                row[1] = rs.getString("current_status");
+                row[2] = rs.getTimestamp("date_time_updated");
+                row[3] = rs.getString("updated_by_role");
+                row[4] = rs.getString("user_name");
+                row[5] = rs.getInt("user_id");
+                results.add(row);
             }
         } catch (SQLException e) {
             System.err.println("Error retrieving recent activities");
             e.printStackTrace();
         }
-        return list;
+        return results;
     }
 }
