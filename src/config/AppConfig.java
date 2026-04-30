@@ -13,7 +13,7 @@ public class AppConfig {
     public static final String SMTP_HOST = "smtp.gmail.com";
     public static final int SMTP_PORT = 587;
     public static final String SMTP_USERNAME = "renjosh.neust@gmail.com"; // CHANGE THIS
-    public static final String SMTP_PASSWORD = "fkrk alxl eaqq xbxp"; // CHANGE THIS
+    public static final String SMTP_PASSWORD = ""; // CHANGE THIS
     public static final String SMTP_FROM_NAME = "Barangay E-Reporting System";
     public static final boolean SMTP_USE_TLS = true;
 
@@ -44,6 +44,7 @@ public class AppConfig {
             "images/desktop2.JPEG"
     };
 
+    // fkrk alxl eaqq xbxp
     // Default map center for the e-report service coverage
     public static final double REPORT_DEFAULT_MAP_LATITUDE = 15.479997;
     public static final double REPORT_DEFAULT_MAP_LONGITUDE = 121.086568;
