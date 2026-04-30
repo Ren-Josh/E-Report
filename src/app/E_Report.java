@@ -1,6 +1,7 @@
 package app;
 
 import java.awt.CardLayout;
+import java.awt.Component;
 import java.util.ArrayList;
 import java.util.List;
 import javax.swing.ImageIcon;
@@ -13,6 +14,7 @@ import models.Credential;
 import models.UserInfo;
 import models.UserSession;
 import config.UIConfig;
+import features.components.NavPanel;
 import features.views.AllReportsView;
 import features.views.ComplaintDetailView;
 import features.views.ComplaintStatusUpdateView;
@@ -101,6 +103,7 @@ public class E_Report extends JFrame {
 
     public void navigate(String route) {
         getContentPane().removeAll();
+        NavPanel navPanel = null;
 
         switch (route.toLowerCase()) {
             case "login" -> add(new LoginView(this));
@@ -116,13 +119,38 @@ public class E_Report extends JFrame {
             case "complaintdetail" -> add(new ComplaintDetailView(this));
             case "forgotpassword" -> add(new ForgotPasswordView(this));
             case "securitypassword" -> {
-                securityPasswordChangePanel.preparePanel(); // auto-fill username + email
+                securityPasswordChangePanel.preparePanel();
                 add(securityPasswordChangePanel);
+            }
+        }
+
+        Component[] children = getContentPane().getComponents();
+        for (Component c : children) {
+            NavPanel nav = extractNavPanel(c);
+            if (nav != null) {
+                nav.syncSelectionToRoute(route);
             }
         }
 
         revalidate();
         repaint();
+    }
+
+    private NavPanel extractNavPanel(Component c) {
+        if (c instanceof MyProfileView v)
+            return v.getNavPanel();
+        if (c instanceof MyReportsView v)
+            return v.getNavPanel();
+        if (c instanceof SubmitReportView v)
+            return v.getNavPanel();
+        if (c instanceof UserManagementView v)
+            return v.getNavPanel();
+        if (c instanceof DashboardView v)
+            return v.getNavPanel();
+        if (c instanceof AllReportsView v)
+            return v.getNavPanel();
+        // add future views here
+        return null;
     }
 
     public void logout() {

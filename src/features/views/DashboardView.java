@@ -62,7 +62,7 @@ public class DashboardView extends JPanel {
         return header;
     }
 
-    public NavPanel getNav() {
+    public NavPanel getNavPanel() {
         return nav;
     }
 

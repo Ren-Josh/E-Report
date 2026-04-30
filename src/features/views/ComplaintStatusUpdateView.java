@@ -71,7 +71,7 @@ public class ComplaintStatusUpdateView extends JPanel {
         return header;
     }
 
-    public NavPanel getNav() {
+    public NavPanel getNavPanel() {
         return nav;
     }
 }

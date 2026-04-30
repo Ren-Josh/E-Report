@@ -846,4 +846,8 @@ public class SubmitReportView extends JPanel {
             super.paintComponent(g);
         }
     }
+
+    public NavPanel getNavPanel() {
+        return nav;
+    }
 }

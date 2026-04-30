@@ -30,12 +30,15 @@ public class MyReportsView extends JPanel {
         myReportsPanel = new MyReportPanel(app);
 
         UserSession us = app.getUserSession();
-        if (us.getRole().equalsIgnoreCase("captain")) {
-            nav.setCaptainMenus(route -> app.navigate(route));
-        } else if (us.getRole().equalsIgnoreCase("secretary")) {
-            nav.setSecretaryMenus(route -> app.navigate(route));
-        } else {
-            nav.setResidentMenus(route -> app.navigate(route));
+        if (us != null) { // ← null guard added
+            String role = us.getRole();
+            if (role.equalsIgnoreCase("captain")) {
+                nav.setCaptainMenus(route -> app.navigate(route));
+            } else if (role.equalsIgnoreCase("secretary")) {
+                nav.setSecretaryMenus(route -> app.navigate(route));
+            } else {
+                nav.setResidentMenus(route -> app.navigate(route));
+            }
         }
 
         bgPanel.add(header, BorderLayout.NORTH);
@@ -49,7 +52,7 @@ public class MyReportsView extends JPanel {
         return header;
     }
 
-    public NavPanel getNav() {
+    public NavPanel getNavPanel() {
         return nav;
     }
 

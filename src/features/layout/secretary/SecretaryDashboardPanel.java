@@ -147,7 +147,7 @@ public class SecretaryDashboardPanel extends JPanel {
 
         if (cd != null) {
             app.setCurrentComplaint(cd);
-            app.setReturnRoute("reports");
+            app.setReturnRoute("dashboard");
             app.navigate("complaintdetail");
         }
     }

@@ -13,7 +13,7 @@ import java.util.function.Consumer;
 
 public class NavPanel extends JPanel {
     private JPanel menuContainer;
-    private static int selectedIndex = 0;
+    private int selectedIndex = 0; // ← was static, now instance-level
 
     // Holds all current navigation items (icon, label, action)
     private List<NavItem> navItems = new ArrayList<>();
@@ -44,8 +44,8 @@ public class NavPanel extends JPanel {
     public static class NavItem {
         private final String iconPath;
         private final String label;
-        private final String navigateTo; // e.g., "dashboard", "reports"
-        private final Consumer<String> action; // Optional custom action override
+        private final String navigateTo;
+        private final Consumer<String> action;
 
         public NavItem(String iconPath, String label, String navigateTo) {
             this(iconPath, label, navigateTo, null);
@@ -120,17 +120,6 @@ public class NavPanel extends JPanel {
 
     // ========== CUSTOM MENU SETTER (most flexible) ==========
 
-    /**
-     * Set completely custom navigation items with their own actions.
-     * Example:
-     * navPanel.setCustomMenus(navigator, List.of(
-     * new NavItem("icon.png", "Dashboard", "dashboard"),
-     * new NavItem("icon.png", "Reports", "reports", route -> {
-     * // custom logic before navigate
-     * navigator.accept(route);
-     * })
-     * ));
-     */
     public void setCustomMenus(Consumer<String> navigator, List<NavItem> items) {
         this.navItems = new ArrayList<>(items);
         buildMenus(navigator);
@@ -143,6 +132,29 @@ public class NavPanel extends JPanel {
     private void buildMenus(Consumer<String> navigator) {
         this.currentNavigator = navigator;
         refreshMenu();
+    }
+
+    public void syncSelectionToRoute(String route) {
+        System.out.println("NavPanel.syncSelectionToRoute(" + route + ")");
+        System.out.println("  navItems.size() = " + navItems.size());
+        if (route == null || navItems.isEmpty()) {
+            System.out.println("  EARLY RETURN - empty");
+            return;
+        }
+        String target = route.toLowerCase();
+        for (int i = 0; i < navItems.size(); i++) {
+            String navRoute = navItems.get(i).getNavigateTo();
+            System.out.println("  Checking [" + i + "]: '" + navRoute + "' vs '" + target + "'");
+            if (navRoute.equalsIgnoreCase(target)) {
+                System.out.println("  MATCH! " + selectedIndex + " -> " + i);
+                if (selectedIndex != i) {
+                    selectedIndex = i;
+                    refreshMenu();
+                }
+                return;
+            }
+        }
+        System.out.println("  NO MATCH");
     }
 
     private JPanel createMenuItem(int index) {

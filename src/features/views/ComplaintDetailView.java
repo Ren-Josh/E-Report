@@ -11,22 +11,12 @@ import models.UserSession;
 import javax.swing.*;
 import java.awt.*;
 
-/**
- * Full-page complaint detail view with persistent Header and NavPanel.
- * The content panel handles both View and Update modes internally.
- */
 public class ComplaintDetailView extends JPanel {
 
     private final E_Report app;
     private HeaderPanel header;
     private NavPanel nav;
     private ComplaintContentPanel contentPanel;
-
-    /**
-     * Route to navigate back to when Back is clicked (e.g., "dashboard",
-     * "myreport", "reports")
-     */
-    private String returnRoute = "dashboard";
 
     public ComplaintDetailView(E_Report app) {
         this.app = app;
@@ -36,17 +26,18 @@ public class ComplaintDetailView extends JPanel {
         bgPanel.setLayout(new BorderLayout(15, 15));
         bgPanel.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
 
-        // Header (always visible)
         header = new HeaderPanel(app);
         bgPanel.add(header, BorderLayout.NORTH);
 
-        // Navigation sidebar (always visible)
         nav = new NavPanel();
         setupNavigation();
         bgPanel.add(nav, BorderLayout.WEST);
 
-        // Main content - wrap in a scroll pane to handle overflow
         contentPanel = new ComplaintContentPanel(app);
+        // ── READ return route from app state ──
+        String route = app.getReturnRoute();
+        contentPanel.setReturnRoute(route != null ? route : "dashboard");
+
         JScrollPane contentScroll = new JScrollPane(contentPanel);
         contentScroll.setOpaque(false);
         contentScroll.getViewport().setOpaque(false);
@@ -57,21 +48,6 @@ public class ComplaintDetailView extends JPanel {
         bgPanel.add(contentScroll, BorderLayout.CENTER);
 
         add(bgPanel, BorderLayout.CENTER);
-    }
-
-    /**
-     * Set the route to return to when the user clicks Back.
-     * Call this BEFORE navigating to this view.
-     */
-    public void setReturnRoute(String route) {
-        this.returnRoute = (route != null && !route.isBlank()) ? route : "dashboard";
-        if (contentPanel != null) {
-            contentPanel.setReturnRoute(this.returnRoute);
-        }
-    }
-
-    public String getReturnRoute() {
-        return returnRoute;
     }
 
     private void setupNavigation() {
@@ -97,7 +73,7 @@ public class ComplaintDetailView extends JPanel {
         return header;
     }
 
-    public NavPanel getNav() {
+    public NavPanel getNavPanel() {
         return nav;
     }
 }
