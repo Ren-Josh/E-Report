@@ -11,14 +11,11 @@ import models.UserSession;
 import javax.swing.*;
 import java.awt.*;
 
-/**
- * MyProfileView - A dedicated view for user profile management.
- */
 public class MyProfileView extends JPanel {
     private final E_Report app;
     private final HeaderPanel header;
     private final NavPanel nav;
-    private final ProfilePanel profilePanel;
+    private ProfilePanel profilePanel;
 
     public MyProfileView(E_Report app) {
         this.app = app;
@@ -26,7 +23,10 @@ public class MyProfileView extends JPanel {
         header = new HeaderPanel(app);
         nav = new NavPanel();
 
-        profilePanel = new ProfilePanel(app, () -> app.navigate("securitypassword"));
+        profilePanel = new ProfilePanel(app, () -> {
+            profilePanel.cancelEditOnNavigate();
+            app.navigate("securitypassword");
+        });
 
         initializeLayout();
         setupNavigation();
@@ -52,12 +52,18 @@ public class MyProfileView extends JPanel {
             return;
 
         String role = session.getRole();
+
+        java.util.function.Consumer<String> wrappedNavigator = route -> {
+            profilePanel.cancelEditOnNavigate();
+            app.navigate(route);
+        };
+
         if (role.equalsIgnoreCase("captain")) {
-            nav.setCaptainMenus(route -> app.navigate(route));
+            nav.setCaptainMenus(wrappedNavigator);
         } else if (role.equalsIgnoreCase("secretary")) {
-            nav.setSecretaryMenus(route -> app.navigate(route));
+            nav.setSecretaryMenus(wrappedNavigator);
         } else if (role.equalsIgnoreCase("resident")) {
-            nav.setResidentMenus(route -> app.navigate(route));
+            nav.setResidentMenus(wrappedNavigator);
         }
     }
 

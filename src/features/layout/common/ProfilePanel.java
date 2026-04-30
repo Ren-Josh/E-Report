@@ -54,13 +54,7 @@ public class ProfilePanel extends JPanel {
         this.profileController = new ProfileUpdateController();
 
         headerPanel = new ProfileHeaderPanel("Profile Settings", () -> {
-            if (hasUnsavedChanges) {
-                int result = JOptionPane.showConfirmDialog(this,
-                        "You have unsaved changes. Are you sure you want to leave?",
-                        "Unsaved Changes", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
-                if (result != JOptionPane.YES_OPTION)
-                    return;
-            }
+            cancelEditOnNavigate();
             app.navigate("dashboard");
         });
 
@@ -69,6 +63,7 @@ public class ProfilePanel extends JPanel {
         securityCard = new SecurityCard();
         statusBar = new ProfileStatusBar();
 
+        accountInfoCard.setFieldsEditable(false);
         securityCard.setOnChangePasswordAction(onChangePassword);
 
         setupUI();
@@ -149,7 +144,6 @@ public class ProfilePanel extends JPanel {
                 KeyStroke.getKeyStroke(KeyEvent.VK_E, KeyEvent.CTRL_DOWN_MASK),
                 JComponent.WHEN_IN_FOCUSED_WINDOW);
 
-        // Validation listeners — only for editable fields
         accountInfoCard.getEmailField().getDocument().addDocumentListener(new ValidationListener(
                 accountInfoCard.getEmailField(),
                 () -> isValidEmail(accountInfoCard.getEmailField().getText()),
@@ -159,11 +153,28 @@ public class ProfilePanel extends JPanel {
                 () -> isValidPhone(accountInfoCard.getPhoneField().getText()),
                 "Invalid phone format"));
 
-        // Dirty check — only editable fields
         DocumentChangeListener dirtyListener = new DocumentChangeListener();
         accountInfoCard.getPhoneField().getDocument().addDocumentListener(dirtyListener);
         accountInfoCard.getEmailField().getDocument().addDocumentListener(dirtyListener);
         accountInfoCard.getUsernameField().getDocument().addDocumentListener(dirtyListener);
+    }
+
+    public void cancelEditOnNavigate() {
+        if (!isEditing)
+            return;
+
+        if (hasUnsavedChanges) {
+            restoreOriginalValues();
+        }
+        isEditing = false;
+        accountInfoCard.setFieldsEditable(false);
+        accountInfoCard.getEditButton().setText("Edit");
+        accountInfoCard.getCancelButton().setVisible(false);
+        hasUnsavedChanges = false;
+        showStatus("Edit cancelled", TEXT_SECONDARY);
+        accountInfoCard.updateFieldBackgrounds(false);
+        revalidate();
+        repaint();
     }
 
     private void toggleEditMode() {
@@ -223,9 +234,8 @@ public class ProfilePanel extends JPanel {
                 "Confirm Your Identity",
                 "Enter your password to save changes to email, phone, or username");
 
-        // Add insets/padding around the panel to match the screenshot spacing
         JPanel wrapper = new JPanel(new BorderLayout());
-        wrapper.setBorder(BorderFactory.createEmptyBorder(20, 14, 20, 14)); // top, left, bottom, right insets
+        wrapper.setBorder(BorderFactory.createEmptyBorder(20, 14, 20, 14));
         wrapper.add(passwordPanel, BorderLayout.CENTER);
 
         passwordDialog.add(wrapper);
