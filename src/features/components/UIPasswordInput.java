@@ -15,14 +15,13 @@ public class UIPasswordInput extends JPasswordField {
     private UIPasswordInput referenceField;
     private boolean isPasswordVisible = false;
     private int radius = UIConfig.FIELD_RADIUS;
-    // CHANGED: matched UIComboBox padding (6 top/bottom, 10 right)
     private int paddingLeft = 12, paddingRight = 10, paddingTop = 6, paddingBottom = 6;
     private boolean showEyeIcon = true;
     private boolean isHovered = false;
     private boolean forcePlainBackground = false;
 
-    // ADDED: size scaling
     private Font baseFont;
+    private float placeholderFontSize = 12f; // ADJUSTABLE: default 12pt
 
     public enum SizePreset {
         SMALL, DEFAULT, LARGE
@@ -47,7 +46,7 @@ public class UIPasswordInput extends JPasswordField {
         setOpaque(false);
         applyPadding();
 
-        this.baseFont = getFont(); // ADDED
+        this.baseFont = getFont();
 
         try {
             this.lockIcon = scaleIcon(UIConfig.LOCK_ICON_PATH);
@@ -104,7 +103,6 @@ public class UIPasswordInput extends JPasswordField {
         });
     }
 
-    // ADDED: size preset methods
     public void applySizePreset() {
         applySizePreset(SizePreset.DEFAULT);
     }
@@ -123,7 +121,7 @@ public class UIPasswordInput extends JPasswordField {
 
     public void setShowEyeIcon(boolean show) {
         this.showEyeIcon = show;
-        paddingRight = show ? 36 : 10; // CHANGED: fallback 10 to match combobox
+        paddingRight = show ? 36 : 10;
         applyPadding();
         repaint();
     }
@@ -165,6 +163,11 @@ public class UIPasswordInput extends JPasswordField {
 
     public void setMatchTarget(UIPasswordInput other) {
         this.referenceField = other;
+    }
+
+    public void setPlaceholderFontSize(float size) {
+        this.placeholderFontSize = size;
+        repaint();
     }
 
     private void validateLive() {
@@ -298,11 +301,11 @@ public class UIPasswordInput extends JPasswordField {
 
             super.paintComponent(g);
 
-            // CHANGED: italic placeholder to match UIComboBox style
+            // Smaller, lighter placeholder (default 12pt italic)
             if (placeholder != null && getPassword().length == 0) {
                 g2.setColor(UIConfig.FIELD_PLACEHOLDER);
                 Font origFont = g2.getFont();
-                g2.setFont(origFont.deriveFont(Font.ITALIC));
+                g2.setFont(origFont.deriveFont(Font.ITALIC, placeholderFontSize));
                 FontMetrics fm = g2.getFontMetrics();
                 int y = Math.max(fm.getAscent(), (h - fm.getHeight()) / 2 + fm.getAscent());
                 g2.drawString(placeholder, getInsets().left, y);

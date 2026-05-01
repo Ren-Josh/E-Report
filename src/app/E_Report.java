@@ -92,7 +92,6 @@ public class E_Report extends JFrame {
 
         container.add(new HomepageView(this), "home");
 
-        // Create once and reuse — preparePanel() is called on every navigate to it
         securityPasswordChangePanel = new SecurityPasswordChangePanel(this);
 
         add(container);
@@ -112,7 +111,7 @@ public class E_Report extends JFrame {
             case "profile" -> add(new MyProfileView(this));
             case "myreport" -> add(new MyReportsView(this));
             case "reports" -> add(new AllReportsView(this));
-            case "usermanagement" -> add(new UserManagementView(this));
+            // case "usermanagement" -> add(new UserManagementView(this));
             case "submitreport" -> add(new SubmitReportView(this));
             case "updatestatus" -> add(new ComplaintStatusUpdateView(this));
             case "complaintdetail" -> add(new ComplaintDetailView(this));
@@ -148,7 +147,7 @@ public class E_Report extends JFrame {
             return v.getNavPanel();
         if (c instanceof AllReportsView v)
             return v.getNavPanel();
-        // add future views here
+
         return null;
     }
 

@@ -1,9 +1,17 @@
 package features.layout.common;
 
 import java.awt.*;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.Date;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import javax.swing.*;
 
 import app.E_Report;
@@ -56,7 +64,45 @@ public class AllReportsPanel extends JPanel {
     private void onDataChanged() {
         filteredDataList.clear();
         filteredDataList.addAll(fetcher.getFilteredReports());
+
+        Map<Long, Color> highlights = computeRowHighlights();
+        reportsPanel.setRowHighlights(highlights);
+
         refreshTable();
+    }
+
+    private Map<Long, Color> computeRowHighlights() {
+        Map<Long, Color> highlights = new HashMap<>();
+        Set<Integer> followUpIds = fetchFollowUpComplaintIds();
+        int rowsPerPage = reportsPanel.getRowsPerPage();
+
+        for (int i = 0; i < filteredDataList.size(); i++) {
+            Object[] row = filteredDataList.get(i);
+            if (row == null || row.length == 0 || row[0] == null)
+                continue;
+
+            int complaintId;
+            try {
+                complaintId = Integer.parseInt(row[0].toString());
+            } catch (NumberFormatException e) {
+                continue;
+            }
+
+            String status = row.length > 5 && row[5] != null ? row[5].toString() : "";
+
+            int page = i / rowsPerPage;
+            int rowIdx = i % rowsPerPage;
+            long pos = ((long) page << 32) | (rowIdx & 0xffffffffL);
+
+            if (followUpIds.contains(complaintId)) {
+                highlights.put(pos, new Color(255, 248, 225)); // light orange
+            } else if ("Resolved".equalsIgnoreCase(status)) {
+                highlights.put(pos, new Color(232, 245, 233)); // light green
+            } else if ("Rejected".equalsIgnoreCase(status)) {
+                highlights.put(pos, new Color(255, 235, 238)); // light red
+            }
+        }
+        return highlights;
     }
 
     private void initializeUI() {
@@ -147,6 +193,25 @@ public class AllReportsPanel extends JPanel {
                 return cd;
         }
         return null;
+    }
+
+    /**
+     * Fetches distinct complaint IDs that currently have a Pending follow-up
+     * request.
+     */
+    private Set<Integer> fetchFollowUpComplaintIds() {
+        Set<Integer> ids = new HashSet<>();
+        String sql = "SELECT DISTINCT CD_ID FROM Follow_Up_Request WHERE status = 'Pending'";
+        try (Connection con = config.database.DBConnection.connect();
+                PreparedStatement ps = con.prepareStatement(sql);
+                ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                ids.add(rs.getInt("CD_ID"));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return ids;
     }
 
     // ============================================================

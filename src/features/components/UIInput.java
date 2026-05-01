@@ -22,8 +22,8 @@ public class UIInput extends JTextField {
     private boolean isHovered = false;
     private boolean forcePlainBackground = false;
 
-    // ADDED: size scaling
     private Font baseFont;
+    private float placeholderFontSize = 12f; // ADJUSTABLE: default 12pt
 
     public enum SizePreset {
         SMALL, DEFAULT, LARGE
@@ -44,7 +44,7 @@ public class UIInput extends JTextField {
         setCaretColor(UIConfig.PRIMARY);
         applyPadding(12);
 
-        this.baseFont = getFont(); // ADDED
+        this.baseFont = getFont();
 
         getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
             public void insertUpdate(javax.swing.event.DocumentEvent e) {
@@ -84,7 +84,6 @@ public class UIInput extends JTextField {
         }
     }
 
-    // ADDED: size preset methods
     public void applySizePreset() {
         applySizePreset(SizePreset.DEFAULT);
     }
@@ -155,6 +154,11 @@ public class UIInput extends JTextField {
         });
     }
 
+    public void setPlaceholderFontSize(float size) {
+        this.placeholderFontSize = size;
+        repaint();
+    }
+
     private void validateLive() {
         String value = getValue();
         if (value.isEmpty()) {
@@ -195,7 +199,6 @@ public class UIInput extends JTextField {
         return state;
     }
 
-    // CHANGED: matched UIComboBox padding (6,12,6,10)
     private void applyPadding(int left) {
         setBorder(new EmptyBorder(6, left, 6, 10));
     }
@@ -253,11 +256,11 @@ public class UIInput extends JTextField {
 
             super.paintComponent(g);
 
-            // CHANGED: italic placeholder to match UIComboBox style
+            // Smaller, lighter placeholder (default 12pt italic)
             if (placeholder != null && getText().isEmpty()) {
                 g2.setColor(UIConfig.FIELD_PLACEHOLDER);
                 Font origFont = g2.getFont();
-                g2.setFont(origFont.deriveFont(Font.ITALIC));
+                g2.setFont(origFont.deriveFont(Font.ITALIC, placeholderFontSize));
                 FontMetrics fm = g2.getFontMetrics();
                 int y = Math.max(fm.getAscent(), (h - fm.getHeight()) / 2 + fm.getAscent());
                 g2.drawString(placeholder, getInsets().left, y);

@@ -6,7 +6,7 @@ import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
 
-public class HeaderPanel extends JPanel {
+public class TitlePanel extends JPanel {
 
     private final JLabel lblStatusBadge;
     private final JLabel lblFollowUpBadge;
@@ -17,14 +17,13 @@ public class HeaderPanel extends JPanel {
     private final JButton btnSave;
     private final JButton btnFollowUp;
 
-    private final JPanel rightPanel; // reference for targeted revalidation
+    private final JPanel rightPanel;
 
-    public HeaderPanel() {
+    public TitlePanel() {
         setLayout(new BorderLayout(16, 0));
         setOpaque(false);
         setBorder(new EmptyBorder(8, 16, 8, 16));
 
-        // Use preferred size only — DO NOT clamp maximum size or buttons get clipped
         setPreferredSize(new Dimension(0, 48));
 
         // ── Left: badges + title ──
@@ -42,7 +41,7 @@ public class HeaderPanel extends JPanel {
         lblFollowUpBadge.setFont(UIConstants.FONT_BOLD_11);
         lblFollowUpBadge.setForeground(Color.WHITE);
         lblFollowUpBadge.setOpaque(true);
-        lblFollowUpBadge.setBackground(new Color(249, 115, 22)); // orange
+        lblFollowUpBadge.setBackground(new Color(249, 115, 22));
         lblFollowUpBadge.setBorder(BorderFactory.createEmptyBorder(5, 12, 5, 12));
         lblFollowUpBadge.setVisible(false);
 
@@ -71,10 +70,10 @@ public class HeaderPanel extends JPanel {
 
         btnFollowUp = ButtonFactory.createSecondaryButton("Request Follow Up");
 
+        rightPanel.add(btnFollowUp);
         rightPanel.add(btnCancel);
         rightPanel.add(btnReject);
         rightPanel.add(btnSave);
-        rightPanel.add(btnFollowUp);
         rightPanel.add(btnUpdate);
 
         add(left, BorderLayout.WEST);
@@ -89,12 +88,6 @@ public class HeaderPanel extends JPanel {
     public void setTitle(int complaintId, String type) {
         lblTitle.setText("Report #" + String.format("%03d", complaintId) + " – " + safe(type));
     }
-
-    /*
-     * ═══════════════════════════════════════════════
-     * FIXED VISIBILITY SETTERS — deep revalidation
-     * ═══════════════════════════════════════════════
-     */
 
     public void setUpdateMode(boolean editing) {
         btnUpdate.setVisible(!editing);
@@ -127,16 +120,15 @@ public class HeaderPanel extends JPanel {
      * Revalidates the button bar, this panel, and every parent up to the top level.
      */
     private void refresh() {
-        // 1. Recalculate the button row (FlowLayout needs this)
         rightPanel.revalidate();
         rightPanel.repaint();
-
-        // 2. Recalculate this header (BorderLayout needs this)
         revalidate();
         repaint();
 
-        // 3. Force every ancestor to relayout (BoxLayout/GridBagLayout need this)
         SwingUtilities.invokeLater(() -> {
+            // FIXED: Guard against running layout on a component not yet showing
+            if (!isShowing())
+                return;
             Container c = getParent();
             while (c != null) {
                 c.revalidate();
@@ -145,8 +137,6 @@ public class HeaderPanel extends JPanel {
             }
         });
     }
-
-    // ── Getters ──
 
     public JButton getUpdateButton() {
         return btnUpdate;

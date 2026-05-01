@@ -67,7 +67,7 @@ public class FollowUpDialog extends JDialog {
         JButton btnCancel = ButtonFactory.createGhostButton("Cancel");
         btnCancel.addActionListener(e -> dispose());
 
-        JButton btnSubmit = ButtonFactory.createPrimaryButton("Submit Request", new Color(245, 158, 11));
+        JButton btnSubmit = ButtonFactory.createPrimaryButton("Submit Request", new Color(59, 130, 246));
         btnSubmit.addActionListener(e -> {
             submitted = true;
             dispose();

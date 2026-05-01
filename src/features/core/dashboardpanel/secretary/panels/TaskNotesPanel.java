@@ -22,13 +22,11 @@ public class TaskNotesPanel extends JPanel {
         setLayout(new BorderLayout(0, 12));
         setOpaque(false);
 
-        // ── Title ───────────────────────────────────────────────
         JLabel titleLabel = new JLabel(title);
         titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 16));
         titleLabel.setForeground(new Color(33, 37, 41));
         add(titleLabel, BorderLayout.NORTH);
 
-        // ── Text area ───────────────────────────────────────────
         textArea = new JTextArea();
         textArea.setFont(new Font("Segoe UI", Font.PLAIN, 13));
         textArea.setLineWrap(true);
@@ -43,7 +41,6 @@ public class TaskNotesPanel extends JPanel {
         scroll.getViewport().setOpaque(false);
         add(scroll, BorderLayout.CENTER);
 
-        // ── Bottom bar (status + save) ──────────────────────────
         JPanel bottom = new JPanel(new BorderLayout());
         bottom.setOpaque(false);
 
@@ -84,8 +81,6 @@ public class TaskNotesPanel extends JPanel {
         loadTasks();
     }
 
-    // ── Persistence ─────────────────────────────────────────────
-
     private void saveTasks() {
         try {
             File file = new File(TASKS_FILE);
@@ -109,13 +104,17 @@ public class TaskNotesPanel extends JPanel {
     private void loadTasks() {
         File file = new File(TASKS_FILE);
         if (!file.exists()) {
-            statusLabel.setText("No saved tasks");
-            statusLabel.setForeground(new Color(100, 116, 139));
+            showNoTasksFallback();
             return;
         }
 
         try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(file))) {
             TaskData data = (TaskData) ois.readObject();
+
+            if (data == null || data.text == null || data.text.isBlank()) {
+                showNoTasksFallback();
+                return;
+            }
 
             long daysSince = ChronoUnit.DAYS.between(
                     Instant.ofEpochMilli(data.timestamp), Instant.now());
@@ -124,21 +123,27 @@ public class TaskNotesPanel extends JPanel {
                 textArea.setText("");
                 statusLabel.setText("Tasks expired (" + daysSince + " days old) — cleared");
                 statusLabel.setForeground(new Color(220, 60, 60));
-                file.delete(); // clean up stale file
+                file.delete();
             } else {
                 textArea.setText(data.text);
                 long daysLeft = EXPIRY_DAYS - daysSince;
                 statusLabel.setText("Expires in " + daysLeft + " day" + (daysLeft != 1 ? "s" : ""));
                 statusLabel.setForeground(new Color(100, 116, 139));
             }
-        } catch (IOException | ClassNotFoundException ex) {
-            statusLabel.setText("Could not load tasks");
-            statusLabel.setForeground(new Color(220, 60, 60));
-            ex.printStackTrace();
+        } catch (ClassNotFoundException ex) {
+            showNoTasksFallback();
+            file.delete();
+        } catch (IOException ex) {
+            showNoTasksFallback();
+            file.delete();
         }
     }
 
-    // ── Public API ──────────────────────────────────────────────
+    private void showNoTasksFallback() {
+        textArea.setText("");
+        statusLabel.setText("Add task to remember your agenda");
+        statusLabel.setForeground(new Color(100, 116, 139));
+    }
 
     public String getTasksText() {
         return textArea.getText();
@@ -150,11 +155,9 @@ public class TaskNotesPanel extends JPanel {
 
     public void clearTasks() {
         textArea.setText("");
-        statusLabel.setText("Cleared");
+        statusLabel.setText("Add task to remember your agenda");
         statusLabel.setForeground(new Color(100, 116, 139));
     }
-
-    // ── Helpers ─────────────────────────────────────────────────
 
     private String formatTime(long epochMillis) {
         return DateTimeFormatter.ofPattern("MMM dd, HH:mm")
@@ -162,10 +165,8 @@ public class TaskNotesPanel extends JPanel {
                 .format(Instant.ofEpochMilli(epochMillis));
     }
 
-    // ── Serializable data holder ────────────────────────────────
-
     private static class TaskData implements Serializable {
-        private static final long serialVersionUID = 1L;
+        private static final long serialVersionUID = 2L;
         final String text;
         final long timestamp;
 

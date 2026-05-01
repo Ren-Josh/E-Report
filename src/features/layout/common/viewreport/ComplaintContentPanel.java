@@ -27,7 +27,7 @@ public class ComplaintContentPanel extends JPanel {
     private ComplaintDetail currentComplaint;
     private String returnRoute = "dashboard";
 
-    private final HeaderPanel headerPanel;
+    private final TitlePanel titlePanel;
     private final StatusTimelinePanel timelinePanel;
     private final UpdateStatusPanel updatePanel;
     private final ComplaintDetailPanel detailPanel;
@@ -68,11 +68,11 @@ public class ComplaintContentPanel extends JPanel {
         mainContent.add(backRow, gbc);
 
         // Header
-        headerPanel = new HeaderPanel();
-        headerPanel.getFollowUpButton().addActionListener(e -> onRequestFollowUp());
+        titlePanel = new TitlePanel();
+        titlePanel.getFollowUpButton().addActionListener(e -> onRequestFollowUp());
         gbc.gridy = 1;
         gbc.insets = new Insets(8, 0, 0, 0);
-        mainContent.add(headerPanel, gbc);
+        mainContent.add(titlePanel, gbc);
 
         // Timeline
         timelinePanel = new StatusTimelinePanel();
@@ -96,24 +96,24 @@ public class ComplaintContentPanel extends JPanel {
         gbc.insets = new Insets(12, 0, 0, 0);
         mainContent.add(followUpBadgePanel, gbc);
 
-        // Detail card
-        detailPanel = new ComplaintDetailPanel();
-        gbc.gridy = 5;
-        mainContent.add(detailPanel, gbc);
-
         // Action history
         actionHistoryPanel = new ActionHistoryPanel();
-        gbc.gridy = 6;
+        gbc.gridy = 5;
         gbc.weighty = 1.0;
         mainContent.add(actionHistoryPanel, gbc);
+
+        // Detail card
+        detailPanel = new ComplaintDetailPanel();
+        gbc.gridy = 6;
+        mainContent.add(detailPanel, gbc);
 
         add(mainContent, BorderLayout.CENTER);
 
         // Wire header buttons
-        headerPanel.getUpdateButton().addActionListener(e -> toggleUpdatePanel());
-        headerPanel.getCancelButton().addActionListener(e -> hideUpdatePanel());
-        headerPanel.getSaveButton().addActionListener(e -> saveUpdate());
-        headerPanel.getRejectButton().addActionListener(e -> rejectComplaint());
+        titlePanel.getUpdateButton().addActionListener(e -> toggleUpdatePanel());
+        titlePanel.getCancelButton().addActionListener(e -> hideUpdatePanel());
+        titlePanel.getSaveButton().addActionListener(e -> saveUpdate());
+        titlePanel.getRejectButton().addActionListener(e -> rejectComplaint());
 
         if (currentComplaint != null) {
             loadComplaint(currentComplaint);
@@ -158,22 +158,22 @@ public class ComplaintContentPanel extends JPanel {
 
         boolean visible = !updatePanel.isVisible();
         updatePanel.setVisible(visible);
-        headerPanel.setUpdateMode(visible);
+        titlePanel.setUpdateMode(visible);
 
         if (visible) {
             updatePanel.reset(app, currentComplaint != null ? currentComplaint.getCurrentStatus() : "Pending");
 
             if (currentComplaint != null && "Pending".equals(currentComplaint.getCurrentStatus())) {
                 updatePanel.showPendingPanel(true);
-                headerPanel.setRejectVisible(true);
+                titlePanel.setRejectVisible(true);
                 updatePanel.prefillPending(currentComplaint.getSubject(), currentComplaint.getType());
             } else {
-                headerPanel.setRejectVisible(false);
+                titlePanel.setRejectVisible(false);
             }
 
             updatePanel.setCurrentStatus(currentComplaint != null ? currentComplaint.getCurrentStatus() : "—");
         } else {
-            headerPanel.setRejectVisible(false);
+            titlePanel.setRejectVisible(false);
         }
 
         revalidate();
@@ -193,8 +193,8 @@ public class ComplaintContentPanel extends JPanel {
 
     private void hideUpdatePanel() {
         updatePanel.setVisible(false);
-        headerPanel.setUpdateMode(false);
-        headerPanel.setRejectVisible(false);
+        titlePanel.setUpdateMode(false);
+        titlePanel.setRejectVisible(false);
         revalidate();
         repaint();
     }
@@ -235,7 +235,7 @@ public class ComplaintContentPanel extends JPanel {
             return;
         }
 
-        // Pending → In Progress
+        // Pending → In Progress (validation required)
         if ("In Progress".equals(newStatus) && "Pending".equals(currentComplaint.getCurrentStatus())) {
             String title = updatePanel.getPendingPanel().getTitle();
             String type = updatePanel.getPendingPanel().getType();
@@ -278,8 +278,8 @@ public class ComplaintContentPanel extends JPanel {
                 return;
             }
         }
-        // Normal In Progress
-        else if ("In Progress".equals(newStatus)) {
+        // In Progress → In Progress (same status, just adding history/note)
+        else if ("In Progress".equals(newStatus) && "In Progress".equals(currentComplaint.getCurrentStatus())) {
             String officer = updatePanel.getInProgressPanel().getOfficer();
             if (officer.isEmpty()) {
                 JOptionPane.showMessageDialog(app, "Officer / Personnel Assigned is required.", "Required",
@@ -287,10 +287,20 @@ public class ComplaintContentPanel extends JPanel {
                 return;
             }
             String date = updatePanel.getInProgressPanel().getAssignedDate();
-            note += "\n[Assigned to: " + officer + (date.isEmpty() ? "" : " | Date: " + date) + "]";
-        }
 
-        if ("Resolved".equals(newStatus)) {
+            StringBuilder sb = new StringBuilder();
+            if (!note.isEmpty()) {
+                sb.append(note);
+            }
+            sb.append("[Assigned to: ").append(officer);
+            if (!date.isEmpty()) {
+                sb.append(" | Date: ").append(date);
+            }
+            sb.append("]");
+            note = sb.toString();
+        }
+        // In Progress → Resolved or Transferred
+        else if ("Resolved".equals(newStatus)) {
             var action = buildComplaintAction();
             if (action == null)
                 return;
@@ -360,15 +370,15 @@ public class ComplaintContentPanel extends JPanel {
 
         String status = safe(cd.getCurrentStatus());
 
-        headerPanel.setStatus(status);
-        headerPanel.setTitle(cd.getComplaintId(), cd.getType());
+        titlePanel.setStatus(status);
+        titlePanel.setTitle(cd.getComplaintId(), cd.getType());
         refreshFollowUpStatus();
 
         timelinePanel.updateTimeline(status);
         detailPanel.loadComplaint(cd);
 
         boolean isFinalStatus = "Rejected".equalsIgnoreCase(status) || "Resolved".equalsIgnoreCase(status);
-        headerPanel.setUpdateVisible(canUpdateStatus && !isFinalStatus);
+        titlePanel.setUpdateVisible(canUpdateStatus && !isFinalStatus);
 
         loadHistory(cd.getComplaintId());
     }
@@ -395,10 +405,9 @@ public class ComplaintContentPanel extends JPanel {
         if (currentComplaint == null)
             return;
 
-        Window owner = SwingUtilities.getWindowAncestor(this);
-        FollowUpDialog dialog = new FollowUpDialog(owner, currentComplaint.getComplaintId());
+        FollowUpDialog dialog = new FollowUpDialog(app, currentComplaint.getComplaintId());
 
-        dialog.setVisible(true); // blocks because it's modal
+        dialog.setVisible(true);
 
         if (dialog.isSubmitted()) {
             int uiId = app.getUserSession() != null ? app.getUserSession().getUserId() : -1;
@@ -406,27 +415,96 @@ public class ComplaintContentPanel extends JPanel {
                     currentComplaint.getComplaintId(), uiId, dialog.getNotes());
 
             if (ok) {
-                JOptionPane.showMessageDialog(this,
+                JOptionPane.showMessageDialog(app,
                         "Follow-up request submitted successfully.",
                         "Success", JOptionPane.INFORMATION_MESSAGE);
                 refreshFollowUpStatus();
             } else {
-                JOptionPane.showMessageDialog(this,
+                JOptionPane.showMessageDialog(app,
                         "Failed to submit follow-up request.",
                         "Error", JOptionPane.ERROR_MESSAGE);
             }
         }
     }
 
+    /**
+     * Determines follow-up visibility based on:
+     * 1. Whether there is an active (non-resolved) follow-up request
+     * 2. Whether the most recent status update is newer than (or equal to) the
+     * follow-up request
+     * 3. Whether the complaint status is terminal (Resolved, Rejected, or
+     * Transferred)
+     */
     private void refreshFollowUpStatus() {
         if (currentComplaint == null)
             return;
 
-        FollowUpRequest req = followUpController.getLatestFollowUp(currentComplaint.getComplaintId());
-        boolean hasActive = req != null && !"Resolved".equalsIgnoreCase(req.getStatus());
+        String status = safe(currentComplaint.getCurrentStatus());
 
-        headerPanel.setFollowUpBadgeVisible(hasActive);
-        headerPanel.setFollowUpVisible(!hasActive && !canUpdateStatus);
-        followUpBadgePanel.showRequest(req);
+        // FIXED: follow-up requests are only allowed on terminal statuses
+        boolean isTerminalStatus = "Pending".equalsIgnoreCase(status)
+                || "In Progress".equalsIgnoreCase(status);
+
+        FollowUpRequest req = followUpController.getLatestFollowUp(currentComplaint.getComplaintId());
+
+        // No follow-up request at all
+        if (req == null) {
+            titlePanel.setFollowUpBadgeVisible(false);
+            titlePanel.setFollowUpVisible(!canUpdateStatus && isTerminalStatus);
+            followUpBadgePanel.hideRequest();
+            return;
+        }
+
+        // Get the most recent status update timestamp from history
+        Timestamp lastStatusUpdate = getMostRecentStatusUpdateTime(currentComplaint.getComplaintId());
+        Timestamp followUpDate = req.getRequestDate();
+
+        // FIXED: Use millisecond comparison (>=) so equal timestamps still count as
+        // addressed
+        boolean statusUpdatedAfterFollowUp = lastStatusUpdate != null && followUpDate != null
+                && lastStatusUpdate.getTime() >= followUpDate.getTime();
+
+        boolean isFollowUpStale = statusUpdatedAfterFollowUp;
+
+        // Active = exists, not resolved, and not stale
+        boolean hasActive = !"Resolved".equalsIgnoreCase(req.getStatus()) && !isFollowUpStale;
+        boolean isResident = !canUpdateStatus;
+
+        // FIXED: Resident can request a NEW follow-up only on terminal statuses
+        boolean showButton = !hasActive && isResident && isTerminalStatus;
+
+        titlePanel.setFollowUpBadgeVisible(hasActive);
+        titlePanel.setFollowUpVisible(showButton);
+
+        if (hasActive) {
+            followUpBadgePanel.showRequest(req);
+        } else {
+            followUpBadgePanel.hideRequest();
+        }
+    }
+
+    /**
+     * Gets the most recent status update timestamp from Complaint_History_Detail.
+     * Returns null if no history exists.
+     */
+    private Timestamp getMostRecentStatusUpdateTime(int complaintId) {
+        try (Connection con = DBConnection.connect()) {
+            List<ComplaintHistoryDetail> history = new GetComplaintDao().getComplaintHistory(con, complaintId);
+            if (history == null || history.isEmpty()) {
+                return null;
+            }
+            Timestamp mostRecent = null;
+            for (ComplaintHistoryDetail h : history) {
+                if (h.getDateTimeUpdated() != null) {
+                    if (mostRecent == null || h.getDateTimeUpdated().after(mostRecent)) {
+                        mostRecent = h.getDateTimeUpdated();
+                    }
+                }
+            }
+            return mostRecent;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return null;
+        }
     }
 }

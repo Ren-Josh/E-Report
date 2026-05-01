@@ -17,7 +17,6 @@ public class ComplaintStatusController {
 
     private final UpdateComplaintStatusDao statusDao;
 
-    // Valid status values in the system
     public static final String STATUS_PENDING = "Pending";
     public static final String STATUS_IN_PROGRESS = "In Progress";
     public static final String STATUS_RESOLVED = "Resolved";
@@ -29,12 +28,8 @@ public class ComplaintStatusController {
 
     /**
      * Updates the status of a complaint with full transaction safety.
-     *
-     * @param cdId      Complaint Detail ID
-     * @param newStatus New status to set
-     * @param process   Notes about the action taken
-     * @param session   Current user session (for updated_by)
-     * @return true if successful
+     * Allows same-status updates if a process note is provided (adds history
+     * entry).
      */
     public boolean updateComplaintStatus(int cdId, String newStatus,
             String process, UserSession session) {
@@ -46,18 +41,28 @@ public class ComplaintStatusController {
             con = DBConnection.connect();
             con.setAutoCommit(false);
 
-            // Validate status transition
+            // Validate complaint exists
             String currentStatus = statusDao.getCurrentStatus(con, cdId);
             if (currentStatus == null) {
                 throw new IllegalStateException("Complaint not found: " + cdId);
             }
 
-            if (!isValidTransition(currentStatus, newStatus)) {
+            // Allow same-status updates ONLY if there's a process note (history tracking)
+            boolean isSameStatus = currentStatus.equals(newStatus);
+            boolean hasNote = process != null && !process.isBlank();
+
+            if (isSameStatus && !hasNote) {
+                con.rollback();
+                return false; // No-op: same status with no note
+            }
+
+            // For actual status changes, validate the transition
+            if (!isSameStatus && !isValidTransition(currentStatus, newStatus)) {
                 throw new IllegalArgumentException(
                         "Invalid status transition: " + currentStatus + " -> " + newStatus);
             }
 
-            // Perform update
+            // Perform update (inserts history; updates status if changed)
             boolean success = statusDao.updateStatus(con, cdId, newStatus, process, updatedBy);
 
             if (success) {
@@ -91,12 +96,6 @@ public class ComplaintStatusController {
         }
     }
 
-    /**
-     * Retrieves the status history for a complaint.
-     *
-     * @param cdId Complaint Detail ID
-     * @return List of history records, or empty list if none
-     */
     public List<ComplaintHistoryDetail> getStatusHistory(int cdId) {
         try (Connection con = DBConnection.connect()) {
             return statusDao.getHistory(con, cdId);
@@ -107,9 +106,6 @@ public class ComplaintStatusController {
         }
     }
 
-    /**
-     * Gets the current status of a complaint.
-     */
     public String getCurrentStatus(int cdId) {
         try (Connection con = DBConnection.connect()) {
             return statusDao.getCurrentStatus(con, cdId);
@@ -121,27 +117,22 @@ public class ComplaintStatusController {
 
     /**
      * Returns valid next statuses based on current status.
+     * Same status is NOT listed here — handled separately in updateComplaintStatus.
      */
     public static List<String> getValidNextStatuses(String currentStatus) {
         return switch (currentStatus) {
             case STATUS_PENDING -> List.of(STATUS_IN_PROGRESS, STATUS_REJECTED);
             case STATUS_IN_PROGRESS -> List.of(STATUS_RESOLVED, STATUS_REJECTED);
-            case STATUS_RESOLVED -> List.of(STATUS_IN_PROGRESS); // Re-open
-            case STATUS_REJECTED -> List.of(STATUS_IN_PROGRESS); // Re-open
+            case STATUS_RESOLVED -> List.of(STATUS_IN_PROGRESS);
+            case STATUS_REJECTED -> List.of(STATUS_IN_PROGRESS);
             default -> List.of();
         };
     }
 
-    /**
-     * Checks if a status transition is valid.
-     */
     public static boolean isValidTransition(String from, String to) {
         return getValidNextStatuses(from).contains(to);
     }
 
-    /**
-     * Builds the updated_by string from session info.
-     */
     private String buildUpdatedByString(UserSession session) {
         if (session == null)
             return "System";

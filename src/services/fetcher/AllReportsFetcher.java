@@ -34,11 +34,6 @@ public class AllReportsFetcher extends AbstractDashboardFetcher {
         this.currentCategory = category;
         this.currentPurok = purok;
         this.currentStatus = status;
-        System.out.println("----- FILTER STATE UPDATED -----");
-        System.out.println("From: " + currentFrom + "  To: " + currentTo);
-        System.out.println("Category: " + currentCategory);
-        System.out.println("Purok: " + currentPurok);
-        System.out.println("Status: " + currentStatus);
         refreshNow();
     }
 
@@ -65,19 +60,6 @@ public class AllReportsFetcher extends AbstractDashboardFetcher {
 
         this.allComplaints = raw;
 
-        // Debug output
-        System.out.println("Total complaints fetched: " + raw.size());
-        int sampleCount = Math.min(raw.size(), 3);
-        for (int i = 0; i < sampleCount; i++) {
-            ComplaintDetail cd = raw.get(i);
-            System.out.println("  Sample[" + i + "] ID=" + cd.getComplaintId()
-                    + " Type=" + cd.getType()
-                    + " Purok=" + cd.getPurok()
-                    + " Status=" + cd.getCurrentStatus()
-                    + " Created=" + cd.getDateTime()
-                    + " LastUpdate=" + cd.getLastUpdateTimestamp());
-        }
-
         List<Object[]> rows = new ArrayList<>();
         for (ComplaintDetail cd : raw) {
             if (matchesFilters(cd)) {
@@ -85,8 +67,6 @@ public class AllReportsFetcher extends AbstractDashboardFetcher {
             }
         }
         this.filteredReports = rows;
-
-        System.out.println("After filtering: " + rows.size() + " records matched");
     }
 
     private boolean matchesFilters(ComplaintDetail cd) {

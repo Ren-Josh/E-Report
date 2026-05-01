@@ -7,11 +7,19 @@ import javax.swing.*;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
+import javax.swing.table.TableCellRenderer;
 import java.awt.*;
 import java.awt.event.*;
 import java.awt.image.BufferedImage;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 
 public class RecentReportsPanel extends GlassPanel {
@@ -20,6 +28,13 @@ public class RecentReportsPanel extends GlassPanel {
     private final List<Object[]> allData = new ArrayList<>();
     private int currentPage = 0;
     private int rowsPerPage;
+
+    // ── Row highlights: key = encoded(page, row), value = color ───
+    private final Map<Long, Color> rowHighlights = new HashMap<>();
+
+    // ── Date filter (disabled by default) ─────────────────────────
+    private int dateFilterDaysBack = 0;
+    private int[] dateFilterColumnIndices = new int[0];
 
     // ── UI ────────────────────────────────────────────────────────
     private DashboardTable table;
@@ -146,6 +161,120 @@ public class RecentReportsPanel extends GlassPanel {
         this.viewClickCallback = callback;
     }
 
+    // ── Row highlight API ─────────────────────────────────────────
+
+    public void setRowHighlights(Map<Long, Color> highlights) {
+        this.rowHighlights.clear();
+        if (highlights != null) {
+            this.rowHighlights.putAll(highlights);
+        }
+        if (table != null) {
+            table.repaint();
+        }
+    }
+
+    public void clearRowHighlights() {
+        this.rowHighlights.clear();
+        if (table != null) {
+            table.repaint();
+        }
+    }
+
+    private static long encodePosition(int page, int row) {
+        return ((long) page << 32) | (row & 0xffffffffL);
+    }
+
+    private Color getHighlightColor(int visibleRow) {
+        return rowHighlights.get(encodePosition(currentPage, visibleRow));
+    }
+
+    // ── Date filter API ───────────────────────────────────────────
+
+    /**
+     * Enables a date filter. Only rows where at least one of the specified
+     * columns contains a date within {@code daysBack} days from today are kept.
+     *
+     * @param daysBack      how many days back to look (e.g. 2 = today, yesterday,
+     *                      and the day before)
+     * @param columnIndices one or more column indices to check (OR logic)
+     */
+    public void setDateFilter(int daysBack, int... columnIndices) {
+        this.dateFilterDaysBack = daysBack;
+        this.dateFilterColumnIndices = columnIndices != null ? columnIndices : new int[0];
+    }
+
+    public void clearDateFilter() {
+        this.dateFilterDaysBack = 0;
+        this.dateFilterColumnIndices = new int[0];
+    }
+
+    private boolean passesDateFilter(Object[] rowData) {
+        if (dateFilterColumnIndices.length == 0 || rowData == null) {
+            return true;
+        }
+        LocalDate cutoff = LocalDate.now().minusDays(dateFilterDaysBack);
+
+        for (int idx : dateFilterColumnIndices) {
+            if (idx < 0 || idx >= rowData.length)
+                continue;
+            Object val = rowData[idx];
+            if (val == null)
+                continue;
+
+            Instant inst = parseDate(val);
+            if (inst == null)
+                continue;
+
+            LocalDate rowDate = inst.atZone(ZoneId.systemDefault()).toLocalDate();
+            if (!rowDate.isBefore(cutoff)) {
+                return true; // at least one date is within range
+            }
+        }
+        return false;
+    }
+
+    private Instant parseDate(Object obj) {
+        if (obj instanceof Instant)
+            return (Instant) obj;
+        if (obj instanceof java.sql.Timestamp)
+            return ((java.sql.Timestamp) obj).toInstant();
+        if (obj instanceof java.sql.Date)
+            return ((java.sql.Date) obj).toInstant();
+        if (obj instanceof java.util.Date)
+            return ((java.util.Date) obj).toInstant();
+
+        if (obj instanceof String) {
+            String s = ((String) obj).trim();
+            if (s.isEmpty())
+                return null;
+
+            String[] patterns = {
+                    "yyyy-MM-dd HH:mm:ss",
+                    "yyyy-MM-dd HH:mm:ss.S",
+                    "yyyy-MM-dd HH:mm",
+                    "yyyy-MM-dd",
+                    "MM/dd/yyyy HH:mm:ss",
+                    "MM/dd/yyyy",
+                    "MMM dd, yyyy",
+                    "MMM dd, yyyy HH:mm:ss",
+                    "MMM dd, yyyy hh:mm a"
+            };
+
+            for (String p : patterns) {
+                try {
+                    DateTimeFormatter f = DateTimeFormatter.ofPattern(p);
+                    if (p.contains("H") || p.contains("h")) {
+                        return LocalDateTime.parse(s, f).atZone(ZoneId.systemDefault()).toInstant();
+                    } else {
+                        return LocalDate.parse(s, f).atStartOfDay(ZoneId.systemDefault()).toInstant();
+                    }
+                } catch (Exception ignored) {
+                }
+            }
+        }
+        return null;
+    }
+
     // ── UI Init ───────────────────────────────────────────────────
     private void initializeUI(String[] columnNames) {
         add(buildHeader(), BorderLayout.NORTH);
@@ -188,10 +317,11 @@ public class RecentReportsPanel extends GlassPanel {
             }
         });
 
-        DefaultTableCellRenderer center = new DefaultTableCellRenderer();
-        center.setHorizontalAlignment(SwingConstants.CENTER);
-        for (int i = 0; i < table.getColumnCount(); i++)
-            table.getColumnModel().getColumn(i).setCellRenderer(center);
+        // Default renderer with highlight support
+        HighlightCellRenderer highlightRenderer = new HighlightCellRenderer();
+        for (int i = 0; i < table.getColumnCount(); i++) {
+            table.getColumnModel().getColumn(i).setCellRenderer(highlightRenderer);
+        }
 
         refreshActionColumnRenderer();
 
@@ -266,16 +396,47 @@ public class RecentReportsPanel extends GlassPanel {
                 .setPreferredWidth(total);
     }
 
+    // ── Renderer: default cells with highlight support ────────────
+
+    private class HighlightCellRenderer extends DefaultTableCellRenderer {
+        @Override
+        public Component getTableCellRendererComponent(JTable table, Object value,
+                boolean isSelected, boolean hasFocus, int row, int column) {
+            Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+            setHorizontalAlignment(SwingConstants.CENTER);
+
+            if (!isSelected) {
+                Color hl = getHighlightColor(row);
+                if (hl != null) {
+                    c.setBackground(hl);
+                } else {
+                    c.setBackground(table.getBackground());
+                }
+            }
+            return c;
+        }
+    }
+
     // ── Renderer: centered icons with optional background ─────────
 
-    private class ActionIconsRenderer implements javax.swing.table.TableCellRenderer {
+    private class ActionIconsRenderer implements TableCellRenderer {
         @Override
         public Component getTableCellRendererComponent(JTable t, Object value,
                 boolean isSelected, boolean hasFocus, int row, int column) {
 
             JPanel container = new JPanel(new GridBagLayout());
             container.setOpaque(true);
-            container.setBackground(isSelected ? t.getSelectionBackground() : t.getBackground());
+
+            if (!isSelected) {
+                Color hl = getHighlightColor(row);
+                if (hl != null) {
+                    container.setBackground(hl);
+                } else {
+                    container.setBackground(t.getBackground());
+                }
+            } else {
+                container.setBackground(t.getSelectionBackground());
+            }
 
             if (tableActions.isEmpty()) {
                 return container;
@@ -570,6 +731,10 @@ public class RecentReportsPanel extends GlassPanel {
     // ── Public API ────────────────────────────────────────────────
 
     public void addReport(Object[] reportData) {
+        if (reportData == null)
+            return;
+        if (!passesDateFilter(reportData))
+            return;
         allData.add(reportData);
         refreshPage();
     }
@@ -585,6 +750,11 @@ public class RecentReportsPanel extends GlassPanel {
         refreshPage();
     }
 
+    /** Returns the filtered list currently held by the panel. */
+    public List<Object[]> getAllData() {
+        return new ArrayList<>(allData);
+    }
+
     public DashboardTable getTable() {
         return table;
     }
@@ -595,10 +765,17 @@ public class RecentReportsPanel extends GlassPanel {
         refreshPage();
     }
 
+    public int getRowsPerPage() {
+        return rowsPerPage;
+    }
+
     public int getAbsoluteRowIndex(int visibleRow) {
         return currentPage * rowsPerPage + visibleRow;
     }
 
+    /**
+     * Uses the original external ButtonRenderer so the button design stays intact.
+     */
     public void setButtonColumn(int columnIndex, String buttonText, Color buttonColor) {
         table.getColumnModel().getColumn(columnIndex)
                 .setCellRenderer(new ButtonRenderer(buttonText, buttonColor));

@@ -135,18 +135,13 @@ public class NavPanel extends JPanel {
     }
 
     public void syncSelectionToRoute(String route) {
-        System.out.println("NavPanel.syncSelectionToRoute(" + route + ")");
-        System.out.println("  navItems.size() = " + navItems.size());
         if (route == null || navItems.isEmpty()) {
-            System.out.println("  EARLY RETURN - empty");
             return;
         }
         String target = route.toLowerCase();
         for (int i = 0; i < navItems.size(); i++) {
             String navRoute = navItems.get(i).getNavigateTo();
-            System.out.println("  Checking [" + i + "]: '" + navRoute + "' vs '" + target + "'");
             if (navRoute.equalsIgnoreCase(target)) {
-                System.out.println("  MATCH! " + selectedIndex + " -> " + i);
                 if (selectedIndex != i) {
                     selectedIndex = i;
                     refreshMenu();
@@ -154,7 +149,6 @@ public class NavPanel extends JPanel {
                 return;
             }
         }
-        System.out.println("  NO MATCH");
     }
 
     private JPanel createMenuItem(int index) {

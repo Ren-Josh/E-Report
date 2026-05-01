@@ -5,6 +5,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
+import java.util.ArrayList;
 import java.util.List;
 
 public class RecentActivitiesPanel extends BaseCardPanel {
@@ -16,7 +17,8 @@ public class RecentActivitiesPanel extends BaseCardPanel {
     public RecentActivitiesPanel(String title, List<ActivityItem> activities) {
         super(title);
         this.panelTitle = title;
-        this.activities = activities;
+        // Defensive copy so addFollowUpRequest() can mutate the list
+        this.activities = (activities != null) ? new ArrayList<>(activities) : new ArrayList<>();
         setLayout(new BorderLayout(UIConfig.SM, UIConfig.SM));
 
         addComponentListener(new ComponentAdapter() {
@@ -41,7 +43,47 @@ public class RecentActivitiesPanel extends BaseCardPanel {
     }
 
     public void updateActivities(List<ActivityItem> newActivities) {
-        this.activities = newActivities;
+        this.activities = (newActivities != null) ? new ArrayList<>(newActivities) : new ArrayList<>();
+        rebuild();
+    }
+
+    /**
+     * Appends a follow-up request activity using the exact format requested.
+     *
+     * @param role           User role (e.g., "Secretary", "Resident")
+     * @param name           User full name
+     * @param userId         User ID (UI_ID)
+     * @param complaintId    Complaint ID (CD_ID)
+     * @param complaintType  Complaint type/category
+     * @param complaintTitle Complaint subject/title
+     * @param time           Formatted time string
+     * @param date           Formatted date string
+     */
+    public void addFollowUpRequest(String role, String name, int userId,
+            int complaintId, String complaintType, String complaintTitle,
+            String time, String date) {
+        addFollowUpRequest(role, name, userId, complaintId, complaintType, complaintTitle, time, date, true);
+    }
+
+    /**
+     * Appends a follow-up request activity using the exact format requested.
+     *
+     * @param insertAtTop true to insert at the top of the list (most recent first)
+     */
+    public void addFollowUpRequest(String role, String name, int userId,
+            int complaintId, String complaintType, String complaintTitle,
+            String time, String date, boolean insertAtTop) {
+        String description = String.format(
+                "%s: %s (ID: %d) has requested a follow up on Complaint (ID: %d): %s - %s",
+                role, name, userId, complaintId, complaintType, complaintTitle);
+
+        ActivityItem item = new ActivityItem("Follow Up Request", description, time, date);
+
+        if (insertAtTop) {
+            this.activities.add(0, item);
+        } else {
+            this.activities.add(item);
+        }
         rebuild();
     }
 

@@ -19,6 +19,14 @@ public final class ButtonFactory {
         btn.setOpaque(true);
         btn.setFocusPainted(false);
         btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+
+        // FIXED: force text to dead-center regardless of L&F
+        btn.setHorizontalAlignment(SwingConstants.CENTER);
+        btn.setVerticalAlignment(SwingConstants.CENTER);
+        btn.setHorizontalTextPosition(SwingConstants.CENTER);
+        btn.setVerticalTextPosition(SwingConstants.CENTER);
+        btn.setMargin(new Insets(0, 0, 0, 0));
+
         btn.setBorder(BorderFactory.createEmptyBorder(8, 16, 8, 16));
         return btn;
     }
@@ -31,9 +39,17 @@ public final class ButtonFactory {
         btn.setOpaque(true);
         btn.setFocusPainted(false);
         btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+
+        // FIXED: force text to dead-center regardless of L&F
+        btn.setHorizontalAlignment(SwingConstants.CENTER);
+        btn.setVerticalAlignment(SwingConstants.CENTER);
+        btn.setHorizontalTextPosition(SwingConstants.CENTER);
+        btn.setVerticalTextPosition(SwingConstants.CENTER);
+        btn.setMargin(new Insets(0, 0, 0, 0));
+
         btn.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(UIConstants.C_BORDER, 1, true),
-                BorderFactory.createEmptyBorder(8, 16, 8, 16)));
+                BorderFactory.createEmptyBorder(5, 12, 5, 12)));
         return btn;
     }
 
@@ -45,6 +61,14 @@ public final class ButtonFactory {
         btn.setBorderPainted(false);
         btn.setFocusPainted(false);
         btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+
+        // FIXED: force text to dead-center regardless of L&F
+        btn.setHorizontalAlignment(SwingConstants.CENTER);
+        btn.setVerticalAlignment(SwingConstants.CENTER);
+        btn.setHorizontalTextPosition(SwingConstants.CENTER);
+        btn.setVerticalTextPosition(SwingConstants.CENTER);
+        btn.setMargin(new Insets(0, 0, 0, 0));
+
         return btn;
     }
 
@@ -56,6 +80,14 @@ public final class ButtonFactory {
         btn.setOpaque(true);
         btn.setFocusPainted(false);
         btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+
+        // FIXED: force text to dead-center regardless of L&F
+        btn.setHorizontalAlignment(SwingConstants.CENTER);
+        btn.setVerticalAlignment(SwingConstants.CENTER);
+        btn.setHorizontalTextPosition(SwingConstants.CENTER);
+        btn.setVerticalTextPosition(SwingConstants.CENTER);
+        btn.setMargin(new Insets(0, 0, 0, 0));
+
         btn.setBorder(BorderFactory.createEmptyBorder(8, 16, 8, 16));
         return btn;
     }

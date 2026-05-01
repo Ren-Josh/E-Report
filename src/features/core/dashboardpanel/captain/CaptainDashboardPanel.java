@@ -3,6 +3,7 @@ package features.core.dashboardpanel.captain;
 import javax.swing.*;
 import java.awt.*;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 
 import app.E_Report;
@@ -16,6 +17,7 @@ import features.core.dashboardpanel.captain.panels.StackedBarChartPanel;
 import services.controller.RecentActivityController;
 import services.controller.ReportStatisticsController;
 import services.fetcher.CaptainDashboardFetcher;
+import services.fetcher.FollowUpActivityFetcher;
 import features.components.filter.TimeFilter;
 
 public class CaptainDashboardPanel extends JPanel {
@@ -29,12 +31,15 @@ public class CaptainDashboardPanel extends JPanel {
     private DonutChartPanel donutChartPanel;
     private StackedBarChartPanel stackedBarChartPanel;
     private BarChartPanel barChartPanel;
+    private RecentActivitiesPanel recentActivitiesPanel;
 
     private CaptainDashboardFetcher fetcher;
+    private final FollowUpActivityFetcher followUpFetcher;
 
     public CaptainDashboardPanel(E_Report app) {
         this.app = app;
-        rsc = new ReportStatisticsController();
+        this.rsc = new ReportStatisticsController();
+        this.followUpFetcher = new FollowUpActivityFetcher();
         setLayout(new BorderLayout());
         setOpaque(false);
 
@@ -89,6 +94,22 @@ public class CaptainDashboardPanel extends JPanel {
                 app.getCaptainSourceValues(),
                 getDefaultSourceColors(),
                 app.getCaptainSourceTotal());
+
+        // ── Auto-refresh recent activities (including follow-ups) ──
+        refreshRecentActivities();
+    }
+
+    private void refreshRecentActivities() {
+        if (recentActivitiesPanel == null)
+            return;
+
+        var regularActivities = new RecentActivityController()
+                .getRecentActivities(app.getUserSession(), 7);
+
+        var merged = new ArrayList<>(regularActivities);
+        merged.addAll(0, followUpFetcher.fetchRecentActivities());
+
+        recentActivitiesPanel.updateActivities(merged);
     }
 
     private JScrollPane createScrollableDashboard() {
@@ -189,9 +210,14 @@ public class CaptainDashboardPanel extends JPanel {
         JPanel panel = new JPanel(new GridLayout(1, 2, 20, 0));
         panel.setOpaque(false);
 
-        RecentActivityController rac = new RecentActivityController();
-        var activities = rac.getRecentActivities(app.getUserSession(), 7);
-        panel.add(new RecentActivitiesPanel("Recent Activities", activities));
+        var regularActivities = new RecentActivityController()
+                .getRecentActivities(app.getUserSession(), 7);
+
+        var merged = new ArrayList<>(regularActivities);
+        merged.addAll(0, followUpFetcher.fetchRecentActivities());
+
+        recentActivitiesPanel = new RecentActivitiesPanel("Recent Activities", merged);
+        panel.add(recentActivitiesPanel);
 
         barChartPanel = new BarChartPanel("Report Source", new String[0], new int[0],
                 getDefaultSourceColors(), 1);
@@ -209,7 +235,7 @@ public class CaptainDashboardPanel extends JPanel {
     private Color[] getDefaultStatusColors() {
         return new Color[] {
                 new Color(66, 133, 244), new Color(255, 193, 7),
-                new Color(186, 85, 211), new Color(52, 168, 83), new Color(189, 189, 189)
+                new Color(186, 85, 211), new Color(250, 160, 160), new Color(189, 189, 189)
         };
     }
 
@@ -227,9 +253,26 @@ public class CaptainDashboardPanel extends JPanel {
         return filterBarPanel;
     }
 
+    public RecentActivitiesPanel getRecentActivitiesPanel() {
+        return recentActivitiesPanel;
+    }
+
     public void updateInfoCards(int total, int pending, int inProgress, int resolved) {
         if (infoCardsPanel != null) {
             infoCardsPanel.updateValues(total, pending, inProgress, resolved);
+        }
+    }
+
+    /**
+     * Adds a single follow-up request activity manually (e.g. real-time socket
+     * push).
+     */
+    public void addFollowUpRequest(String role, String name, int userId,
+            int complaintId, String complaintType, String complaintTitle,
+            String time, String date) {
+        if (recentActivitiesPanel != null) {
+            recentActivitiesPanel.addFollowUpRequest(role, name, userId, complaintId,
+                    complaintType, complaintTitle, time, date);
         }
     }
 }

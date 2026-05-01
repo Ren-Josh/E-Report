@@ -9,6 +9,8 @@ import java.awt.*;
 import java.awt.event.*;
 import java.util.Calendar;
 import java.util.Date;
+
+import config.AppConfig;
 import config.UIConfig;
 
 public class FilterBarPanel extends JPanel {
@@ -65,9 +67,9 @@ public class FilterBarPanel extends JPanel {
     }
 
     public FilterBarPanel(FilterListener listener) {
-        this(new String[] { "All Categories", "Theft", "Vandalism", "Scam", "Others" },
-                new String[] { "All Puroks", "Purok 1", "Purok 2", "Purok 3", "Purok 4", "Purok 5" },
-                new String[] { "All Statuses", "Submitted", "Pending", "In Progress", "Resolved", "Invalid" },
+        this(AppConfig.COMPLAINT_TYPES,
+                AppConfig.REPORT_PUROK_OPTIONS,
+                new String[] { "All Statuses", "Submitted", "Pending", "In Progress", "Resolved", "Rejected" },
                 listener);
     }
 
@@ -78,7 +80,7 @@ public class FilterBarPanel extends JPanel {
     }
 
     public FilterBarPanel(SearchListener listener) {
-        this(new String[] { "All Categories", "Theft", "Vandalism", "Scam", "Others" }, listener);
+        this(AppConfig.COMPLAINT_TYPES, listener);
     }
 
     private void initializeDashboard(String[] categories, String[] puroks, String[] statuses) {

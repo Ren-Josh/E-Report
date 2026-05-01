@@ -1,8 +1,16 @@
 package features.core.dashboardpanel.secretary;
 
 import java.awt.*;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import javax.swing.*;
 
 import app.E_Report;
@@ -14,6 +22,7 @@ import features.core.dashboardpanel.captain.panels.RecentActivitiesPanel;
 import features.core.dashboardpanel.secretary.panels.TaskNotesPanel;
 import models.ComplaintDetail;
 import services.controller.RecentActivityController;
+import services.fetcher.FollowUpActivityFetcher;
 import services.fetcher.SecretaryDashboardFetcher;
 
 public class SecretaryDashboardPanel extends JPanel {
@@ -36,8 +45,11 @@ public class SecretaryDashboardPanel extends JPanel {
     private static final int SECTION_GAP = 20;
     private static final int DASHBOARD_PADDING = 20;
 
+    private final FollowUpActivityFetcher followUpFetcher;
+
     public SecretaryDashboardPanel(E_Report app) {
         this.app = app;
+        this.followUpFetcher = new FollowUpActivityFetcher();
         app.setSecretaryDashboardStats(0, 0, 0, 0);
         app.setSecretaryReportDataList(new ArrayList<>());
         this.activityList = new ArrayList<>();
@@ -60,6 +72,10 @@ public class SecretaryDashboardPanel extends JPanel {
         RecentActivityController rac = new RecentActivityController();
         activityList.clear();
         activityList.addAll(rac.getRecentActivities(app.getUserSession(), 7));
+
+        // ── Dynamic follow-up fetch (2-day visibility) ──
+        activityList.addAll(0, followUpFetcher.fetchRecentActivities());
+
         refreshActivities();
     }
 
@@ -94,6 +110,7 @@ public class SecretaryDashboardPanel extends JPanel {
         gbc.weighty = 1.0;
 
         reportsPanel = new RecentReportsPanel("Recent Reports", REPORT_TABLE_COLUMNS);
+        reportsPanel.setDateFilter(2, 3, 4);
         reportsPanel.setButtonColumn(ACTION_COLUMN_INDEX, ACTION_BUTTON_TEXT, ACTION_BUTTON_COLOR);
         reportsPanel.setOnViewClicked(row -> handleReportAction(row));
 
@@ -102,8 +119,14 @@ public class SecretaryDashboardPanel extends JPanel {
         gbc.insets = new Insets(0, 0, 0, SECTION_GAP);
         contentRow.add(reportsPanel, gbc);
 
+        // ═══════════════════════════════════════════════════════════════
+        // RIGHT COLUMN — capped so it never grows when label text changes
+        // ═══════════════════════════════════════════════════════════════
         JPanel rightColumn = new JPanel(new GridBagLayout());
         rightColumn.setOpaque(false);
+        // KEY FIX: hard cap on width — GridBagLayout will never give it more than this
+        rightColumn.setMaximumSize(new Dimension(380, Integer.MAX_VALUE));
+        rightColumn.setPreferredSize(new Dimension(380, 0));
 
         GridBagConstraints rgbc = new GridBagConstraints();
         rgbc.gridx = 0;
@@ -112,6 +135,8 @@ public class SecretaryDashboardPanel extends JPanel {
 
         RecentActivityController rac = new RecentActivityController();
         activityList = rac.getRecentActivities(app.getUserSession(), 7);
+        activityList.addAll(0, followUpFetcher.fetchRecentActivities());
+
         activitiesPanel = new RecentActivitiesPanel("Recent Activities", activityList);
 
         rgbc.gridy = 0;
@@ -126,7 +151,7 @@ public class SecretaryDashboardPanel extends JPanel {
         rightColumn.add(taskNotesPanel, rgbc);
 
         gbc.gridx = 1;
-        gbc.weightx = 0.4;
+        gbc.weightx = 0.0; // KEY FIX: do NOT let GridBagLayout give extra width
         gbc.insets = new Insets(0, 0, 0, 0);
         contentRow.add(rightColumn, gbc);
 
@@ -136,7 +161,7 @@ public class SecretaryDashboardPanel extends JPanel {
     }
 
     private void handleReportAction(int row) {
-        List<Object[]> reports = app.getSecretaryReportDataList();
+        List<Object[]> reports = reportsPanel.getAllData(); // use filtered list
         if (row < 0 || row >= reports.size())
             return;
 
@@ -217,6 +242,55 @@ public class SecretaryDashboardPanel extends JPanel {
         for (Object[] report : app.getSecretaryReportDataList()) {
             reportsPanel.addReport(report);
         }
+        reportsPanel.setRowHighlights(computeRowHighlights(reportsPanel.getAllData()));
+    }
+
+    private Map<Long, Color> computeRowHighlights(List<Object[]> reports) {
+        Map<Long, Color> highlights = new HashMap<>();
+        Set<Integer> followUpIds = fetchFollowUpComplaintIds();
+        int rowsPerPage = reportsPanel.getRowsPerPage();
+
+        for (int i = 0; i < reports.size(); i++) {
+            Object[] row = reports.get(i);
+            if (row == null || row.length == 0 || row[0] == null) {
+                continue;
+            }
+            int complaintId;
+            try {
+                complaintId = Integer.parseInt(row[0].toString());
+            } catch (NumberFormatException e) {
+                continue;
+            }
+
+            String status = row.length > 5 && row[5] != null ? row[5].toString() : "";
+            int page = i / rowsPerPage;
+            int rowIdx = i % rowsPerPage;
+            long pos = ((long) page << 32) | (rowIdx & 0xffffffffL);
+
+            if (followUpIds.contains(complaintId)) {
+                highlights.put(pos, new Color(255, 248, 225)); // light orange
+            } else if ("Resolved".equalsIgnoreCase(status)) {
+                highlights.put(pos, new Color(232, 245, 233)); // light green
+            } else if ("Rejected".equalsIgnoreCase(status)) {
+                highlights.put(pos, new Color(255, 235, 238)); // light red
+            }
+        }
+        return highlights;
+    }
+
+    private Set<Integer> fetchFollowUpComplaintIds() {
+        Set<Integer> ids = new HashSet<>();
+        String sql = "SELECT DISTINCT CD_ID FROM Follow_Up_Request WHERE status = 'Pending'";
+        try (Connection con = config.database.DBConnection.connect();
+                PreparedStatement ps = con.prepareStatement(sql);
+                ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                ids.add(rs.getInt("CD_ID"));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return ids;
     }
 
     public List<Object[]> getReportDataList() {
@@ -253,6 +327,22 @@ public class SecretaryDashboardPanel extends JPanel {
             descriptions.add(item.getDescription());
         }
         return descriptions;
+    }
+
+    /**
+     * Adds a single follow-up request activity manually (e.g. real-time socket
+     * push).
+     * Format: Role: Name (ID: value) has requested a follow up on Complaint (ID:
+     * value): Type - Title
+     */
+    public void addFollowUpRequest(String role, String name, int userId,
+            int complaintId, String complaintType, String complaintTitle,
+            String time, String date) {
+        String description = String.format(
+                "%s: %s (ID: %d) has requested a follow up on Complaint (ID: %d): %s - %s",
+                role, name, userId, complaintId, complaintType, complaintTitle);
+        activityList.add(0, new ActivityItem("Follow Up Request", description, time, date));
+        refreshActivities();
     }
 
     // ── Task notes delegation ───────────────────────────────────
