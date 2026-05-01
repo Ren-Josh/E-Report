@@ -5,7 +5,7 @@ import config.UIConfig;
 import features.components.HeaderPanel;
 import features.components.NavPanel;
 import features.core.BackgroundPanel;
-import features.layout.common.ProfilePanel;
+import features.layout.common.profile.ProfilePanel;
 import models.UserSession;
 
 import javax.swing.*;

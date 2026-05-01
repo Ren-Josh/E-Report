@@ -26,6 +26,7 @@ public class TBCreate {
      * - Complaint_Action
      * - Complaint_History_Detail
      * - Complaint_History
+     * - Follow_Up_Request
      *
      * @param con an active {@link Connection} to the database
      */
@@ -37,6 +38,7 @@ public class TBCreate {
         createTable(con, "Complaint_Action", AppConfig.CREATE_COMPLAINT_ACTION_TABLE);
         createTable(con, "Complaint_History_Detail", AppConfig.CREATE_COMPLAINT_HISTORY_DETAIL_TABLE);
         createTable(con, "Complaint_History", AppConfig.CREATE_COMPLAINT_HISTORY_TABLE);
+        createTable(con, "Follow_Up_Request", AppConfig.CREATE_FOLLOW_UP_REQUEST_TABLE);
     }
 
     /**

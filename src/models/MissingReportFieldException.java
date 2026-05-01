@@ -1,7 +1,9 @@
 package models;
 
-public class MissingReportFieldException extends IllegalArgumentException {
-
+/**
+ * Thrown when a required report field is missing or empty.
+ */
+public class MissingReportFieldException extends RuntimeException {
     private final String fieldName;
 
     public MissingReportFieldException(String fieldName, String message) {

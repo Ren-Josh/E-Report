@@ -39,8 +39,7 @@ public class AddUserDao {
 			stmt.setString(5, ui.getContact());
 			stmt.setString(6, ui.getEmail());
 			stmt.setString(7, ui.getHouseNum());
-			stmt.setString(8, ui.getStreet());
-			stmt.setString(9, ui.getPurok());
+			stmt.setString(8, ui.getPurok());
 
 			stmt.executeUpdate();
 

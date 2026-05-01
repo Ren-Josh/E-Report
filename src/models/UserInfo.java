@@ -1,12 +1,12 @@
 package models;
 
 public class UserInfo {
-    private String fName, mName, lName, sex, contact, email, houseNum, street, purok;
+    private String fName, mName, lName, sex, contact, email, houseNum, purok;
     private int UI_ID;
 
     public UserInfo(int UI_ID, String fName, String mName, String lName, String sex, String contact, String email,
             String houseNum,
-            String street, String purok) {
+            String purok) {
         this.UI_ID = UI_ID;
         this.fName = fName;
         this.mName = mName;
@@ -14,21 +14,19 @@ public class UserInfo {
         this.sex = sex;
         this.contact = contact;
         this.email = email;
-        this.street = street;
         this.purok = purok;
         this.houseNum = houseNum;
     }
 
     public UserInfo(String fName, String mName, String lName, String sex, String contact, String email,
             String houseNum,
-            String street, String purok) {
+            String purok) {
         this.fName = fName;
         this.mName = mName;
         this.lName = lName;
         this.sex = sex;
         this.contact = contact;
         this.email = email;
-        this.street = street;
         this.purok = purok;
         this.houseNum = houseNum;
     }
@@ -98,14 +96,6 @@ public class UserInfo {
 
     public void setHouseNum(String houseNum) {
         this.houseNum = houseNum;
-    }
-
-    public String getStreet() {
-        return street;
-    }
-
-    public void setStreet(String street) {
-        this.street = street;
     }
 
     public String getPurok() {

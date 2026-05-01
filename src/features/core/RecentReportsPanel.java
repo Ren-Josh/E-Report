@@ -1,7 +1,7 @@
 package features.core;
 
 import features.components.GlassPanel;
-import features.core.dashboardpanel.secretary.DashboardTable;
+import features.core.dashboardpanel.secretary.panels.DashboardTable;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableCellRenderer;

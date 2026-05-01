@@ -110,7 +110,7 @@ public class UIConfig {
         public static final Font H3 = new Font("Segoe UI", Font.BOLD, 24);
 
         public static final Font BODY_LARGE = new Font("Segoe UI", Font.PLAIN, 22);
-        public static final Font BODY = new Font("Segoe UI", Font.PLAIN, 16);
+        public static final Font BODY = new Font("Arial", Font.PLAIN, 16);
         public static final Font CAPTION = new Font("Segoe UI", Font.PLAIN, 13);
 
         // NEW: Small font tokens for filters, chips, and compact UI

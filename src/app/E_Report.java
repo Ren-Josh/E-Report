@@ -103,7 +103,6 @@ public class E_Report extends JFrame {
 
     public void navigate(String route) {
         getContentPane().removeAll();
-        NavPanel navPanel = null;
 
         switch (route.toLowerCase()) {
             case "login" -> add(new LoginView(this));

@@ -22,6 +22,7 @@ import java.util.List;
  * Complaint View & Update Panel
  */
 public class ComplaintContentPanel extends JPanel {
+    // YOU MUST UPDATE THIS CLASS CODE FOR REFERENCE: 1010
 
     private final E_Report app;
     private final boolean canUpdateStatus;

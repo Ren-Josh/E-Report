@@ -5,9 +5,9 @@ import config.UIConfig;
 import features.components.HeaderPanel;
 import features.components.NavPanel;
 import features.core.BackgroundPanel;
-import features.layout.captain.CaptainDashboardPanel;
-import features.layout.secretary.SecretaryDashboardPanel;
-import features.layout.ResidentDashboardPanel;
+import features.core.dashboardpanel.captain.CaptainDashboardPanel;
+import features.core.dashboardpanel.resident.ResidentDashboardPanel;
+import features.core.dashboardpanel.secretary.SecretaryDashboardPanel;
 import models.UserSession;
 
 import javax.swing.*;

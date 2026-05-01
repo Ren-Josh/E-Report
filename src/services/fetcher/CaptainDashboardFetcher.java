@@ -2,7 +2,7 @@ package services.fetcher;
 
 import app.E_Report;
 import features.components.filter.TimeFilter;
-import features.core.dashboardpanel.captain.ActivityItem;
+import features.core.dashboardpanel.captain.panels.ActivityItem;
 import services.controller.RecentActivityController;
 import services.controller.ReportStatisticsController;
 

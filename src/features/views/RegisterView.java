@@ -1,6 +1,7 @@
 package features.views;
 
 import app.E_Report;
+import config.AppConfig;
 import config.UIConfig;
 import features.components.*;
 import features.core.BackgroundPanel;
@@ -11,6 +12,8 @@ import services.controller.UserServiceController;
 import services.validation.UIValidator;
 
 import javax.swing.*;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 import java.awt.*;
 import java.util.List;
 
@@ -18,12 +21,15 @@ public class RegisterView extends JPanel {
     private E_Report app;
     private CardLayout cardLayout;
     private JPanel formContainer;
-    private String fName, mName, lName, sex, contact, email, houseNum, street, purok, username, password,
+    private String fName, mName, lName, sex, contact, email, houseNum, purok, username, password,
             confirmPassword;
     private UIInput txtFName, txtMName, txtLName, txtContact, txtEmail, txtHouseNum, txtUsername;
     private UIPasswordInput txtPassword, txtConfirmPassword;
     private UIRadioButtonGroup rbgSex;
-    private UIComboBox<String> cbStreet, cbPurok;
+    private UIComboBox<String> cbPurok;
+
+    // Live status label for password feedback
+    private JLabel lblCredentialStatus;
 
     public RegisterView(E_Report app) {
         this.app = app;
@@ -84,13 +90,10 @@ public class RegisterView extends JPanel {
 
         gbc.gridwidth = 1;
 
-        String[] streets = { "Select Street", "Main St.", "Rizal St.", "Mabini St." };
-        cbStreet = new UIComboBox<>(streets);
-        UIComboBox.applyPreset(cbStreet, UIConfig.COMBOBOX_WIDTH_STANDARD);
-
-        String[] puroks = { "Select Purok", "Purok 1", "Purok 2", "Purok 3", "Purok 4", "Purok 5" };
+        String[] puroks = AppConfig.REPORT_PUROK_OPTIONS;
         cbPurok = new UIComboBox<>(puroks);
         UIComboBox.applyPreset(cbPurok, UIConfig.COMBOBOX_WIDTH_STANDARD);
+        cbPurok.setFont(new Font("Arial", Font.PLAIN, 16));
         cbPurok.applySizePreset(UIComboBox.SizePreset.LARGE);
 
         rbgSex = new UIRadioButtonGroup(new String[] { "Male", "Female" });
@@ -130,10 +133,9 @@ public class RegisterView extends JPanel {
         addInputGroup(panel, "Email Address", txtEmail, gbc, 1, 5);
 
         addInputGroup(panel, "House Number", txtHouseNum, gbc, 0, 7);
-        addInputGroup(panel, "Street", cbStreet, gbc, 1, 7);
 
         gbc.gridwidth = 2;
-        addInputGroup(panel, "Purok", cbPurok, gbc, 0, 9);
+        addInputGroup(panel, "Purok", cbPurok, gbc, 1, 7);
 
         UIButton btnNext = new UIButton("Continue to Credentials", UIConfig.SUCCESS,
                 new Dimension(540, 50), UIConfig.BTN_SECONDARY_FONT, 25, UIButton.ButtonType.PRIMARY);
@@ -147,8 +149,6 @@ public class RegisterView extends JPanel {
             boolean hasError = UIValidator.validateInputs(List.of(
                     txtFName, txtMName, txtLName, txtContact, txtEmail, txtHouseNum));
 
-            if (UIValidator.validateComboBox(cbStreet))
-                hasError = true;
             if (UIValidator.validateComboBox(cbPurok))
                 hasError = true;
 
@@ -157,7 +157,6 @@ public class RegisterView extends JPanel {
                 hasError = true;
             }
 
-            // Turned off for easy access on credentials panel, turn back on after testing
             if (hasError)
                 return;
 
@@ -168,7 +167,6 @@ public class RegisterView extends JPanel {
             email = txtEmail.getValue();
             houseNum = txtHouseNum.getValue();
             sex = rbgSex.getSelectedValue();
-            street = String.valueOf(cbStreet.getSelectedItem());
             purok = String.valueOf(cbPurok.getSelectedItem());
 
             cardLayout.show(formContainer, "credentials");
@@ -213,6 +211,15 @@ public class RegisterView extends JPanel {
         addInputGroup(panel, "Password", txtPassword, gbc, 0, 3);
         addInputGroup(panel, "Confirm Password", txtConfirmPassword, gbc, 0, 5);
 
+        /* ===== LIVE STATUS LABEL ===== */
+        lblCredentialStatus = new JLabel(" ");
+        lblCredentialStatus.setFont(UIConfig.CAPTION);
+        lblCredentialStatus.setForeground(UIConfig.TEXT_SECONDARY);
+        lblCredentialStatus.setHorizontalAlignment(SwingConstants.CENTER);
+        gbc.gridy = 6;
+        gbc.insets = new Insets(5, 40, 5, 40);
+        panel.add(lblCredentialStatus, gbc);
+
         UIButton btnFinish = new UIButton("Complete Registration", UIConfig.SUCCESS,
                 new Dimension(540, 50), UIConfig.BTN_SECONDARY_FONT, 25, UIButton.ButtonType.PRIMARY);
 
@@ -233,25 +240,60 @@ public class RegisterView extends JPanel {
         gbc.insets = new Insets(5, 0, 20, 0);
         panel.add(btnBack, gbc);
 
-        btnFinish.addActionListener(e -> {
-            boolean hasError = UIValidator.validatePasswords(List.of(txtPassword, txtConfirmPassword))
-                    | UIValidator.validateInputs(List.of(txtUsername));
+        /* ===== LIVE VALIDATION LISTENERS ===== */
+        DocumentListener passwordListener = new DocumentListener() {
+            @Override
+            public void insertUpdate(DocumentEvent e) {
+                validatePasswordLive();
+            }
 
+            @Override
+            public void removeUpdate(DocumentEvent e) {
+                validatePasswordLive();
+            }
+
+            @Override
+            public void changedUpdate(DocumentEvent e) {
+                validatePasswordLive();
+            }
+        };
+
+        txtPassword.getDocument().addDocumentListener(passwordListener);
+        txtConfirmPassword.getDocument().addDocumentListener(passwordListener);
+
+        btnFinish.addActionListener(e -> {
+            boolean hasError = UIValidator.validateInputs(List.of(txtUsername));
             if (hasError)
                 return;
 
-            password = txtPassword.getValue();
-            confirmPassword = txtConfirmPassword.getValue();
+            String newPass = txtPassword.getValue();
+            String confirmPass = txtConfirmPassword.getValue();
 
-            if (!password.equals(confirmPassword)) {
-                txtConfirmPassword.setError();
-                JOptionPane.showMessageDialog(this, "Error: Passwords do not match");
+            if (newPass.isEmpty() || confirmPass.isEmpty()) {
+                lblCredentialStatus.setText("Please fill in both password fields.");
+                lblCredentialStatus.setForeground(Color.RED);
                 return;
             }
 
+            if (!newPass.equals(confirmPass)) {
+                lblCredentialStatus.setText("Passwords do not match.");
+                lblCredentialStatus.setForeground(Color.RED);
+                txtConfirmPassword.setText("");
+                txtConfirmPassword.requestFocus();
+                return;
+            }
+
+            if (newPass.length() < 6) {
+                lblCredentialStatus.setText("Password must be at least 6 characters.");
+                lblCredentialStatus.setForeground(Color.RED);
+                return;
+            }
+
+            lblCredentialStatus.setText(" ");
+            password = newPass;
             username = txtUsername.getValue();
 
-            UserInfo ui = new UserInfo(fName, mName, lName, sex, contact, email, houseNum, street, purok);
+            UserInfo ui = new UserInfo(fName, mName, lName, sex, contact, email, houseNum, purok);
             Credential cred = new Credential(username, password);
             String result = new UserServiceController().registerUser(ui, cred);
 
@@ -265,6 +307,46 @@ public class RegisterView extends JPanel {
         });
 
         return panel;
+    }
+
+    /**
+     * Live password validation — updates status label as user types.
+     * Shows strength when typing password, shows match status when typing confirm.
+     */
+    private void validatePasswordLive() {
+        String pass = txtPassword.getValue();
+        String confirm = txtConfirmPassword.getValue();
+
+        // If both empty, clear status
+        if (pass.isEmpty() && confirm.isEmpty()) {
+            lblCredentialStatus.setText(" ");
+            return;
+        }
+
+        // If confirm field has text, prioritize match check
+        if (!confirm.isEmpty()) {
+            if (!pass.equals(confirm)) {
+                lblCredentialStatus.setText("Passwords do not match.");
+                lblCredentialStatus.setForeground(Color.RED);
+                return;
+            } else {
+                lblCredentialStatus.setText("Passwords match.");
+                lblCredentialStatus.setForeground(new Color(52, 168, 83)); // green
+                return;
+            }
+        }
+
+        // Otherwise show strength of password field
+        if (pass.length() < 6) {
+            lblCredentialStatus.setText("Password is too weak (min 6 characters).");
+            lblCredentialStatus.setForeground(Color.ORANGE);
+        } else if (pass.length() < 10) {
+            lblCredentialStatus.setText("Password strength: Fair");
+            lblCredentialStatus.setForeground(Color.ORANGE);
+        } else {
+            lblCredentialStatus.setText("Password strength: Strong");
+            lblCredentialStatus.setForeground(new Color(52, 168, 83)); // green
+        }
     }
 
     private void addInputGroup(JPanel panel, String title, JComponent input,

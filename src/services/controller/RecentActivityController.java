@@ -11,7 +11,7 @@ import javax.swing.JOptionPane;
 
 import config.database.DBConnection;
 import daos.RecentActivityDao;
-import features.core.dashboardpanel.captain.ActivityItem;
+import features.core.dashboardpanel.captain.panels.ActivityItem;
 import models.UserSession;
 
 public class RecentActivityController {
