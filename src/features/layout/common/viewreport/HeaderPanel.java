@@ -3,12 +3,9 @@ package features.layout.common.viewreport;
 import config.UIConfig;
 
 import javax.swing.*;
+import javax.swing.border.EmptyBorder;
 import java.awt.*;
 
-/**
- * Header panel displaying the complaint status badge, title,
- * action buttons (Update, Cancel, Reject, Save), and follow-up indicator.
- */
 public class HeaderPanel extends JPanel {
 
     private final JLabel lblStatusBadge;
@@ -20,13 +17,18 @@ public class HeaderPanel extends JPanel {
     private final JButton btnSave;
     private final JButton btnFollowUp;
 
+    private final JPanel rightPanel; // reference for targeted revalidation
+
     public HeaderPanel() {
         setLayout(new BorderLayout(16, 0));
         setOpaque(false);
-        setMaximumSize(new Dimension(Short.MAX_VALUE, 42));
+        setBorder(new EmptyBorder(8, 16, 8, 16));
 
-        // Left side: badge + follow-up badge + title
-        JPanel left = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
+        // Use preferred size only — DO NOT clamp maximum size or buttons get clipped
+        setPreferredSize(new Dimension(0, 48));
+
+        // ── Left: badges + title ──
+        JPanel left = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 5));
         left.setOpaque(false);
 
         lblStatusBadge = new JLabel("PENDING", SwingConstants.CENTER);
@@ -52,9 +54,9 @@ public class HeaderPanel extends JPanel {
         left.add(lblFollowUpBadge);
         left.add(lblTitle);
 
-        // Right side: action buttons
-        JPanel right = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
-        right.setOpaque(false);
+        // ── Right: action buttons ──
+        rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 5));
+        rightPanel.setOpaque(false);
 
         btnCancel = ButtonFactory.createGhostButton("Cancel");
         btnCancel.setVisible(false);
@@ -69,14 +71,14 @@ public class HeaderPanel extends JPanel {
 
         btnFollowUp = ButtonFactory.createSecondaryButton("Request Follow Up");
 
-        right.add(btnCancel);
-        right.add(btnReject);
-        right.add(btnSave);
-        right.add(btnFollowUp);
-        right.add(btnUpdate);
+        rightPanel.add(btnCancel);
+        rightPanel.add(btnReject);
+        rightPanel.add(btnSave);
+        rightPanel.add(btnFollowUp);
+        rightPanel.add(btnUpdate);
 
         add(left, BorderLayout.WEST);
-        add(right, BorderLayout.EAST);
+        add(rightPanel, BorderLayout.EAST);
     }
 
     public void setStatus(String status) {
@@ -88,27 +90,63 @@ public class HeaderPanel extends JPanel {
         lblTitle.setText("Report #" + String.format("%03d", complaintId) + " – " + safe(type));
     }
 
+    /*
+     * ═══════════════════════════════════════════════
+     * FIXED VISIBILITY SETTERS — deep revalidation
+     * ═══════════════════════════════════════════════
+     */
+
     public void setUpdateMode(boolean editing) {
         btnUpdate.setVisible(!editing);
         btnCancel.setVisible(editing);
         btnSave.setVisible(editing);
+        refresh();
     }
 
     public void setRejectVisible(boolean visible) {
         btnReject.setVisible(visible);
+        refresh();
     }
 
     public void setUpdateVisible(boolean visible) {
         btnUpdate.setVisible(visible);
+        refresh();
     }
 
     public void setFollowUpVisible(boolean visible) {
         btnFollowUp.setVisible(visible);
+        refresh();
     }
 
     public void setFollowUpBadgeVisible(boolean visible) {
         lblFollowUpBadge.setVisible(visible);
+        refresh();
     }
+
+    /**
+     * Revalidates the button bar, this panel, and every parent up to the top level.
+     */
+    private void refresh() {
+        // 1. Recalculate the button row (FlowLayout needs this)
+        rightPanel.revalidate();
+        rightPanel.repaint();
+
+        // 2. Recalculate this header (BorderLayout needs this)
+        revalidate();
+        repaint();
+
+        // 3. Force every ancestor to relayout (BoxLayout/GridBagLayout need this)
+        SwingUtilities.invokeLater(() -> {
+            Container c = getParent();
+            while (c != null) {
+                c.revalidate();
+                c.repaint();
+                c = c.getParent();
+            }
+        });
+    }
+
+    // ── Getters ──
 
     public JButton getUpdateButton() {
         return btnUpdate;

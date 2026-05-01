@@ -6,10 +6,6 @@ import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
 
-/**
- * Panel displaying follow-up request status inside the complaint detail view.
- * Shows a colored banner when a follow-up has been requested.
- */
 public class FollowUpBadgePanel extends JPanel {
 
     private final JLabel lblStatus;
@@ -19,7 +15,7 @@ public class FollowUpBadgePanel extends JPanel {
     public FollowUpBadgePanel() {
         setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
         setOpaque(true);
-        setBackground(new Color(254, 243, 199)); // amber-50
+        setBackground(new Color(254, 243, 199));
         setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(new Color(245, 158, 11), 1, true),
                 new EmptyBorder(12, 16, 12, 16)));
@@ -66,7 +62,6 @@ public class FollowUpBadgePanel extends JPanel {
             lblNotes.setVisible(false);
         }
 
-        // Color based on status
         switch (req.getStatus()) {
             case "Pending" -> {
                 setBackground(new Color(254, 243, 199));

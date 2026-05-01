@@ -1,16 +1,13 @@
 package features.layout.common.viewreport;
 
+import app.E_Report;
+import config.UIConfig;
+
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
 
-/**
- * Panel containing the status update form.
- * Orchestrates the status dropdown, notes, and conditional sub-panels
- * (PendingValidation, InProgressDetail, ResolutionDetail).
- */
 public class UpdateStatusPanel extends JPanel {
-
     private final JComboBox<String> cmbStatus;
     private final JTextArea txtProcessNotes;
     private final JLabel lblCurrentStatus;
@@ -20,16 +17,16 @@ public class UpdateStatusPanel extends JPanel {
     private final InProgressDetailPanel inProgressPanel;
     private final ResolutionDetailPanel resolutionPanel;
 
-    public UpdateStatusPanel(String currentUserFullName) {
-        setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
+    private Runnable onStatusChangedCallback;
+
+    public UpdateStatusPanel(E_Report app) {
         setOpaque(true);
         setBackground(new Color(255, 255, 255, 252));
+        setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
         setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(UIConstants.C_UPDATE_BORDER, 1, true),
+                BorderFactory.createLineBorder(new Color(59, 130, 246, 90), 1, true),
                 new EmptyBorder(16, 20, 16, 20)));
-        setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        // Header
         JPanel header = new JPanel(new BorderLayout());
         header.setOpaque(false);
         header.setMaximumSize(new Dimension(Short.MAX_VALUE, 28));
@@ -37,12 +34,11 @@ public class UpdateStatusPanel extends JPanel {
 
         JLabel title = new JLabel("Update Complaint Status");
         title.setFont(UIConstants.FONT_BOLD_16);
-        title.setForeground(config.UIConfig.TEXT_PRIMARY);
+        title.setForeground(UIConfig.TEXT_PRIMARY);
         header.add(title, BorderLayout.WEST);
         add(header);
         add(Box.createVerticalStrut(12));
 
-        // Current status row
         JPanel currentRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
         currentRow.setOpaque(false);
         currentRow.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -57,7 +53,6 @@ public class UpdateStatusPanel extends JPanel {
         add(currentRow);
         add(Box.createVerticalStrut(12));
 
-        // Form grid: Status + Notes
         JPanel formGrid = new JPanel(new GridBagLayout());
         formGrid.setOpaque(false);
         formGrid.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -77,6 +72,11 @@ public class UpdateStatusPanel extends JPanel {
         cmbStatus.setBackground(Color.WHITE);
         cmbStatus.setBorder(BorderFactory.createLineBorder(UIConstants.C_BORDER, 1, true));
         cmbStatus.setMaximumSize(new Dimension(Short.MAX_VALUE, 32));
+        cmbStatus.addActionListener(e -> {
+            onInternalStatusChanged();
+            if (onStatusChangedCallback != null)
+                onStatusChangedCallback.run();
+        });
         statusWrap.add(lblStatus, BorderLayout.NORTH);
         statusWrap.add(cmbStatus, BorderLayout.CENTER);
 
@@ -98,7 +98,11 @@ public class UpdateStatusPanel extends JPanel {
         txtProcessNotes.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(UIConstants.C_BORDER, 1, true),
                 new EmptyBorder(8, 10, 8, 10)));
-        JScrollPane notesScroll = FieldFactory.createNonScrollingScrollPane(txtProcessNotes);
+        JScrollPane notesScroll = new JScrollPane(txtProcessNotes);
+        notesScroll.setBorder(null);
+        notesScroll.setOpaque(false);
+        notesScroll.getViewport().setOpaque(false);
+        notesScroll.setWheelScrollingEnabled(false);
         notesWrap.add(lblNotes, BorderLayout.NORTH);
         notesWrap.add(notesScroll, BorderLayout.CENTER);
 
@@ -109,40 +113,34 @@ public class UpdateStatusPanel extends JPanel {
         add(formGrid);
         add(Box.createVerticalStrut(10));
 
-        // Conditional sub-panels
         pendingPanel = new PendingValidationPanel();
         pendingPanel.setVisible(false);
+        pendingPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
         add(pendingPanel);
 
         inProgressPanel = new InProgressDetailPanel();
         inProgressPanel.setVisible(false);
+        inProgressPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
         add(inProgressPanel);
 
         resolutionPanel = new ResolutionDetailPanel();
         resolutionPanel.setVisible(false);
+        resolutionPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
         add(resolutionPanel);
 
         add(Box.createVerticalStrut(10));
 
-        // Meta
-        lblMeta = new JLabel("Updated by: " + currentUserFullName + "  •  " +
-                new java.sql.Date(System.currentTimeMillis()));
+        lblMeta = new JLabel();
         lblMeta.setFont(UIConstants.FONT_PLAIN_11);
         lblMeta.setForeground(UIConstants.C_TEXT_MUTED);
         lblMeta.setAlignmentX(Component.LEFT_ALIGNMENT);
+        updateMeta(app);
         add(lblMeta);
-
-        // Wire events
-        cmbStatus.addActionListener(e -> onStatusChanged());
     }
 
-    private void onStatusChanged() {
-        String status = (String) cmbStatus.getSelectedItem();
-        pendingPanel.setVisible(false);
-        resolutionPanel.setVisible("Resolved".equals(status));
-        inProgressPanel.setVisible("In Progress".equals(status));
-        revalidate();
-        repaint();
+    private void updateMeta(E_Report app) {
+        lblMeta.setText("Updated by: " + app.getCurrentUserFullName() + "  •  " +
+                new java.sql.Date(System.currentTimeMillis()));
     }
 
     public void setCurrentStatus(String status) {
@@ -151,9 +149,8 @@ public class UpdateStatusPanel extends JPanel {
 
     public void populateStatusDropdown(String currentStatus) {
         cmbStatus.removeAllItems();
-        String cur = currentStatus != null ? currentStatus : "Pending";
-
-        switch (cur) {
+        String current = currentStatus != null ? currentStatus : "Pending";
+        switch (current) {
             case "Pending" -> {
                 cmbStatus.addItem("In Progress");
                 cmbStatus.addItem("Transferred");
@@ -181,43 +178,55 @@ public class UpdateStatusPanel extends JPanel {
         }
     }
 
-    public void reset(String currentUserFullName) {
+    public void reset(E_Report app, String currentStatus) {
         txtProcessNotes.setText("");
-        pendingPanel.clearFields();
-        inProgressPanel.setOfficer("");
-        inProgressPanel.setAssignedDate("");
-        resolutionPanel.setActionTaken("");
-        resolutionPanel.setRecommendation("");
-        resolutionPanel.setOIC("");
-        resolutionPanel.setResolutionDate("");
+        resolutionPanel.setOIC(app.getCurrentUserFullName());
+        inProgressPanel.setOfficer(app.getCurrentUserFullName());
+        pendingPanel.setOfficer(app.getCurrentUserFullName());
+        resolutionPanel.setResolutionDate(new java.sql.Date(System.currentTimeMillis()).toString());
+        inProgressPanel.setAssignedDate(new java.sql.Date(System.currentTimeMillis()).toString());
+
         pendingPanel.setVisible(false);
         inProgressPanel.setVisible(false);
         resolutionPanel.setVisible(false);
-        lblMeta.setText("Updated by: " + currentUserFullName + "  •  " +
-                new java.sql.Date(System.currentTimeMillis()));
+
+        populateStatusDropdown(currentStatus);
     }
 
-    public void prefillForPending(String rawSubject, String rawType, String officer, String date) {
-        pendingPanel.setPendingTitle(rawSubject != null ? rawSubject : "");
-        pendingPanel.setPendingType(rawType);
-        pendingPanel.setPendingOfficer(officer != null ? officer : "");
-        inProgressPanel.setOfficer(officer != null ? officer : "");
-        inProgressPanel.setAssignedDate(date != null ? date : "");
-        resolutionPanel.setOIC(officer != null ? officer : "");
-        resolutionPanel.setResolutionDate(date != null ? date : "");
+    public void prefillPending(String rawSubject, String rawType) {
+        pendingPanel.setTitle(rawSubject);
+        pendingPanel.setType(rawType);
+    }
+
+    private void onInternalStatusChanged() {
+        String status = (String) cmbStatus.getSelectedItem();
+        boolean isResolved = "Resolved".equals(status);
+        boolean isInProgress = "In Progress".equals(status);
+
+        pendingPanel.setVisible(false);
+        resolutionPanel.setVisible(isResolved);
+        inProgressPanel.setVisible(isInProgress);
     }
 
     public void showPendingPanel(boolean visible) {
         pendingPanel.setVisible(visible);
     }
 
+    public void setOnStatusChangedCallback(Runnable callback) {
+        this.onStatusChangedCallback = callback;
+    }
+
     public String getSelectedStatus() {
         Object sel = cmbStatus.getSelectedItem();
-        return sel != null ? sel.toString() : "";
+        return sel != null ? sel.toString() : null;
     }
 
     public String getProcessNotes() {
         return txtProcessNotes.getText().trim();
+    }
+
+    public void setProcessNotes(String notes) {
+        txtProcessNotes.setText(notes != null ? notes : "");
     }
 
     public PendingValidationPanel getPendingPanel() {

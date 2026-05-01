@@ -4,26 +4,21 @@ import config.AppConfig;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
+
 import java.awt.*;
 
-/**
- * Panel for pending complaint validation fields.
- * Shown when transitioning from Pending to In Progress.
- */
 public class PendingValidationPanel extends JPanel {
-
     private final JTextField txtPendingTitle;
     private final JComboBox<String> cmbPendingType;
     private final JTextField txtPendingOfficer;
     private final JTextArea txtPendingNotes;
 
     public PendingValidationPanel() {
-        setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
         setOpaque(false);
+        setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
         setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createMatteBorder(1, 0, 0, 0, UIConstants.C_PENDING),
                 new EmptyBorder(12, 0, 0, 0)));
-        setAlignmentX(Component.LEFT_ALIGNMENT);
 
         JLabel lblHeader = new JLabel("Complaint Validation");
         lblHeader.setFont(UIConstants.FONT_BOLD_13);
@@ -32,7 +27,12 @@ public class PendingValidationPanel extends JPanel {
         add(lblHeader);
         add(Box.createVerticalStrut(10));
 
-        txtPendingTitle = FieldFactory.createEditableField();
+        txtPendingTitle = new JTextField();
+        txtPendingTitle.setFont(UIConstants.FONT_PLAIN_13);
+        txtPendingTitle.setBackground(UIConstants.C_BG_EDITABLE);
+        txtPendingTitle.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(UIConstants.C_BORDER, 1, true),
+                new EmptyBorder(8, 10, 8, 10)));
         JPanel titleWrap = FieldFactory.createLabeledFieldPanel("Title (editable) *", txtPendingTitle);
         titleWrap.setAlignmentX(Component.LEFT_ALIGNMENT);
         add(titleWrap);
@@ -50,7 +50,12 @@ public class PendingValidationPanel extends JPanel {
         add(typeWrap);
         add(Box.createVerticalStrut(8));
 
-        txtPendingOfficer = FieldFactory.createEditableField();
+        txtPendingOfficer = new JTextField();
+        txtPendingOfficer.setFont(UIConstants.FONT_PLAIN_13);
+        txtPendingOfficer.setBackground(UIConstants.C_BG_EDITABLE);
+        txtPendingOfficer.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(UIConstants.C_BORDER, 1, true),
+                new EmptyBorder(8, 10, 8, 10)));
         JPanel officerWrap = FieldFactory.createLabeledFieldPanel("Officer / Personnel Assigned", txtPendingOfficer);
         officerWrap.setAlignmentX(Component.LEFT_ALIGNMENT);
         add(officerWrap);
@@ -64,26 +69,30 @@ public class PendingValidationPanel extends JPanel {
         txtPendingNotes.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(UIConstants.C_BORDER, 1, true),
                 new EmptyBorder(8, 10, 8, 10)));
-        JScrollPane notesScroll = FieldFactory.createNonScrollingScrollPane(txtPendingNotes);
+        JScrollPane notesScroll = new JScrollPane(txtPendingNotes);
+        notesScroll.setBorder(null);
+        notesScroll.setOpaque(false);
+        notesScroll.getViewport().setOpaque(false);
+        notesScroll.setWheelScrollingEnabled(false);
         JPanel notesWrap = FieldFactory.createLabeledFieldPanel("Validation Notes", notesScroll);
         notesWrap.setAlignmentX(Component.LEFT_ALIGNMENT);
         add(notesWrap);
     }
 
-    public String getPendingTitle() {
+    public String getTitle() {
         return txtPendingTitle.getText().trim();
     }
 
-    public void setPendingTitle(String title) {
+    public void setTitle(String title) {
         txtPendingTitle.setText(title != null ? title : "");
     }
 
-    public String getPendingType() {
+    public String getType() {
         Object sel = cmbPendingType.getSelectedItem();
         return sel != null ? sel.toString().trim() : "";
     }
 
-    public void setPendingType(String type) {
+    public void setType(String type) {
         if (type != null && !type.isBlank()) {
             cmbPendingType.setSelectedItem(type);
             if (cmbPendingType.getSelectedIndex() == -1) {
@@ -95,26 +104,19 @@ public class PendingValidationPanel extends JPanel {
         }
     }
 
-    public String getPendingOfficer() {
+    public String getOfficer() {
         return txtPendingOfficer.getText().trim();
     }
 
-    public void setPendingOfficer(String officer) {
+    public void setOfficer(String officer) {
         txtPendingOfficer.setText(officer != null ? officer : "");
     }
 
-    public String getPendingNotes() {
+    public String getNotes() {
         return txtPendingNotes.getText().trim();
     }
 
-    public void setPendingNotes(String notes) {
+    public void setNotes(String notes) {
         txtPendingNotes.setText(notes != null ? notes : "");
-    }
-
-    public void clearFields() {
-        txtPendingTitle.setText("");
-        cmbPendingType.setSelectedIndex(-1);
-        txtPendingOfficer.setText("");
-        txtPendingNotes.setText("");
     }
 }

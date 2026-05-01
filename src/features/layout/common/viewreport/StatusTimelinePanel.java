@@ -4,10 +4,6 @@ import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
 
-/**
- * Visual timeline showing complaint progress: Submitted → In Progress →
- * Resolved.
- */
 public class StatusTimelinePanel extends JPanel {
 
     private final JLabel[] timelineSteps;

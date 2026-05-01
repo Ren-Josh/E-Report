@@ -6,10 +6,6 @@ import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
 
-/**
- * Panel displaying read-only complaint details.
- * Includes the extracted AttachmentViewerPanel for image display.
- */
 public class ComplaintDetailPanel extends JPanel {
 
     private final JTextField txtTitle;

@@ -8,17 +8,13 @@ import java.awt.*;
 import java.sql.Timestamp;
 import java.util.List;
 
-/**
- * Panel displaying the complaint action history.
- */
 public class ActionHistoryPanel extends JPanel {
-
     private final JPanel historyContent;
 
     public ActionHistoryPanel() {
-        setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
         setOpaque(true);
         setBackground(UIConstants.C_CARD);
+        setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
         setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(UIConstants.C_BORDER, 1, true),
                 new EmptyBorder(16, 20, 16, 20)));
@@ -35,7 +31,7 @@ public class ActionHistoryPanel extends JPanel {
         header.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, UIConstants.C_BORDER));
         header.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        JPanel headerCols = new JPanel(new GridLayout(1, 3, 0, 0));
+        JPanel headerCols = new JPanel(new GridLayout(1, 3, 8, 0));
         headerCols.setOpaque(false);
 
         JLabel col1 = new JLabel("Date & Time");
@@ -66,9 +62,8 @@ public class ActionHistoryPanel extends JPanel {
         add(historyContent);
     }
 
-    public Timestamp loadHistory(List<ComplaintHistoryDetail> history) {
+    public void loadHistory(List<ComplaintHistoryDetail> history) {
         historyContent.removeAll();
-        Timestamp mostRecent = null;
 
         if (history == null || history.isEmpty()) {
             JLabel empty = new JLabel("No actions recorded yet");
@@ -77,16 +72,10 @@ public class ActionHistoryPanel extends JPanel {
             historyContent.add(empty);
         } else {
             for (ComplaintHistoryDetail h : history) {
-                if (h.getDateTimeUpdated() != null) {
-                    if (mostRecent == null || h.getDateTimeUpdated().after(mostRecent)) {
-                        mostRecent = h.getDateTimeUpdated();
-                    }
-                }
-
                 JPanel row = new JPanel(new GridLayout(1, 3, 8, 0));
                 row.setOpaque(false);
                 row.setMaximumSize(new Dimension(Short.MAX_VALUE, 28));
-                row.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, UIConstants.C_ROW_BORDER));
+                row.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(241, 245, 249)));
 
                 JLabel date = new JLabel(h.getDateTimeUpdated() != null ? h.getDateTimeUpdated().toString() : "—");
                 date.setFont(UIConstants.FONT_PLAIN_12);
@@ -107,15 +96,19 @@ public class ActionHistoryPanel extends JPanel {
 
         historyContent.revalidate();
         historyContent.repaint();
-        return mostRecent;
     }
 
-    public void showError(String message) {
-        historyContent.removeAll();
-        JLabel err = new JLabel(message);
-        err.setForeground(Color.RED);
-        historyContent.add(err);
-        historyContent.revalidate();
-        historyContent.repaint();
+    public Timestamp getMostRecentTimestamp(List<ComplaintHistoryDetail> history) {
+        Timestamp mostRecent = null;
+        if (history != null) {
+            for (ComplaintHistoryDetail h : history) {
+                if (h.getDateTimeUpdated() != null) {
+                    if (mostRecent == null || h.getDateTimeUpdated().after(mostRecent)) {
+                        mostRecent = h.getDateTimeUpdated();
+                    }
+                }
+            }
+        }
+        return mostRecent;
     }
 }

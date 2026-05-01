@@ -1,108 +1,75 @@
 package features.layout.common.viewreport;
 
 import javax.swing.*;
+import javax.swing.border.EmptyBorder;
+
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import javax.imageio.ImageIO;
 
-/**
- * Panel for displaying complaint photo attachments.
- * <p>
- * Extracted from ComplaintContentPanel to provide a reusable, dedicated
- * image viewing component that can be merged into any report view.
- * <p>
- * Supports click-to-enlarge with screen-aware scaling (up to 95% of screen
- * size).
- * Never upscales beyond original resolution to keep quality crisp.
- */
 public class AttachmentViewerPanel extends JPanel {
-
-    private final JLabel imageLabel;
-    private byte[] currentImageData;
-    private String currentImageName;
-
-    private static final int THUMB_HEIGHT = 80;
+    private final JLabel lblImage;
+    private final JLabel lblName;
+    private byte[] currentPhotoBytes;
+    private String currentPhotoName;
 
     public AttachmentViewerPanel() {
-        setLayout(new BorderLayout());
+        setLayout(new BorderLayout(8, 0));
         setOpaque(true);
         setBackground(UIConstants.C_BG_FIELD);
         setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(UIConstants.C_BORDER, 1, true),
-                BorderFactory.createEmptyBorder(10, 10, 10, 10)));
+                new EmptyBorder(10, 10, 10, 10)));
 
-        imageLabel = new JLabel("No attachments", SwingConstants.LEFT);
-        imageLabel.setFont(UIConstants.FONT_PLAIN_13);
-        imageLabel.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        imageLabel.addMouseListener(new MouseAdapter() {
+        lblImage = new JLabel();
+        lblImage.setHorizontalAlignment(SwingConstants.LEFT);
+        lblImage.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        lblImage.setToolTipText("Click to enlarge preview");
+        lblImage.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
-                if (currentImageData != null && currentImageData.length > 0) {
-                    enlargePhoto();
-                }
+                enlargePhoto();
             }
         });
 
-        add(imageLabel, BorderLayout.CENTER);
+        lblName = new JLabel("No attachments");
+        lblName.setFont(UIConstants.FONT_PLAIN_13);
+
+        add(lblImage, BorderLayout.WEST);
+        add(lblName, BorderLayout.CENTER);
     }
 
-    /**
-     * Displays the attachment from raw bytes.
-     *
-     * @param photoBytes the image data
-     * @param photoName  the file name for display
-     */
-    public void setAttachment(byte[] photoBytes, String photoName) {
-        this.currentImageData = photoBytes;
-        this.currentImageName = photoName;
+    public void setAttachment(byte[] photo, String name) {
+        this.currentPhotoBytes = photo;
+        this.currentPhotoName = name;
 
-        if (photoBytes != null && photoBytes.length > 0) {
-            ImageIcon thumbIcon = createThumbnailIcon(photoBytes, THUMB_HEIGHT);
-            imageLabel.setIcon(thumbIcon);
-            imageLabel.setText("  " + (photoName != null ? photoName : "Photo") +
-                    "  (Click to enlarge)");
-            imageLabel.setToolTipText("Click to view full size");
-        } else {
-            imageLabel.setIcon(null);
-            imageLabel.setText("No attachments");
-            imageLabel.setToolTipText(null);
-        }
+        ImageIcon icon = new ImageIcon(photo);
+        Image scaled = icon.getImage().getScaledInstance(120, 80, Image.SCALE_SMOOTH);
+        lblImage.setIcon(new ImageIcon(scaled));
+        lblName.setText("  " + (name != null ? name : "Photo"));
     }
 
-    /**
-     * Clears the current attachment display.
-     */
     public void clearAttachment() {
-        this.currentImageData = null;
-        this.currentImageName = null;
-        imageLabel.setIcon(null);
-        imageLabel.setText("No attachments");
-        imageLabel.setToolTipText(null);
+        this.currentPhotoBytes = null;
+        this.currentPhotoName = null;
+        lblImage.setIcon(null);
+        lblName.setText("No attachments");
     }
 
-    // ================== Photo Enlargement ==================
-
-    /**
-     * Opens a modal JOptionPane showing the image scaled up to 95% of screen size.
-     * Uses JScrollPane so even massive images are scrollable. Zero impact on the
-     * content panel layout because it is a separate modal dialog.
-     */
+    /** Opens a modal dialog showing the full image scaled to 95% of screen size. */
     private void enlargePhoto() {
-        if (currentImageData == null || currentImageData.length == 0) {
+        if (currentPhotoBytes == null || currentPhotoBytes.length == 0) {
             JOptionPane.showMessageDialog(this,
-                    "No photo available. Please upload a photo first.",
-                    "No Image", JOptionPane.INFORMATION_MESSAGE);
+                    "No photo attached.", "No Image", JOptionPane.INFORMATION_MESSAGE);
             return;
         }
 
-        ImageIcon fullIcon = loadScaledImage(currentImageData, 0.95);
+        ImageIcon fullIcon = loadScaledImage(currentPhotoBytes, 0.95);
         if (fullIcon == null) {
             JOptionPane.showMessageDialog(this,
-                    "Unable to load image.",
-                    "Error", JOptionPane.ERROR_MESSAGE);
+                    "Unable to load image.", "Error", JOptionPane.ERROR_MESSAGE);
             return;
         }
 
@@ -112,10 +79,9 @@ public class AttachmentViewerPanel extends JPanel {
         JScrollPane scrollPane = new JScrollPane(imageLabel);
         scrollPane.setBorder(BorderFactory.createEmptyBorder());
 
-        // Size the scroll pane to the image + padding, capped only by screen bounds
         Dimension screen = Toolkit.getDefaultToolkit().getScreenSize();
         int padX = 60;
-        int padY = 120; // room for title bar + buttons
+        int padY = 120;
         int prefW = Math.min(fullIcon.getIconWidth() + padX, screen.width - 80);
         int prefH = Math.min(fullIcon.getIconHeight() + padY, screen.height - 100);
         scrollPane.setPreferredSize(new Dimension(prefW, prefH));
@@ -123,43 +89,22 @@ public class AttachmentViewerPanel extends JPanel {
         JOptionPane.showMessageDialog(
                 this,
                 scrollPane,
-                "Photo Preview — " + (currentImageName != null ? currentImageName : "Image"),
+                "Photo Preview — " + (currentPhotoName != null ? currentPhotoName : "Attachment"),
                 JOptionPane.PLAIN_MESSAGE);
     }
 
-    /** Tiny inline thumbnail for the label beside the filename. */
-    private ImageIcon createThumbnailIcon(byte[] imageData, int height) {
+    /**
+     * Loads image from bytes scaled to a percentage of screen size. Never upscales
+     * beyond original.
+     */
+    private ImageIcon loadScaledImage(byte[] data, double scale) {
         try {
-            ByteArrayInputStream bais = new ByteArrayInputStream(imageData);
-            BufferedImage img = ImageIO.read(bais);
+            Image img = ImageIO.read(new ByteArrayInputStream(data));
             if (img == null)
                 return null;
 
-            int width = (int) ((double) img.getWidth() / img.getHeight() * height);
-            if (width <= 0)
-                width = height;
-            Image scaled = img.getScaledInstance(width, height, Image.SCALE_SMOOTH);
-            return new ImageIcon(scaled);
-        } catch (Exception e) {
-            return null;
-        }
-    }
-
-    /**
-     * Loads an image scaled to a percentage of the current screen size.
-     * Never upscales beyond the original resolution (keeps quality crisp).
-     *
-     * @param scale 0.0–1.0 (e.g. 0.95 = 95% of screen)
-     */
-    private ImageIcon loadScaledImage(byte[] imageData, double scale) {
-        try {
-            ByteArrayInputStream bais = new ByteArrayInputStream(imageData);
-            BufferedImage original = ImageIO.read(bais);
-            if (original == null)
-                return null;
-
-            int imgW = original.getWidth();
-            int imgH = original.getHeight();
+            int imgW = img.getWidth(null);
+            int imgH = img.getHeight(null);
 
             Dimension screen = Toolkit.getDefaultToolkit().getScreenSize();
             int maxW = (int) (screen.width * scale);
@@ -172,7 +117,7 @@ public class AttachmentViewerPanel extends JPanel {
             int newW = (int) (imgW * s);
             int newH = (int) (imgH * s);
 
-            Image scaled = original.getScaledInstance(newW, newH, Image.SCALE_SMOOTH);
+            Image scaled = img.getScaledInstance(newW, newH, Image.SCALE_SMOOTH);
             return new ImageIcon(scaled);
         } catch (Exception e) {
             e.printStackTrace();

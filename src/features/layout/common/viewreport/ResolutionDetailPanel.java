@@ -2,42 +2,56 @@ package features.layout.common.viewreport;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
+
 import java.awt.*;
 
-/**
- * Panel for Resolution status fields.
- */
 public class ResolutionDetailPanel extends JPanel {
-
     private final JTextField txtActionTaken;
     private final JTextField txtRecommendation;
     private final JTextField txtOIC;
     private final JTextField txtResolutionDate;
 
     public ResolutionDetailPanel() {
-        setLayout(new GridLayout(5, 1, 6, 6));
         setOpaque(false);
+        setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
         setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createMatteBorder(1, 0, 0, 0, UIConstants.C_RESOLUTION_BORDER),
+                BorderFactory.createMatteBorder(1, 0, 0, 0, UIConstants.C_RESOLVED),
                 new EmptyBorder(10, 0, 0, 0)));
-        setAlignmentX(Component.LEFT_ALIGNMENT);
 
         JLabel lblHeader = new JLabel("Resolution Actioned");
         lblHeader.setFont(UIConstants.FONT_BOLD_13);
         lblHeader.setForeground(UIConstants.C_RESOLVED);
+        lblHeader.setAlignmentX(Component.LEFT_ALIGNMENT);
         add(lblHeader);
+        add(Box.createVerticalStrut(10));
 
-        txtActionTaken = FieldFactory.createEditableField();
-        add(FieldFactory.createLabeledFieldPanel("Action Taken *", txtActionTaken));
+        txtActionTaken = new JTextField();
+        txtRecommendation = new JTextField();
+        txtOIC = new JTextField();
+        txtResolutionDate = new JTextField();
 
-        txtRecommendation = FieldFactory.createEditableField();
-        add(FieldFactory.createLabeledFieldPanel("Recommendation", txtRecommendation));
+        JPanel actionWrap = FieldFactory.createLabeledField("Action Taken *", txtActionTaken);
+        actionWrap.setAlignmentX(Component.LEFT_ALIGNMENT);
+        actionWrap.setMaximumSize(new Dimension(Short.MAX_VALUE, 60));
+        add(actionWrap);
+        add(Box.createVerticalStrut(6));
 
-        txtOIC = FieldFactory.createEditableField();
-        add(FieldFactory.createLabeledFieldPanel("Officer in Charge", txtOIC));
+        JPanel recWrap = FieldFactory.createLabeledField("Recommendation", txtRecommendation);
+        recWrap.setAlignmentX(Component.LEFT_ALIGNMENT);
+        recWrap.setMaximumSize(new Dimension(Short.MAX_VALUE, 60));
+        add(recWrap);
+        add(Box.createVerticalStrut(6));
 
-        txtResolutionDate = FieldFactory.createEditableField();
-        add(FieldFactory.createLabeledFieldPanel("Resolution Date (YYYY-MM-DD)", txtResolutionDate));
+        JPanel oicWrap = FieldFactory.createLabeledField("Officer in Charge", txtOIC);
+        oicWrap.setAlignmentX(Component.LEFT_ALIGNMENT);
+        oicWrap.setMaximumSize(new Dimension(Short.MAX_VALUE, 60));
+        add(oicWrap);
+        add(Box.createVerticalStrut(6));
+
+        JPanel dateWrap = FieldFactory.createLabeledField("Resolution Date (YYYY-MM-DD)", txtResolutionDate);
+        dateWrap.setAlignmentX(Component.LEFT_ALIGNMENT);
+        dateWrap.setMaximumSize(new Dimension(Short.MAX_VALUE, 60));
+        add(dateWrap);
     }
 
     public String getActionTaken() {

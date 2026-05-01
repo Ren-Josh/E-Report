@@ -2,34 +2,40 @@ package features.layout.common.viewreport;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
+
 import java.awt.*;
 
-/**
- * Panel for In Progress status detail fields.
- */
 public class InProgressDetailPanel extends JPanel {
-
     private final JTextField txtOfficer;
     private final JTextField txtAssignedDate;
 
     public InProgressDetailPanel() {
-        setLayout(new GridLayout(3, 1, 8, 8));
         setOpaque(false);
+        setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
         setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createMatteBorder(1, 0, 0, 0, UIConstants.C_IN_PROGRESS),
                 new EmptyBorder(10, 0, 0, 0)));
-        setAlignmentX(Component.LEFT_ALIGNMENT);
 
         JLabel lblHeader = new JLabel("Complaint History Detail");
         lblHeader.setFont(UIConstants.FONT_BOLD_13);
         lblHeader.setForeground(UIConstants.C_IN_PROGRESS);
+        lblHeader.setAlignmentX(Component.LEFT_ALIGNMENT);
         add(lblHeader);
+        add(Box.createVerticalStrut(10));
 
-        txtOfficer = FieldFactory.createEditableField();
-        add(FieldFactory.createLabeledFieldPanel("Officer / Personnel Assigned", txtOfficer));
+        txtOfficer = new JTextField();
+        txtAssignedDate = new JTextField();
 
-        txtAssignedDate = FieldFactory.createEditableField();
-        add(FieldFactory.createLabeledFieldPanel("Date Assigned (YYYY-MM-DD)", txtAssignedDate));
+        JPanel officerWrap = FieldFactory.createLabeledField("Officer / Personnel Assigned", txtOfficer);
+        officerWrap.setAlignmentX(Component.LEFT_ALIGNMENT);
+        officerWrap.setMaximumSize(new Dimension(Short.MAX_VALUE, 60));
+        add(officerWrap);
+        add(Box.createVerticalStrut(8));
+
+        JPanel dateWrap = FieldFactory.createLabeledField("Date Assigned (YYYY-MM-DD)", txtAssignedDate);
+        dateWrap.setAlignmentX(Component.LEFT_ALIGNMENT);
+        dateWrap.setMaximumSize(new Dimension(Short.MAX_VALUE, 60));
+        add(dateWrap);
     }
 
     public String getOfficer() {

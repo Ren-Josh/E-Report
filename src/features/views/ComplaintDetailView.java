@@ -5,7 +5,7 @@ import config.UIConfig;
 import features.components.HeaderPanel;
 import features.components.NavPanel;
 import features.core.BackgroundPanel;
-import features.viewing.ComplaintContentPanel;
+import features.layout.common.viewreport.ComplaintContentPanel;
 import models.UserSession;
 
 import javax.swing.*;

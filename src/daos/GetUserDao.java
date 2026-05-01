@@ -25,7 +25,7 @@ public class GetUserDao {
 		// ===== INIT SQL =====
 		queryUser = """
 				SELECT UI_ID, first_name, middle_name, last_name, sex,
-					contact_number, email_address, house_number, street, purok
+					contact_number, email_address, house_number, purok
 				FROM User_Info
 				WHERE UI_ID = ?;
 				""";
