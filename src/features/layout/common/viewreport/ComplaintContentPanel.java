@@ -1,8 +1,10 @@
 package features.layout.common.viewreport;
 
 import app.E_Report;
+import config.AppConfig;
 import config.database.DBConnection;
 import daos.GetComplaintDao;
+import features.submit.SubmitReportMapPanel;
 import models.ComplaintAction;
 import models.ComplaintDetail;
 import models.ComplaintHistoryDetail;
@@ -36,6 +38,13 @@ public class ComplaintContentPanel extends JPanel {
     private final ActionHistoryPanel actionHistoryPanel;
     private final FollowUpBadgePanel followUpBadgePanel;
     private final FollowUpRequestController followUpController;
+
+    /* ========== Map display fields ========== */
+    private final SubmitReportMapPanel viewMapPanel;
+    private final JLabel mapCoordsLabel;
+    private final JPanel mapSection;
+    private static final Color TEXT_DARK = new Color(33, 33, 33);
+    private static final Color TEXT_MUTED = new Color(117, 117, 117);
 
     public ComplaintContentPanel(E_Report app) {
         this.app = app;
@@ -89,20 +98,57 @@ public class ComplaintContentPanel extends JPanel {
             mainContent.revalidate();
             mainContent.repaint();
         });
-        gbc.gridy = 4;
+        gbc.gridy = 3;
         mainContent.add(updatePanel, gbc);
 
         // Follow-up badge
         followUpBadgePanel = new FollowUpBadgePanel();
-        gbc.gridy = 5;
+        gbc.gridy = 4;
         gbc.insets = new Insets(12, 0, 0, 0);
         mainContent.add(followUpBadgePanel, gbc);
 
         // Action history
         actionHistoryPanel = new ActionHistoryPanel();
-        gbc.gridy = 6;
+        gbc.gridy = 5;
         gbc.weighty = 1.0;
         mainContent.add(actionHistoryPanel, gbc);
+
+        /* ========== Incident Location Map (below action history) ========== */
+        mapSection = new JPanel(new BorderLayout(0, 8));
+        mapSection.setOpaque(false);
+
+        JLabel mapTitle = new JLabel("Incident Location");
+        mapTitle.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        mapTitle.setForeground(TEXT_DARK);
+        mapSection.add(mapTitle, BorderLayout.NORTH);
+
+        // No-op listener: read-only view
+        viewMapPanel = new SubmitReportMapPanel(new SubmitReportMapPanel.Listener() {
+            @Override
+            public void onPinned(double latitude, double longitude) {
+            }
+
+            @Override
+            public void onStatusChanged(String statusText) {
+            }
+
+            @Override
+            public void onAddressResolved(String addressText) {
+            }
+        });
+        viewMapPanel.setPreferredSize(new Dimension(0, 260));
+        mapSection.add(viewMapPanel, BorderLayout.CENTER);
+
+        mapCoordsLabel = new JLabel("No coordinates available");
+        mapCoordsLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        mapCoordsLabel.setForeground(TEXT_MUTED);
+        mapSection.add(mapCoordsLabel, BorderLayout.SOUTH);
+
+        gbc.gridy = 6;
+        gbc.insets = new Insets(12, 0, 0, 0);
+        gbc.weighty = 0;
+        mainContent.add(mapSection, gbc);
+        /* ================================================================== */
 
         // Detail card
         detailPanel = new ComplaintDetailPanel();
@@ -428,6 +474,43 @@ public class ComplaintContentPanel extends JPanel {
         titlePanel.setUpdateVisible(canUpdateStatus && !isFinalStatus);
 
         loadHistory(cd.getComplaintId());
+
+        /*
+         * ========== Load coordinates into map using AppConfig zoom & radius ==========
+         */
+        Double lat = parseCoordinate(cd.getLatitude());
+        Double lon = parseCoordinate(cd.getLongitude());
+
+        if (lat != null && lon != null && lat != 0.0 && lon != 0.0) {
+            viewMapPanel.setPin(lat, lon);
+            viewMapPanel.setZoom(AppConfig.REPORT_DEFAULT_MAP_ZOOM);
+
+            mapCoordsLabel.setText(String.format(
+                    "Lat: %.6f  |  Lon: %.6f  |  Service Area: %d m",
+                    lat, lon, AppConfig.REPORT_SERVICE_AREA_RADIUS_METERS));
+
+            mapSection.setVisible(true);
+        } else {
+            viewMapPanel.resetView();
+            mapCoordsLabel.setText("No location coordinates available");
+        }
+        /*
+         * =============================================================================
+         */
+    }
+
+    private Double parseCoordinate(Object value) {
+        if (value == null)
+            return null;
+        if (value instanceof Double)
+            return (Double) value;
+        if (value instanceof Number)
+            return ((Number) value).doubleValue();
+        try {
+            return Double.parseDouble(value.toString().trim());
+        } catch (NumberFormatException e) {
+            return null;
+        }
     }
 
     private void loadHistory(int complaintId) {

@@ -235,7 +235,7 @@ public class SubmitReportMapPanel extends JPanel {
         repaint();
     }
 
-    private void setPin(double lat, double lon) {
+    public void setPin(double lat, double lon) {
         pinLat = lat;
         pinLon = lon;
         centerLat = lat;
