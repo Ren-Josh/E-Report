@@ -3,20 +3,19 @@ package models;
 import java.sql.Timestamp;
 
 public class ComplaintDetail {
-    private String currentStatus, subject, type, street, purok, personsInvolved, details;
+    private String currentStatus, subject, type, purok, personsInvolved, details;
     private byte[] photoAttachmentBytes;
     private Timestamp dateTime, lastUpdateTimestamp;
     private double longitude, latitude;
     private int CD_ID;
     private String photoName;
     private String photoType;
+    private String street;
     private Integer photoSize;
 
     public ComplaintDetail(int CD_ID, String currentStatus, String subject, String type, Timestamp dateTime,
-            double longitude,
-            double latitude, String street, String purok, String personsInvolved, String details,
+            double longitude, double latitude, String purok, String personsInvolved, String details,
             byte[] photoAttachmentBytes) {
-
         this.CD_ID = CD_ID;
         this.currentStatus = currentStatus;
         this.subject = subject;
@@ -24,7 +23,6 @@ public class ComplaintDetail {
         this.dateTime = dateTime;
         this.longitude = longitude;
         this.latitude = latitude;
-        this.street = street;
         this.purok = purok;
         this.personsInvolved = personsInvolved;
         this.details = details;
@@ -90,14 +88,6 @@ public class ComplaintDetail {
         this.latitude = latitude;
     }
 
-    public String getStreet() {
-        return street;
-    }
-
-    public void setStreet(String street) {
-        this.street = street;
-    }
-
     public String getPurok() {
         return purok;
     }
@@ -126,8 +116,8 @@ public class ComplaintDetail {
         return photoAttachmentBytes;
     }
 
-    public void setPhotoAttachmentBytes(byte[] photoAttachment) {
-        this.photoAttachmentBytes = photoAttachment;
+    public void setPhotoAttachmentBytes(byte[] photoAttachmentBytes) {
+        this.photoAttachmentBytes = photoAttachmentBytes;
     }
 
     public void setLastUpdateTimestamp(Timestamp timeStamp) {
@@ -162,4 +152,11 @@ public class ComplaintDetail {
         this.photoSize = photoSize;
     }
 
+    public String getStreet() {
+        return street;
+    }
+
+    public void setStreet(String street) {
+        this.street = street;
+    }
 }

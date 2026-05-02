@@ -28,41 +28,36 @@ public class ComplaintStatusController {
 
     /**
      * Updates the status of a complaint with full transaction safety.
-     * Allows same-status updates if a process note is provided (adds history
-     * entry).
+     * Allows same-status updates if a process note is provided.
      */
     public boolean updateComplaintStatus(int cdId, String newStatus,
             String process, UserSession session) {
 
-        String updatedBy = buildUpdatedByString(session);
+        int updatedBy = (session != null) ? session.getUserId() : 0;
 
         Connection con = null;
         try {
             con = DBConnection.connect();
             con.setAutoCommit(false);
 
-            // Validate complaint exists
             String currentStatus = statusDao.getCurrentStatus(con, cdId);
             if (currentStatus == null) {
                 throw new IllegalStateException("Complaint not found: " + cdId);
             }
 
-            // Allow same-status updates ONLY if there's a process note (history tracking)
             boolean isSameStatus = currentStatus.equals(newStatus);
             boolean hasNote = process != null && !process.isBlank();
 
             if (isSameStatus && !hasNote) {
                 con.rollback();
-                return false; // No-op: same status with no note
+                return false;
             }
 
-            // For actual status changes, validate the transition
             if (!isSameStatus && !isValidTransition(currentStatus, newStatus)) {
                 throw new IllegalArgumentException(
                         "Invalid status transition: " + currentStatus + " -> " + newStatus);
             }
 
-            // Perform update (inserts history; updates status if changed)
             boolean success = statusDao.updateStatus(con, cdId, newStatus, process, updatedBy);
 
             if (success) {
@@ -115,10 +110,6 @@ public class ComplaintStatusController {
         }
     }
 
-    /**
-     * Returns valid next statuses based on current status.
-     * Same status is NOT listed here — handled separately in updateComplaintStatus.
-     */
     public static List<String> getValidNextStatuses(String currentStatus) {
         return switch (currentStatus) {
             case STATUS_PENDING -> List.of(STATUS_IN_PROGRESS, STATUS_REJECTED);
@@ -131,11 +122,5 @@ public class ComplaintStatusController {
 
     public static boolean isValidTransition(String from, String to) {
         return getValidNextStatuses(from).contains(to);
-    }
-
-    private String buildUpdatedByString(UserSession session) {
-        if (session == null)
-            return "System";
-        return session.getRole() + " (ID:" + session.getUserId() + ")";
     }
 }

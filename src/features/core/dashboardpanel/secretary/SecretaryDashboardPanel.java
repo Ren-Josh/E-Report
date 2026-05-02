@@ -267,12 +267,12 @@ public class SecretaryDashboardPanel extends JPanel {
             int rowIdx = i % rowsPerPage;
             long pos = ((long) page << 32) | (rowIdx & 0xffffffffL);
 
-            if (followUpIds.contains(complaintId)) {
-                highlights.put(pos, new Color(255, 248, 225)); // light orange
-            } else if ("Resolved".equalsIgnoreCase(status)) {
+            if ("Resolved".equalsIgnoreCase(status)) {
                 highlights.put(pos, new Color(232, 245, 233)); // light green
             } else if ("Rejected".equalsIgnoreCase(status)) {
                 highlights.put(pos, new Color(255, 235, 238)); // light red
+            } else if (followUpIds.contains(complaintId)) {
+                highlights.put(pos, new Color(255, 248, 225)); // light orange
             }
         }
         return highlights;

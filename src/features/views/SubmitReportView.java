@@ -162,18 +162,18 @@ public class SubmitReportView extends JPanel {
 
     private ComplaintDetail buildComplaintFromForm() {
         String category = formPanel.getCategory();
-        if (category.isEmpty()) {
+        if (category.isEmpty() || category.startsWith("All ")) {
             throw new MissingReportFieldException("category", "Please select a category for your report.");
         }
 
         String purok = formPanel.getPurok();
-        if (purok.isEmpty()) {
-            throw new MissingReportFieldException("purok", "Please select your purok.");
+        if (purok.isEmpty() || purok.startsWith("All ")) {
+            throw new MissingReportFieldException("purok", "Please select the purok where it happens.");
         }
 
         String location = formPanel.getLocationText();
         if (location.isEmpty()) {
-            throw new MissingReportFieldException("location", "Please enter the location or street name.");
+            throw new MissingReportFieldException("location", "Please select the location on the map.");
         }
 
         String details = formPanel.getDetails();

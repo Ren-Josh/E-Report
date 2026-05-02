@@ -1,27 +1,36 @@
 package daos;
 
-import java.sql.*;
-import config.AppConfig;
-import models.UserInfo;
-import models.Credential;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 
+import config.AppConfig;
+import models.Credential;
+import models.UserInfo;
+
+/**
+ * DAO for adding users and credentials.
+ */
 public class AddUserDao {
 
 	// ===== SQL STRINGS =====
-	private String queryUserInfo, queryCredential, queryCheckUser, queryCount;
+	private String queryUserInfo;
+	private String queryCredential;
+	private String queryCheckUser;
+	private String queryCount;
 
 	public AddUserDao() {
-		// ===== INIT SQL =====
 		queryUserInfo = """
 				INSERT INTO %s(first_name, middle_name, last_name, sex,
-					contact_number, email_address, house_number,
-					street, purok)
-				VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
+					contact_number, email_address, house_number, purok)
+				VALUES (?, ?, ?, ?, ?, ?, ?, ?);
 				""".formatted(AppConfig.TABLE_USER_INFO);
 
 		queryCredential = """
-				INSERT INTO %s(UI_ID, username, password, role, is_verified)
-				VALUES (?, ?, ?, ?, ?);
+				INSERT INTO %s(UI_ID, username, password, role)
+				VALUES (?, ?, ?, ?);
 				""".formatted(AppConfig.TABLE_CREDENTIAL);
 
 		queryCheckUser = "SELECT COUNT(*) FROM %s WHERE username = ?".formatted(AppConfig.TABLE_CREDENTIAL);
@@ -29,8 +38,15 @@ public class AddUserDao {
 		queryCount = "SELECT COUNT(*) FROM %s".formatted(AppConfig.TABLE_CREDENTIAL);
 	}
 
+	/**
+	 * Inserts a new user into User_Info.
+	 *
+	 * @param con Active DB connection
+	 * @param ui  UserInfo object
+	 * @return Generated UI_ID, or -1 on failure
+	 * @throws SQLException if insertion fails
+	 */
 	public int addUser(Connection con, UserInfo ui) throws SQLException {
-		// ===== INSERT USER INFO =====
 		try (PreparedStatement stmt = con.prepareStatement(queryUserInfo, Statement.RETURN_GENERATED_KEYS)) {
 			stmt.setString(1, ui.getFName());
 			stmt.setString(2, ui.getMName());
@@ -43,7 +59,6 @@ public class AddUserDao {
 
 			stmt.executeUpdate();
 
-			// ===== GET GENERATED ID =====
 			try (ResultSet generatedKeys = stmt.getGeneratedKeys()) {
 				if (generatedKeys.next()) {
 					return generatedKeys.getInt(1);
@@ -53,46 +68,57 @@ public class AddUserDao {
 		return -1;
 	}
 
+	/**
+	 * Inserts credential record for a user.
+	 *
+	 * @param con    Active DB connection
+	 * @param userID User ID
+	 * @param c      Credential object
+	 * @return true if inserted
+	 * @throws SQLException if insertion fails
+	 */
 	public boolean addCredential(Connection con, int userID, Credential c) throws SQLException {
-		// ===== INSERT CREDENTIAL =====
 		try (PreparedStatement stmt = con.prepareStatement(queryCredential)) {
 			stmt.setInt(1, userID);
 			stmt.setString(2, c.getUsername());
 			stmt.setString(3, c.getPassword());
 			stmt.setString(4, c.getRole());
-			stmt.setBoolean(5, c.getIsVerified());
 
 			return stmt.executeUpdate() > 0;
 		}
 	}
 
+	/**
+	 * Checks if a username is already taken.
+	 *
+	 * @param con      Active DB connection
+	 * @param username Username to check
+	 * @return true if taken
+	 */
 	public boolean isUsernameTaken(Connection con, String username) {
-		boolean isTaken = false;
-
-		// ===== CHECK USERNAME =====
 		try (PreparedStatement stmt = con.prepareStatement(queryCheckUser)) {
 			stmt.setString(1, username);
-
-			// ===== EXECUTE QUERY =====
 			try (ResultSet rs = stmt.executeQuery()) {
 				if (rs.next()) {
-					if (rs.getInt(1) > 0)
-						isTaken = true;
+					return rs.getInt(1) > 0;
 				}
 			}
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
-		return isTaken;
+		return false;
 	}
 
+	/**
+	 * Counts total credentials in the system.
+	 *
+	 * @param con Active DB connection
+	 * @return User count
+	 */
 	public int getUserCount(Connection con) {
 		int userCount = 0;
-
-		// ===== COUNT USERS =====
 		try (PreparedStatement stmt = con.prepareStatement(queryCount);
 				ResultSet rs = stmt.executeQuery()) {
-
 			if (rs.next()) {
 				userCount = rs.getInt(1);
 			}

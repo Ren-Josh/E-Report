@@ -27,33 +27,25 @@ public class ResidentDashboardFetcher extends AbstractDashboardFetcher {
     protected void performFetch() {
         UserSession session = app.getUserSession();
 
-        int total = rsc.countTotalReportByUser(session);
-        int pending = rsc.countTotalReportByUserAndStatus(session, "Pending");
-        int inProgress = rsc.countTotalReportByUserAndStatus(session, "In Progress");
-        int resolved = rsc.countTotalReportByUserAndStatus(session, "Resolved");
-
-        List<ComplaintDetail> complaints = csc.getRecentComplaintByUser(session, 7);
-        List<Object[]> rows = new ArrayList<>();
-
-        if (complaints != null) {
-            for (ComplaintDetail cd : complaints) {
-                Object[] row = new Object[7];
-                row[0] = cd.getComplaintId();
-                row[1] = cd.getType();
-                row[2] = cd.getPurok();
-                row[3] = cd.getDateTime();
-                row[4] = cd.getLastUpdateTimestamp() != null
-                        ? cd.getLastUpdateTimestamp()
-                        : cd.getDateTime();
-                row[5] = cd.getCurrentStatus();
-                row[6] = "View";
-                rows.add(row);
-            }
+        String[] statuses = { "Pending", "In Progress", "Resolved" };
+        statValues[0] = rsc.countTotalReportByUser(session);
+        for (int i = 0; i < statuses.length; i++) {
+            statValues[i + 1] = rsc.countTotalReportByUserAndStatus(session, statuses[i]);
         }
 
-        this.statValues = new int[] { total, pending, inProgress, resolved };
+        List<ComplaintDetail> complaints = csc.getRecentComplaintByUser(session, 7);
         this.rawComplaints = complaints != null ? new ArrayList<>(complaints) : new ArrayList<>();
-        this.reports = rows;
+        this.reports = mapToRows(rawComplaints);
+    }
+
+    private List<Object[]> mapToRows(List<ComplaintDetail> complaints) {
+        List<Object[]> rows = new ArrayList<>();
+        if (complaints == null)
+            return rows;
+        for (ComplaintDetail cd : complaints) {
+            rows.add(ComplaintRowMapper.toRow(cd));
+        }
+        return rows;
     }
 
     public int[] getStatValues() {
@@ -68,11 +60,7 @@ public class ResidentDashboardFetcher extends AbstractDashboardFetcher {
         return new ArrayList<>(rawComplaints);
     }
 
-    /**
-     * Returns the raw ComplaintDetail list for row-click mapping in the dashboard
-     * table.
-     */
     public List<ComplaintDetail> getComplaintDetails() {
-        return new ArrayList<>(rawComplaints);
+        return getRawComplaints();
     }
 }

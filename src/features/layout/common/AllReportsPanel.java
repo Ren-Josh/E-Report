@@ -94,12 +94,13 @@ public class AllReportsPanel extends JPanel {
             int rowIdx = i % rowsPerPage;
             long pos = ((long) page << 32) | (rowIdx & 0xffffffffL);
 
-            if (followUpIds.contains(complaintId)) {
-                highlights.put(pos, new Color(255, 248, 225)); // light orange
-            } else if ("Resolved".equalsIgnoreCase(status)) {
+            // FIXED: Status colors now take priority over follow-ups
+            if ("Resolved".equalsIgnoreCase(status)) {
                 highlights.put(pos, new Color(232, 245, 233)); // light green
             } else if ("Rejected".equalsIgnoreCase(status)) {
                 highlights.put(pos, new Color(255, 235, 238)); // light red
+            } else if (followUpIds.contains(complaintId)) {
+                highlights.put(pos, new Color(255, 248, 225)); // light orange
             }
         }
         return highlights;
@@ -174,7 +175,8 @@ public class AllReportsPanel extends JPanel {
         if (row < 0 || row >= filteredDataList.size())
             return;
 
-        int reportId = Integer.parseInt((String) filteredDataList.get(row)[0]);
+        Object idObj = filteredDataList.get(row)[0];
+        int reportId = (idObj instanceof Integer) ? (Integer) idObj : Integer.parseInt(idObj.toString());
         ComplaintDetail cd = fetchComplaintFromDb(reportId);
 
         if (cd != null) {

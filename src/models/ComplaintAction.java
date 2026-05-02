@@ -8,7 +8,6 @@ public class ComplaintAction {
 
     public ComplaintAction(String CD_ID, String actionTaken, String recommendation, String oic,
             Timestamp dateTimeAssigned, Timestamp resolutionDateTime) {
-
         this.CD_ID = CD_ID;
         this.actionTaken = actionTaken;
         this.recommendation = recommendation;

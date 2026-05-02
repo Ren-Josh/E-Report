@@ -16,28 +16,28 @@ import models.ComplaintHistoryDetail;
  */
 public class UpdateComplaintStatusDao {
 
-    // Update the current status on Complaint_Detail
-    private static final String UPDATE_STATUS_SQL = "UPDATE Complaint_Detail SET current_status = ? WHERE CD_ID = ?";
+    // ===== SQL STRINGS =====
+    private String updateStatusSQL;
+    private String insertHistoryDetailSQL;
+    private String selectHistorySQL;
+    private String selectCurrentStatusSQL;
 
-    // Insert a new history detail record
-    private static final String INSERT_HISTORY_DETAIL_SQL = "INSERT INTO Complaint_History_Detail (status, process, date_time_updated, updated_by) "
-            +
-            "VALUES (?, ?, ?, ?)";
+    public UpdateComplaintStatusDao() {
+        // ===== INIT SQL =====
+        updateStatusSQL = "UPDATE Complaint_Detail SET current_status = ? WHERE CD_ID = ?";
 
-    // Link the history detail to the complaint
-    private static final String INSERT_HISTORY_SQL = "INSERT INTO Complaint_History (CD_ID, CHD_ID) VALUES (?, ?)";
+        insertHistoryDetailSQL = "INSERT INTO Complaint_History_Detail "
+                + "(CD_ID, status, process, date_time_updated, updated_by) VALUES (?, ?, ?, ?, ?)";
 
-    // Fetch all history records for a complaint
-    private static final String SELECT_HISTORY_SQL = """
-            SELECT chd.CHD_ID, chd.status, chd.process, chd.date_time_updated, chd.updated_by
-            FROM Complaint_History_Detail chd
-            INNER JOIN Complaint_History ch ON ch.CHD_ID = chd.CHD_ID
-            WHERE ch.CD_ID = ?
-            ORDER BY chd.date_time_updated DESC
-            """;
+        selectHistorySQL = """
+                SELECT CHD_ID, status, process, date_time_updated, updated_by
+                FROM Complaint_History_Detail
+                WHERE CD_ID = ?
+                ORDER BY date_time_updated DESC
+                """;
 
-    // Fetch current status of a complaint
-    private static final String SELECT_CURRENT_STATUS_SQL = "SELECT current_status FROM Complaint_Detail WHERE CD_ID = ?";
+        selectCurrentStatusSQL = "SELECT current_status FROM Complaint_Detail WHERE CD_ID = ?";
+    }
 
     /**
      * Atomically updates complaint status and records history.
@@ -47,15 +47,15 @@ public class UpdateComplaintStatusDao {
      * @param cdId      Complaint Detail ID
      * @param newStatus New status value
      * @param process   Notes about what was done
-     * @param updatedBy Name/ID of the staff making the update
+     * @param updatedBy User ID (UI_ID) of the staff making the update
      * @return true if successful
      * @throws SQLException if any step fails — caller should rollback
      */
     public boolean updateStatus(Connection con, int cdId, String newStatus,
-            String process, String updatedBy) throws SQLException {
+            String process, int updatedBy) throws SQLException {
 
-        // 1. Update Complaint_Detail status
-        try (PreparedStatement stmt = con.prepareStatement(UPDATE_STATUS_SQL)) {
+        // ===== UPDATE STATUS =====
+        try (PreparedStatement stmt = con.prepareStatement(updateStatusSQL)) {
             stmt.setString(1, newStatus);
             stmt.setInt(2, cdId);
             int rows = stmt.executeUpdate();
@@ -64,15 +64,15 @@ public class UpdateComplaintStatusDao {
             }
         }
 
-        // 2. Insert Complaint_History_Detail
-        int chdId;
+        // ===== INSERT HISTORY DETAIL =====
         try (PreparedStatement stmt = con.prepareStatement(
-                INSERT_HISTORY_DETAIL_SQL, Statement.RETURN_GENERATED_KEYS)) {
+                insertHistoryDetailSQL, Statement.RETURN_GENERATED_KEYS)) {
 
-            stmt.setString(1, newStatus);
-            stmt.setString(2, process != null ? process : "");
-            stmt.setTimestamp(3, new java.sql.Timestamp(System.currentTimeMillis()));
-            stmt.setString(4, updatedBy);
+            stmt.setInt(1, cdId);
+            stmt.setString(2, newStatus);
+            stmt.setString(3, process != null ? process : "");
+            stmt.setTimestamp(4, new java.sql.Timestamp(System.currentTimeMillis()));
+            stmt.setInt(5, updatedBy);
 
             int rows = stmt.executeUpdate();
             if (rows == 0) {
@@ -80,21 +80,9 @@ public class UpdateComplaintStatusDao {
             }
 
             try (ResultSet rs = stmt.getGeneratedKeys()) {
-                if (rs.next()) {
-                    chdId = rs.getInt(1);
-                } else {
+                if (!rs.next()) {
                     throw new SQLException("Failed to retrieve generated CHD_ID");
                 }
-            }
-        }
-
-        // 3. Link to Complaint_History
-        try (PreparedStatement stmt = con.prepareStatement(INSERT_HISTORY_SQL)) {
-            stmt.setInt(1, cdId);
-            stmt.setInt(2, chdId);
-            int rows = stmt.executeUpdate();
-            if (rows == 0) {
-                throw new SQLException("Failed to insert Complaint_History link");
             }
         }
 
@@ -105,7 +93,7 @@ public class UpdateComplaintStatusDao {
      * Retrieves the current status of a complaint.
      */
     public String getCurrentStatus(Connection con, int cdId) throws SQLException {
-        try (PreparedStatement stmt = con.prepareStatement(SELECT_CURRENT_STATUS_SQL)) {
+        try (PreparedStatement stmt = con.prepareStatement(selectCurrentStatusSQL)) {
             stmt.setInt(1, cdId);
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
@@ -122,7 +110,7 @@ public class UpdateComplaintStatusDao {
     public List<ComplaintHistoryDetail> getHistory(Connection con, int cdId) throws SQLException {
         List<ComplaintHistoryDetail> history = new ArrayList<>();
 
-        try (PreparedStatement stmt = con.prepareStatement(SELECT_HISTORY_SQL)) {
+        try (PreparedStatement stmt = con.prepareStatement(selectHistorySQL)) {
             stmt.setInt(1, cdId);
             try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {
@@ -130,7 +118,7 @@ public class UpdateComplaintStatusDao {
                     chd.setStatus(rs.getString("status"));
                     chd.setProcess(rs.getString("process"));
                     chd.setDateTimeUpdated(rs.getTimestamp("date_time_updated"));
-                    chd.setUpdatedBy(rs.getString("updated_by"));
+                    chd.setUpdatedBy(rs.getInt("updated_by"));
                     history.add(chd);
                 }
             }

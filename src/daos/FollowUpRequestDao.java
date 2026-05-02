@@ -1,9 +1,12 @@
 package daos;
 
-import config.database.DBConnection;
 import models.FollowUpRequest;
 
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -12,77 +15,88 @@ import java.util.List;
  */
 public class FollowUpRequestDao {
 
-    public boolean insert(FollowUpRequest req) {
-        String sql = "INSERT INTO Follow_Up_Request (CD_ID, UI_ID, status, notes) VALUES (?, ?, ?, ?)";
-        try (Connection con = DBConnection.connect();
-                PreparedStatement ps = con.prepareStatement(sql)) {
+    // ===== SQL STRINGS =====
+    private String insertSQL;
+    private String findByComplaintIdSQL;
+    private String findLatestSQL;
+    private String hasActiveSQL;
+    private String updateStatusSQL;
+
+    public FollowUpRequestDao() {
+        insertSQL = "INSERT INTO Follow_Up_Request (CD_ID, UI_ID, status, notes) VALUES (?, ?, ?, ?)";
+        findByComplaintIdSQL = "SELECT * FROM Follow_Up_Request WHERE CD_ID = ? ORDER BY request_date DESC";
+        findLatestSQL = "SELECT * FROM Follow_Up_Request WHERE CD_ID = ? ORDER BY request_date DESC LIMIT 1";
+        hasActiveSQL = "SELECT COUNT(*) FROM Follow_Up_Request WHERE CD_ID = ? AND status = 'Pending'";
+        updateStatusSQL = "UPDATE Follow_Up_Request SET status = ? WHERE FUR_ID = ?";
+    }
+
+    /**
+     * Inserts a new follow-up request.
+     */
+    public boolean insert(Connection con, FollowUpRequest req) throws SQLException {
+        try (PreparedStatement ps = con.prepareStatement(insertSQL, Statement.RETURN_GENERATED_KEYS)) {
             ps.setInt(1, req.getCdId());
             ps.setInt(2, req.getUiId());
             ps.setString(3, req.getStatus());
             ps.setString(4, req.getNotes());
             return ps.executeUpdate() > 0;
-        } catch (SQLException e) {
-            e.printStackTrace();
-            return false;
         }
     }
 
-    public List<FollowUpRequest> findByComplaintId(int cdId) {
+    /**
+     * Finds all follow-up requests for a complaint.
+     */
+    public List<FollowUpRequest> findByComplaintId(Connection con, int cdId) throws SQLException {
         List<FollowUpRequest> list = new ArrayList<>();
-        String sql = "SELECT * FROM Follow_Up_Request WHERE CD_ID = ? ORDER BY request_date DESC";
-        try (Connection con = DBConnection.connect();
-                PreparedStatement ps = con.prepareStatement(sql)) {
+        try (PreparedStatement ps = con.prepareStatement(findByComplaintIdSQL)) {
             ps.setInt(1, cdId);
-            ResultSet rs = ps.executeQuery();
-            while (rs.next()) {
-                list.add(mapRow(rs));
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    list.add(mapRow(rs));
+                }
             }
-        } catch (SQLException e) {
-            e.printStackTrace();
         }
         return list;
     }
 
-    public FollowUpRequest findLatestByComplaintId(int cdId) {
-        String sql = "SELECT * FROM Follow_Up_Request WHERE CD_ID = ? ORDER BY request_date DESC LIMIT 1";
-        try (Connection con = DBConnection.connect();
-                PreparedStatement ps = con.prepareStatement(sql)) {
+    /**
+     * Finds the latest follow-up request for a complaint.
+     */
+    public FollowUpRequest findLatestByComplaintId(Connection con, int cdId) throws SQLException {
+        try (PreparedStatement ps = con.prepareStatement(findLatestSQL)) {
             ps.setInt(1, cdId);
-            ResultSet rs = ps.executeQuery();
-            if (rs.next()) {
-                return mapRow(rs);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return mapRow(rs);
+                }
             }
-        } catch (SQLException e) {
-            e.printStackTrace();
         }
         return null;
     }
 
-    public boolean hasActiveRequest(int cdId) {
-        String sql = "SELECT COUNT(*) FROM Follow_Up_Request WHERE CD_ID = ? AND status = 'Pending'";
-        try (Connection con = DBConnection.connect();
-                PreparedStatement ps = con.prepareStatement(sql)) {
+    /**
+     * Checks if there is an active (Pending) request.
+     */
+    public boolean hasActiveRequest(Connection con, int cdId) throws SQLException {
+        try (PreparedStatement ps = con.prepareStatement(hasActiveSQL)) {
             ps.setInt(1, cdId);
-            ResultSet rs = ps.executeQuery();
-            if (rs.next()) {
-                return rs.getInt(1) > 0;
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1) > 0;
+                }
             }
-        } catch (SQLException e) {
-            e.printStackTrace();
         }
         return false;
     }
 
-    public boolean updateStatus(int furId, String status) {
-        String sql = "UPDATE Follow_Up_Request SET status = ? WHERE FUR_ID = ?";
-        try (Connection con = DBConnection.connect();
-                PreparedStatement ps = con.prepareStatement(sql)) {
+    /**
+     * Updates the status of a follow-up request.
+     */
+    public boolean updateStatus(Connection con, int furId, String status) throws SQLException {
+        try (PreparedStatement ps = con.prepareStatement(updateStatusSQL)) {
             ps.setString(1, status);
             ps.setInt(2, furId);
             return ps.executeUpdate() > 0;
-        } catch (SQLException e) {
-            e.printStackTrace();
-            return false;
         }
     }
 

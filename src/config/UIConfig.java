@@ -165,6 +165,33 @@ public class UIConfig {
                         new Color(100, 200, 100, 220)
         };
 
+        public static final Color[] DONUT_COLOR = new Color[] {
+                        new Color(255, 0, 0), // Pure Red
+                        new Color(0, 128, 255), // Bright Blue
+                        new Color(0, 200, 83), // Vivid Green
+                        new Color(255, 171, 0), // Amber
+                        new Color(156, 39, 176), // Deep Purple
+                        new Color(0, 188, 212), // Cyan
+                        new Color(255, 87, 34), // Deep Orange
+                        new Color(233, 30, 99), // Pink
+                        new Color(63, 81, 181), // Indigo
+                        new Color(255, 235, 59), // Yellow
+                        new Color(0, 150, 136), // Teal
+                        new Color(121, 85, 72), // Brown
+                        new Color(244, 67, 54), // Red
+                        new Color(33, 150, 243), // Blue
+                        new Color(76, 175, 80), // Green
+                        new Color(255, 152, 0), // Orange
+                        new Color(103, 58, 183), // Purple
+                        new Color(0, 229, 255), // Bright Cyan
+                        new Color(255, 61, 0), // Red Orange
+                        new Color(224, 64, 251), // Magenta
+                        new Color(255, 193, 7), // Gold
+                        new Color(139, 195, 74), // Light Green
+                        new Color(255, 64, 129), // Hot Pink
+                        new Color(96, 125, 139) // Blue Grey
+        };
+
         // NEW: Neutral text shades used by cards and filters
         public static final Color TEXT_DARK = new Color(15, 23, 42);
         public static final Color TEXT_MUTED = new Color(100, 116, 139);

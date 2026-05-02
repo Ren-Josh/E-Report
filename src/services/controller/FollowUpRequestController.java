@@ -2,6 +2,10 @@ package services.controller;
 
 import daos.FollowUpRequestDao;
 import models.FollowUpRequest;
+import config.database.DBConnection;
+
+import java.sql.Connection;
+import java.sql.SQLException;
 
 /**
  * Controller for follow-up request operations.
@@ -20,22 +24,90 @@ public class FollowUpRequestController {
         req.setUiId(uiId);
         req.setStatus("Pending");
         req.setNotes(notes != null && !notes.isBlank() ? notes : null);
-        return dao.insert(req);
+
+        Connection con = null;
+        try {
+            con = DBConnection.connect();
+            con.setAutoCommit(false);
+
+            boolean result = dao.insert(con, req);
+            con.commit();
+            return result;
+        } catch (SQLException e) {
+            if (con != null) {
+                try {
+                    con.rollback();
+                } catch (SQLException rollbackEx) {
+                    rollbackEx.printStackTrace();
+                }
+            }
+            System.err.println("Follow-up request failed: " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        } finally {
+            if (con != null) {
+                try {
+                    con.close();
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
     }
 
     public boolean hasActiveFollowUp(int cdId) {
-        return dao.hasActiveRequest(cdId);
+        try (Connection con = DBConnection.connect()) {
+            return dao.hasActiveRequest(con, cdId);
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
     }
 
     public FollowUpRequest getLatestFollowUp(int cdId) {
-        return dao.findLatestByComplaintId(cdId);
+        try (Connection con = DBConnection.connect()) {
+            return dao.findLatestByComplaintId(con, cdId);
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return null;
+        }
     }
 
     public boolean acknowledgeFollowUp(int furId) {
-        return dao.updateStatus(furId, "Acknowledged");
+        return updateStatus(furId, "Acknowledged");
     }
 
     public boolean resolveFollowUp(int furId) {
-        return dao.updateStatus(furId, "Resolved");
+        return updateStatus(furId, "Resolved");
+    }
+
+    private boolean updateStatus(int furId, String status) {
+        Connection con = null;
+        try {
+            con = DBConnection.connect();
+            con.setAutoCommit(false);
+
+            boolean result = dao.updateStatus(con, furId, status);
+            con.commit();
+            return result;
+        } catch (SQLException e) {
+            if (con != null) {
+                try {
+                    con.rollback();
+                } catch (SQLException rollbackEx) {
+                    rollbackEx.printStackTrace();
+                }
+            }
+            e.printStackTrace();
+            return false;
+        } finally {
+            if (con != null) {
+                try {
+                    con.close();
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
     }
 }

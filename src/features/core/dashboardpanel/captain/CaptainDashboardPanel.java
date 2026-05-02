@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Date;
 
 import app.E_Report;
+import config.UIConfig;
 import features.components.FilterBarPanel;
 import features.core.dashboardpanel.DashboardInfoCardsPanel;
 import features.core.dashboardpanel.captain.panels.BarChartPanel;
@@ -226,10 +227,7 @@ public class CaptainDashboardPanel extends JPanel {
     }
 
     private Color[] getDefaultDonutColors() {
-        return new Color[] {
-                new Color(186, 85, 211), new Color(255, 193, 7),
-                new Color(66, 133, 244), new Color(52, 168, 83), new Color(255, 152, 0)
-        };
+        return UIConfig.DONUT_COLOR;
     }
 
     private Color[] getDefaultStatusColors() {

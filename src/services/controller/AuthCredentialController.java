@@ -3,12 +3,11 @@ package services.controller;
 import daos.GetUserDao;
 import config.database.DBConnection;
 import java.sql.Connection;
+import java.sql.SQLException;
 import models.Credential;
 import models.UserSession;
 
 /**
- * AuthCredentialController
- * 
  * Handles user authentication by validating credentials against the database.
  */
 public class AuthCredentialController {
@@ -17,7 +16,6 @@ public class AuthCredentialController {
 	private GetUserDao userDAO;
 
 	public AuthCredentialController() {
-		// ===== INIT DAO =====
 		userDAO = new GetUserDao();
 	}
 
@@ -29,37 +27,18 @@ public class AuthCredentialController {
 	 * @return UserSession object if authentication succeeds; null otherwise
 	 */
 	public UserSession authenticateUser(String username, String password) {
-		Connection con = null;
-
-		try {
-			// ===== CREATE CONNECTION =====
-			con = DBConnection.connect();
-
-			// ===== AUTHENTICATE USER =====
+		try (Connection con = DBConnection.connect()) {
 			Credential credential = userDAO.getCredential(con, username, password);
 
-			// ===== CHECK CREDENTIAL =====
 			if (credential != null) {
-				// ===== CREATE SESSION =====
 				return new UserSession(
 						credential.getUI_ID(),
-						credential.getRole(),
-						credential.getIsVerified());
+						credential.getRole());
 			}
-
-		} catch (Exception e) {
+		} catch (SQLException e) {
+			System.err.println("Authentication error: " + e.getMessage());
 			e.printStackTrace();
-		} finally {
-			// ===== CLOSE CONNECTION =====
-			if (con != null) {
-				try {
-					con.close();
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
-			}
 		}
-
 		return null;
 	}
 }

@@ -27,7 +27,7 @@ public final class ButtonFactory {
         btn.setVerticalTextPosition(SwingConstants.CENTER);
         btn.setMargin(new Insets(0, 0, 0, 0));
 
-        btn.setBorder(BorderFactory.createEmptyBorder(8, 16, 8, 16));
+        btn.setBorder(BorderFactory.createEmptyBorder(5, 12, 5, 12));
         return btn;
     }
 
@@ -88,7 +88,7 @@ public final class ButtonFactory {
         btn.setVerticalTextPosition(SwingConstants.CENTER);
         btn.setMargin(new Insets(0, 0, 0, 0));
 
-        btn.setBorder(BorderFactory.createEmptyBorder(8, 16, 8, 16));
+        btn.setBorder(BorderFactory.createEmptyBorder(5, 12, 5, 12));
         return btn;
     }
 }

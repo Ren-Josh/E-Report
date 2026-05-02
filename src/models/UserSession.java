@@ -4,12 +4,10 @@ public class UserSession {
     private int userId;
     private String role;
     private String username;
-    private boolean isVerified;
 
-    public UserSession(int userId, String role, boolean isVerified) {
+    public UserSession(int userId, String role) {
         this.userId = userId;
         this.role = role;
-        this.isVerified = isVerified;
     }
 
     public int getUserId() {

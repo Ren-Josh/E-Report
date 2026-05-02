@@ -3,10 +3,11 @@ package models;
 import java.sql.Timestamp;
 
 public class ComplaintHistoryDetail {
-    private String status, process, updatedBy;
+    private String status, process;
+    private int updatedBy;
     private Timestamp dateTimeUpdated;
 
-    public ComplaintHistoryDetail(String status, String process, Timestamp dateTimeUpdated, String updatedBy) {
+    public ComplaintHistoryDetail(String status, String process, Timestamp dateTimeUpdated, int updatedBy) {
         this.status = status;
         this.process = process;
         this.dateTimeUpdated = dateTimeUpdated;
@@ -40,11 +41,11 @@ public class ComplaintHistoryDetail {
         this.dateTimeUpdated = dateTimeUpdated;
     }
 
-    public String getUpdatedBy() {
+    public int getUpdatedBy() {
         return updatedBy;
     }
 
-    public void setUpdatedBy(String updatedBy) {
+    public void setUpdatedBy(int updatedBy) {
         this.updatedBy = updatedBy;
     }
 }

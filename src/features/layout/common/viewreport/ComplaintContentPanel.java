@@ -3,6 +3,7 @@ package features.layout.common.viewreport;
 import app.E_Report;
 import config.database.DBConnection;
 import daos.GetComplaintDao;
+import models.ComplaintAction;
 import models.ComplaintDetail;
 import models.ComplaintHistoryDetail;
 import models.FollowUpRequest;
@@ -14,6 +15,7 @@ import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.List;
@@ -87,24 +89,25 @@ public class ComplaintContentPanel extends JPanel {
             mainContent.revalidate();
             mainContent.repaint();
         });
-        gbc.gridy = 3;
+        gbc.gridy = 4;
         mainContent.add(updatePanel, gbc);
 
         // Follow-up badge
         followUpBadgePanel = new FollowUpBadgePanel();
-        gbc.gridy = 4;
+        gbc.gridy = 5;
         gbc.insets = new Insets(12, 0, 0, 0);
         mainContent.add(followUpBadgePanel, gbc);
 
         // Action history
         actionHistoryPanel = new ActionHistoryPanel();
-        gbc.gridy = 5;
+        gbc.gridy = 6;
         gbc.weighty = 1.0;
         mainContent.add(actionHistoryPanel, gbc);
 
         // Detail card
         detailPanel = new ComplaintDetailPanel();
-        gbc.gridy = 6;
+        gbc.gridy = 7;
+        gbc.weighty = 0;
         mainContent.add(detailPanel, gbc);
 
         add(mainContent, BorderLayout.CENTER);
@@ -299,11 +302,16 @@ public class ComplaintContentPanel extends JPanel {
             sb.append("]");
             note = sb.toString();
         }
-        // In Progress → Resolved or Transferred
+        // ── Resolved ──
         else if ("Resolved".equals(newStatus)) {
             var action = buildComplaintAction();
             if (action == null)
                 return;
+            if (!saveComplaintAction(action)) {
+                JOptionPane.showMessageDialog(app, "Failed to save resolution details.", "Database Error",
+                        JOptionPane.ERROR_MESSAGE);
+                return;
+            }
         }
 
         boolean saved = statusController.updateComplaintStatus(
@@ -345,6 +353,22 @@ public class ComplaintContentPanel extends JPanel {
         return action;
     }
 
+    private boolean saveComplaintAction(models.ComplaintAction action) {
+        String sql = "INSERT INTO Complaint_Action (CD_ID, action_taken, recommendation, oic, resolution_date_time) VALUES (?, ?, ?, ?, ?)";
+        try (Connection con = DBConnection.connect();
+                PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setInt(1, Integer.parseInt(action.getCD_ID()));
+            ps.setString(2, action.getActionTaken());
+            ps.setString(3, action.getRecommendation());
+            ps.setString(4, action.getOIC());
+            ps.setTimestamp(5, action.getResolutionDateTime());
+            return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
     private boolean updateComplaintDetail(int cdId, String subject, String type) {
         String sql = "UPDATE Complaint_Detail SET subject = ?, type = ? WHERE CD_ID = ?";
         try (Connection con = DBConnection.connect();
@@ -357,6 +381,29 @@ public class ComplaintContentPanel extends JPanel {
             e.printStackTrace();
             return false;
         }
+    }
+
+    private models.ComplaintAction fetchResolvedAction(int cdId) {
+        String sql = "SELECT action_taken, recommendation, oic, resolution_date_time " +
+                "FROM Complaint_Action WHERE CD_ID = ? " +
+                "ORDER BY resolution_date_time DESC LIMIT 1";
+        try (Connection con = DBConnection.connect();
+                PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setInt(1, cdId);
+            ResultSet rs = ps.executeQuery();
+            if (rs.next()) {
+                var action = new models.ComplaintAction();
+                action.setCD_ID(String.valueOf(cdId));
+                action.setActionTaken(rs.getString("action_taken"));
+                action.setRecommendation(rs.getString("recommendation"));
+                action.setOIC(rs.getString("oic"));
+                action.setResolutionDateTime(rs.getTimestamp("resolution_date_time"));
+                return action;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 
     public void loadComplaint(ComplaintDetail cd) {
@@ -386,7 +433,8 @@ public class ComplaintContentPanel extends JPanel {
     private void loadHistory(int complaintId) {
         try (Connection con = DBConnection.connect()) {
             List<ComplaintHistoryDetail> history = new GetComplaintDao().getComplaintHistory(con, complaintId);
-            actionHistoryPanel.loadHistory(history);
+            ComplaintAction action = fetchResolvedAction(complaintId);
+            actionHistoryPanel.loadHistory(history, action);
 
             Timestamp mostRecent = actionHistoryPanel.getMostRecentTimestamp(history);
             detailPanel.setLastUpdate(mostRecent != null ? mostRecent.toString() : "—");
@@ -428,12 +476,9 @@ public class ComplaintContentPanel extends JPanel {
     }
 
     /**
-     * Determines follow-up visibility based on:
-     * 1. Whether there is an active (non-resolved) follow-up request
-     * 2. Whether the most recent status update is newer than (or equal to) the
-     * follow-up request
-     * 3. Whether the complaint status is terminal (Resolved, Rejected, or
-     * Transferred)
+     * Determines follow-up visibility.
+     * Badge + button are FORCE-HIDDEN when the complaint is Resolved, Rejected,
+     * or Transferred because no further follow-up is possible.
      */
     private void refreshFollowUpStatus() {
         if (currentComplaint == null)
@@ -441,8 +486,18 @@ public class ComplaintContentPanel extends JPanel {
 
         String status = safe(currentComplaint.getCurrentStatus());
 
-        // FIXED: follow-up requests are only allowed on terminal statuses
-        boolean isTerminalStatus = "Pending".equalsIgnoreCase(status)
+        // ── TERMINAL STATUSES: hide everything immediately ──
+        if ("Resolved".equalsIgnoreCase(status)
+                || "Rejected".equalsIgnoreCase(status)
+                || "Transferred".equalsIgnoreCase(status)) {
+            titlePanel.setFollowUpBadgeVisible(false);
+            titlePanel.setFollowUpVisible(false);
+            followUpBadgePanel.hideRequest();
+            return;
+        }
+
+        // For Pending / In Progress, follow-ups are allowed
+        boolean isOpenStatus = "Pending".equalsIgnoreCase(status)
                 || "In Progress".equalsIgnoreCase(status);
 
         FollowUpRequest req = followUpController.getLatestFollowUp(currentComplaint.getComplaintId());
@@ -450,7 +505,7 @@ public class ComplaintContentPanel extends JPanel {
         // No follow-up request at all
         if (req == null) {
             titlePanel.setFollowUpBadgeVisible(false);
-            titlePanel.setFollowUpVisible(!canUpdateStatus && isTerminalStatus);
+            titlePanel.setFollowUpVisible(!canUpdateStatus && isOpenStatus);
             followUpBadgePanel.hideRequest();
             return;
         }
@@ -459,8 +514,7 @@ public class ComplaintContentPanel extends JPanel {
         Timestamp lastStatusUpdate = getMostRecentStatusUpdateTime(currentComplaint.getComplaintId());
         Timestamp followUpDate = req.getRequestDate();
 
-        // FIXED: Use millisecond comparison (>=) so equal timestamps still count as
-        // addressed
+        // Use millisecond comparison (>=) so equal timestamps still count as addressed
         boolean statusUpdatedAfterFollowUp = lastStatusUpdate != null && followUpDate != null
                 && lastStatusUpdate.getTime() >= followUpDate.getTime();
 
@@ -470,8 +524,8 @@ public class ComplaintContentPanel extends JPanel {
         boolean hasActive = !"Resolved".equalsIgnoreCase(req.getStatus()) && !isFollowUpStale;
         boolean isResident = !canUpdateStatus;
 
-        // FIXED: Resident can request a NEW follow-up only on terminal statuses
-        boolean showButton = !hasActive && isResident && isTerminalStatus;
+        // Resident can request a NEW follow-up only on open statuses
+        boolean showButton = !hasActive && isResident && isOpenStatus;
 
         titlePanel.setFollowUpBadgeVisible(hasActive);
         titlePanel.setFollowUpVisible(showButton);

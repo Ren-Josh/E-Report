@@ -59,10 +59,8 @@ public class UserServiceController {
 			int existingUsers = addUserDAO.getUserCount(con);
 			if (existingUsers == 0) {
 				c.setRole("Secretary");
-				c.setIsVerified(true);
 			} else {
 				c.setRole("Resident");
-				c.setIsVerified(false);
 			}
 
 			// ===== BEGIN TRANSACTION =====

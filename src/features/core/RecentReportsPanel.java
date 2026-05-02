@@ -286,7 +286,21 @@ public class RecentReportsPanel extends GlassPanel {
             }
         };
 
-        table = new DashboardTable(columnNames);
+        table = new DashboardTable(columnNames) {
+            @Override
+            public Component prepareRenderer(TableCellRenderer renderer, int row, int column) {
+                Component c = super.prepareRenderer(renderer, row, column);
+
+                // Re-apply custom highlights after DashboardTable's zebra striping
+                if (!isRowSelected(row)) {
+                    Color hl = getHighlightColor(row);
+                    if (hl != null) {
+                        c.setBackground(hl);
+                    }
+                }
+                return c;
+            }
+        };
         table.setModel(tableModel);
         table.setFillsViewportHeight(false);
 

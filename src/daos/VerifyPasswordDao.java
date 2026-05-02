@@ -6,11 +6,12 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 
 /**
- * DAO for verifying user passwords against the database.
+ * DAO for verifying user passwords.
  */
 public class VerifyPasswordDao {
 
-    private final String queryVerify;
+    // ===== SQL STRINGS =====
+    private String queryVerify;
 
     public VerifyPasswordDao() {
         queryVerify = """
@@ -22,18 +23,17 @@ public class VerifyPasswordDao {
     /**
      * Verifies if the given password matches the stored password for the user.
      *
-     * @param con      active database connection
-     * @param userId   the user's UI_ID
-     * @param password plain-text password to verify
-     * @return true if password matches, false otherwise
+     * @param con      Active DB connection
+     * @param userId   User ID
+     * @param password Password to verify
+     * @return true if matches
      */
     public boolean verifyPassword(Connection con, int userId, String password) {
         try (PreparedStatement stmt = con.prepareStatement(queryVerify)) {
             stmt.setInt(1, userId);
             stmt.setString(2, password);
-
             try (ResultSet rs = stmt.executeQuery()) {
-                return rs.next(); // true if row exists = password matches
+                return rs.next();
             }
         } catch (SQLException e) {
             System.err.println("Error verifying password");

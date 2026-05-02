@@ -5,8 +5,7 @@ public class UserInfo {
     private int UI_ID;
 
     public UserInfo(int UI_ID, String fName, String mName, String lName, String sex, String contact, String email,
-            String houseNum,
-            String purok) {
+            String houseNum, String purok) {
         this.UI_ID = UI_ID;
         this.fName = fName;
         this.mName = mName;
@@ -14,21 +13,20 @@ public class UserInfo {
         this.sex = sex;
         this.contact = contact;
         this.email = email;
-        this.purok = purok;
         this.houseNum = houseNum;
+        this.purok = purok;
     }
 
     public UserInfo(String fName, String mName, String lName, String sex, String contact, String email,
-            String houseNum,
-            String purok) {
+            String houseNum, String purok) {
         this.fName = fName;
         this.mName = mName;
         this.lName = lName;
         this.sex = sex;
         this.contact = contact;
         this.email = email;
-        this.purok = purok;
         this.houseNum = houseNum;
+        this.purok = purok;
     }
 
     public UserInfo() {
@@ -105,5 +103,4 @@ public class UserInfo {
     public void setPurok(String purok) {
         this.purok = purok;
     }
-
 }

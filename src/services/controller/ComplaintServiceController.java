@@ -4,31 +4,28 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.sql.Connection;
-import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.sql.Timestamp;
 import java.util.List;
 
 import daos.AddComplaintDao;
 import daos.GetComplaintDao;
+import daos.UpdateComplaintStatusDao;
 import config.database.DBConnection;
 import models.ComplaintDetail;
-import models.ComplaintHistoryDetail;
 import models.UserSession;
 
 /**
- * ComplaintServiceController
- * 
  * Handles operations related to complaints submitted by users.
  */
 public class ComplaintServiceController {
 
-	// ===== DAO INSTANCE =====
+	// ===== DAO INSTANCES =====
 	private AddComplaintDao addComplaintDAO;
+	private UpdateComplaintStatusDao statusDao;
 
 	public ComplaintServiceController() {
-		// ===== INIT DAO =====
 		addComplaintDAO = new AddComplaintDao();
+		statusDao = new UpdateComplaintStatusDao();
 	}
 
 	/**
@@ -42,10 +39,9 @@ public class ComplaintServiceController {
 		Connection con = null;
 
 		try {
-			// ===== CREATE CONNECTION =====
 			con = DBConnection.connect();
+			con.setAutoCommit(false);
 
-			// ===== PROCESS IMAGE =====
 			if (droppedFile != null) {
 				try {
 					processAndAttachImage(cd, droppedFile);
@@ -56,15 +52,21 @@ public class ComplaintServiceController {
 				}
 			}
 
-			// ===== ADD COMPLAINT =====
-			addComplaintDAO.addComplaint(con, UI_ID, cd);
-			System.out.println("Complaint successfully saved!");
+			int cdId = addComplaintDAO.addComplaint(con, UI_ID, cd);
+			con.commit();
+			System.out.println("Complaint successfully saved! ID: " + cdId);
 
 		} catch (SQLException e) {
+			if (con != null) {
+				try {
+					con.rollback();
+				} catch (SQLException rollbackEx) {
+					rollbackEx.printStackTrace();
+				}
+			}
 			System.err.println("Database Error: " + e.getMessage());
 			e.printStackTrace();
 		} finally {
-			// ===== CLOSE CONNECTION =====
 			if (con != null) {
 				try {
 					con.close();
@@ -77,7 +79,6 @@ public class ComplaintServiceController {
 
 	public List<ComplaintDetail> getAllComplaints() {
 		GetComplaintDao gcd = new GetComplaintDao();
-
 		try (Connection con = DBConnection.connect()) {
 			return gcd.getAllComplaints(con);
 		} catch (SQLException e) {
@@ -88,12 +89,8 @@ public class ComplaintServiceController {
 
 	/**
 	 * Processes and attaches an image file to the ComplaintDetail object.
-	 * 
-	 * @param cd          The ComplaintDetail object to attach the image to
-	 * @param droppedFile The image file to read and attach
 	 */
 	public void processAndAttachImage(ComplaintDetail cd, File droppedFile) {
-		// ===== READ IMAGE =====
 		try {
 			byte[] fileBytes = Files.readAllBytes(droppedFile.toPath());
 			cd.setPhotoAttachmentBytes(fileBytes);
@@ -106,51 +103,48 @@ public class ComplaintServiceController {
 
 	public List<ComplaintDetail> getAllComplaintByUser(UserSession us) {
 		GetComplaintDao gcd = new GetComplaintDao();
-
-		try (Connection con = DBConnection.connect();) {
+		try (Connection con = DBConnection.connect()) {
 			return gcd.getAllComplaint(con, us.getUserId());
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
-
 		return null;
 	}
 
 	public List<ComplaintDetail> getRecentComplaintByUser(UserSession us, int limit) {
 		GetComplaintDao gcd = new GetComplaintDao();
-
-		try (Connection con = DBConnection.connect();) {
+		try (Connection con = DBConnection.connect()) {
 			return gcd.getRecentComplaint(con, us.getUserId(), limit);
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
-
 		return null;
 	}
 
-	public boolean updateComplaintStatus(int complaintId, String newStatus, String note, String updatedBy) {
-		AddComplaintDao dao = new AddComplaintDao();
+	/**
+	 * Updates complaint status and records history atomically.
+	 * 
+	 * @param complaintId Complaint Detail ID
+	 * @param newStatus   New status value
+	 * @param note        Process notes
+	 * @param updatedBy   User ID (UI_ID) of the staff making the update
+	 * @return true if successful
+	 */
+	public boolean updateComplaintStatus(int complaintId, String newStatus, String note, int updatedBy) {
 		Connection con = null;
 		try {
 			con = DBConnection.connect();
 			con.setAutoCommit(false);
 
-			String updateStatusSql = "UPDATE Complaint_Detail SET current_status = ? WHERE CD_ID = ?";
-			try (PreparedStatement stmt = con.prepareStatement(updateStatusSql)) {
-				stmt.setString(1, newStatus);
-				stmt.setInt(2, complaintId);
-				stmt.executeUpdate();
+			boolean success = statusDao.updateStatus(con, complaintId, newStatus, note, updatedBy);
+
+			if (success) {
+				con.commit();
+				return true;
+			} else {
+				con.rollback();
+				return false;
 			}
-
-			ComplaintHistoryDetail history = new ComplaintHistoryDetail();
-			history.setStatus(newStatus);
-			history.setProcess(note != null ? note : "");
-			history.setDateTimeUpdated(new Timestamp(System.currentTimeMillis()));
-			history.setUpdatedBy(updatedBy != null ? updatedBy : "Staff");
-
-			dao.addComplaintHistory(con, complaintId, history);
-			con.commit();
-			return true;
 		} catch (SQLException e) {
 			if (con != null) {
 				try {

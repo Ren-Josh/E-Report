@@ -93,7 +93,6 @@ public class ComplaintDetailPanel extends JPanel {
             return;
         txtTitle.setText(safe(cd.getSubject()));
         txtDescription.setText(safe(cd.getDetails()));
-        txtLocation.setText(safe(cd.getStreet()));
         txtPurok.setText(safe(cd.getPurok()));
         txtCoords.setText(String.format("%.6f, %.6f", cd.getLatitude(), cd.getLongitude()));
         txtDateSubmitted.setText(cd.getDateTime() != null ? cd.getDateTime().toString() : "N/A");

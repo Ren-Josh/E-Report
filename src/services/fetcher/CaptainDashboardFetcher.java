@@ -120,16 +120,6 @@ public class CaptainDashboardFetcher extends AbstractDashboardFetcher {
         }
     }
 
-    /**
-     * Dynamic title based on the exact filter type the user selected.
-     *
-     * All Time → "All Case Graph"
-     * Span of Years → "Yearly Case Graph"
-     * Single Year → "Monthly Case Graph"
-     * Span of Months → "Monthly Case Graph"
-     * Single Month → "Weekly Case Graph"
-     * Single Week → "Daily Case Graph"
-     */
     public String getLineGraphTitle() {
         if (currentTimeFilter == null) {
             return "All Case Graph";
@@ -152,7 +142,6 @@ public class CaptainDashboardFetcher extends AbstractDashboardFetcher {
         }
     }
 
-    // -- Getters (called on EDT after fireDataChanged) --
     public int getTotal() {
         return total;
     }

@@ -34,10 +34,8 @@ public class TBCreate {
         createTable(con, "User_Info", AppConfig.CREATE_USER_INFO_TABLE);
         createTable(con, "Credential", AppConfig.CREATE_CREDENTIAL_TABLE);
         createTable(con, "Complaint_Detail", AppConfig.CREATE_COMPLAINT_DETAIL_TABLE);
-        createTable(con, "Complaint", AppConfig.CREATE_COMPLAINT_TABLE);
         createTable(con, "Complaint_Action", AppConfig.CREATE_COMPLAINT_ACTION_TABLE);
         createTable(con, "Complaint_History_Detail", AppConfig.CREATE_COMPLAINT_HISTORY_DETAIL_TABLE);
-        createTable(con, "Complaint_History", AppConfig.CREATE_COMPLAINT_HISTORY_TABLE);
         createTable(con, "Follow_Up_Request", AppConfig.CREATE_FOLLOW_UP_REQUEST_TABLE);
     }
 

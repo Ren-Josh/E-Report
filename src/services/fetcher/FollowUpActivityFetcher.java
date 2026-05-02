@@ -41,7 +41,6 @@ public class FollowUpActivityFetcher {
         Timestamp cutoff = Timestamp.from(
                 Instant.now().minus(VISIBILITY_DAYS, ChronoUnit.DAYS));
 
-        // FIXED: Join Credential table to get the role column
         String sql = """
                 SELECT
                     fur.request_date,

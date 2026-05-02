@@ -9,14 +9,14 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 
 /**
- * DAO for updating user profile information — only email, contact, and
- * username.
+ * DAO for updating user profile information.
  */
 public class UpdateUserDao {
 
-    private final String queryUpdateUser;
-    private final String queryUpdateCredentialUsername;
-    private final String queryCheckUsername;
+    // ===== SQL STRINGS =====
+    private String queryUpdateUser;
+    private String queryUpdateCredentialUsername;
+    private String queryCheckUsername;
 
     public UpdateUserDao() {
         queryUpdateUser = """
@@ -38,14 +38,13 @@ public class UpdateUserDao {
     }
 
     /**
-     * Updates user contact info (phone and email only).
+     * Updates user contact info.
      */
     public boolean updateUserInfo(Connection con, UserInfo ui) throws SQLException {
         try (PreparedStatement stmt = con.prepareStatement(queryUpdateUser)) {
             stmt.setString(1, ui.getContact());
             stmt.setString(2, ui.getEmail());
             stmt.setInt(3, ui.getUI_ID());
-
             return stmt.executeUpdate() > 0;
         }
     }
@@ -57,19 +56,17 @@ public class UpdateUserDao {
         try (PreparedStatement stmt = con.prepareStatement(queryUpdateCredentialUsername)) {
             stmt.setString(1, username);
             stmt.setInt(2, userId);
-
             return stmt.executeUpdate() > 0;
         }
     }
 
     /**
-     * Checks if username is already taken by another user.
+     * Checks if username is taken by another user.
      */
     public boolean isUsernameTakenByOther(Connection con, String username, int currentUserId) throws SQLException {
         try (PreparedStatement stmt = con.prepareStatement(queryCheckUsername)) {
             stmt.setString(1, username);
             stmt.setInt(2, currentUserId);
-
             try (ResultSet rs = stmt.executeQuery()) {
                 return rs.next() && rs.getInt(1) > 0;
             }

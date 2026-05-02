@@ -6,6 +6,7 @@ import services.controller.ComplaintServiceController;
 import services.controller.ReportStatisticsController;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 public class SecretaryDashboardFetcher extends AbstractDashboardFetcher {
@@ -25,49 +26,52 @@ public class SecretaryDashboardFetcher extends AbstractDashboardFetcher {
 
     @Override
     protected void performFetch() {
-        // Stats — global counts (null filters = all records)
-        int total = rsc.countTotalReportWithFilters(us, null, null, null, null, null);
-        int pending = rsc.countTotalReportByStatusWithFilters(us, "Pending", null, null, null, null, null);
-        int inProgress = rsc.countTotalReportByStatusWithFilters(us, "In Progress", null, null, null, null, null);
-        int resolved = rsc.countTotalReportByStatusWithFilters(us, "Resolved", null, null, null, null, null);
-
-        // Recent reports (all complaints, newest 7)
-        List<ComplaintDetail> complaints = csc.getAllComplaints();
-        List<Object[]> rows = new ArrayList<>();
-
-        if (complaints != null) {
-            complaints.sort((a, b) -> {
-                var t1 = a.getDateTime();
-                var t2 = b.getDateTime();
-                if (t1 == null || t2 == null)
-                    return 0;
-                return t2.compareTo(t1);
-            });
-            int limit = Math.min(complaints.size(), 7);
-            for (int i = 0; i < limit; i++) {
-                ComplaintDetail cd = complaints.get(i);
-                Object[] row = new Object[7];
-                row[0] = cd.getComplaintId();
-                row[1] = cd.getType();
-                row[2] = cd.getPurok();
-                row[3] = cd.getDateTime();
-                row[4] = cd.getLastUpdateTimestamp() != null
-                        ? cd.getLastUpdateTimestamp()
-                        : cd.getDateTime();
-                row[5] = cd.getCurrentStatus();
-                row[6] = "View";
-                rows.add(row);
-            }
+        // Stats — reuse dynamic status counting (same pattern as Resident)
+        String[] statuses = { "Pending", "In Progress", "Resolved" };
+        statValues[0] = rsc.countTotalReportWithFilters(us, null, null, null, null, null);
+        for (int i = 0; i < statuses.length; i++) {
+            statValues[i + 1] = rsc.countTotalReportByStatusWithFilters(
+                    us, statuses[i], null, null, null, null, null);
         }
 
-        // TODO: Wire up real Activity & Task controllers when available
-        List<String> acts = new ArrayList<>();
-        List<String> tks = new ArrayList<>();
+        // Reports — newest 7, sorted by creation date
+        List<ComplaintDetail> complaints = csc.getAllComplaints();
+        List<ComplaintDetail> sorted = sortByDateTimeDesc(complaints);
+        List<ComplaintDetail> recent = limit(sorted, 7);
 
-        this.statValues = new int[] { total, pending, inProgress, resolved };
-        this.reports = rows;
-        this.activities = acts;
-        this.tasks = tks;
+        this.reports = mapToRows(recent);
+
+        // TODO: Wire up real Activity & Task controllers when available
+        this.activities = new ArrayList<>();
+        this.tasks = new ArrayList<>();
+    }
+
+    /** Sort by dateTime descending, null-safe */
+    private List<ComplaintDetail> sortByDateTimeDesc(List<ComplaintDetail> list) {
+        if (list == null)
+            return new ArrayList<>();
+        List<ComplaintDetail> copy = new ArrayList<>(list);
+        copy.sort(Comparator.comparing(ComplaintDetail::getDateTime,
+                Comparator.nullsLast(Comparator.reverseOrder())));
+        return copy;
+    }
+
+    /** Limit list to first N elements */
+    private List<ComplaintDetail> limit(List<ComplaintDetail> list, int max) {
+        if (list == null || list.size() <= max)
+            return list != null ? list : new ArrayList<>();
+        return list.subList(0, max);
+    }
+
+    /** Centralized row mapping */
+    private List<Object[]> mapToRows(List<ComplaintDetail> complaints) {
+        List<Object[]> rows = new ArrayList<>();
+        if (complaints == null)
+            return rows;
+        for (ComplaintDetail cd : complaints) {
+            rows.add(ComplaintRowMapper.toRow(cd));
+        }
+        return rows;
     }
 
     public int[] getStatValues() {

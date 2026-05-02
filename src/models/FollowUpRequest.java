@@ -2,11 +2,7 @@ package models;
 
 import java.sql.Timestamp;
 
-/**
- * Model representing a follow-up request on a complaint.
- */
 public class FollowUpRequest {
-
     private int furId;
     private int cdId;
     private int uiId;

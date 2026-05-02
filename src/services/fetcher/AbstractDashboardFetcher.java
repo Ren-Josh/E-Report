@@ -32,7 +32,6 @@ public abstract class AbstractDashboardFetcher {
         this.us = app.getUserSession();
         this.autoRefreshTimer = new Timer(300_000, e -> refreshNow()); // 5 min
 
-        // Initial fetch after subclass constructor finishes, then start timer
         SwingUtilities.invokeLater(() -> {
             refreshNow();
             autoRefreshTimer.start();
