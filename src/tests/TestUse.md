@@ -1,4 +1,5 @@
 DAO Integration Test Documentation
+TEST ARE NOW NOT WORKING, A LOT OF CHANGES HAPPENED AND WALA NG TIME PARA IUPDATE YUNG TESTS
 
 Purpose:
 This integration test verifies the functionality of the following DAO classes working together with the database:

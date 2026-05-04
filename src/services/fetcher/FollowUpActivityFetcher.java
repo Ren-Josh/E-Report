@@ -13,17 +13,35 @@ import java.util.List;
 
 /**
  * Fetches follow-up request activities dynamically from the database.
- * Only returns requests from the last {@value #VISIBILITY_DAYS} days.
+ * Only returns requests from the last VISIBILITY_DAYS days.
  */
 public class FollowUpActivityFetcher {
 
+    /** Number of days back from now to include in the activity feed. */
     private static final int VISIBILITY_DAYS = 2;
 
+    /**
+     * Formatter for the time portion of an activity timestamp (e.g., "02:30 PM").
+     */
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("hh:mm a");
+    /**
+     * Formatter for the date portion of an activity timestamp (e.g., "Jan 15,
+     * 2024").
+     */
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("MMM dd, yyyy");
 
+    /**
+     * Registered callbacks invoked when the dataset changes (e.g., after a
+     * refresh).
+     */
     private final List<Runnable> dataChangeListeners = new ArrayList<>();
 
+    /**
+     * Registers a callback to be invoked whenever the fetcher notifies listeners.
+     * Typically used by UI panels to trigger a repaint or re-fetch.
+     * 
+     * @param listener a no-argument Runnable executed on the caller's thread
+     */
     public void addDataChangeListener(Runnable listener) {
         dataChangeListeners.add(listener);
     }
@@ -32,15 +50,17 @@ public class FollowUpActivityFetcher {
      * Queries the database for follow-up requests requested within the last 2 days.
      * Joins with User_Info, Credential, and Complaint_Detail to build the display
      * strings.
-     *
+     * 
      * @return List of ActivityItem ordered newest first.
      */
     public List<ActivityItem> fetchRecentActivities() {
         List<ActivityItem> activities = new ArrayList<>();
 
+        // Compute the cutoff timestamp: anything before this is excluded.
         Timestamp cutoff = Timestamp.from(
                 Instant.now().minus(VISIBILITY_DAYS, ChronoUnit.DAYS));
 
+        // SQL joins four tables to resolve user names, roles, and complaint details.
         String sql = """
                 SELECT
                     fur.request_date,
@@ -67,6 +87,7 @@ public class FollowUpActivityFetcher {
                 while (rs.next()) {
                     Timestamp reqDate = rs.getTimestamp("request_date");
 
+                    // Split the SQL timestamp into human-readable time and date strings.
                     String time = reqDate.toInstant()
                             .atZone(ZoneId.systemDefault())
                             .format(TIME_FORMATTER);
@@ -74,6 +95,7 @@ public class FollowUpActivityFetcher {
                             .atZone(ZoneId.systemDefault())
                             .format(DATE_FORMATTER);
 
+                    // Extract and sanitize all fields from the joined result set.
                     String role = safe(rs.getString("role"));
                     String name = safe(rs.getString("full_name"));
                     int userId = rs.getInt("UI_ID");
@@ -81,6 +103,7 @@ public class FollowUpActivityFetcher {
                     String complaintType = safe(rs.getString("type"));
                     String complaintTitle = safe(rs.getString("subject"));
 
+                    // Build a single-line description summarizing the follow-up request.
                     String description = String.format(
                             "%s: %s (ID: %d) has requested a follow up on Complaint (ID: %d): %s - %s",
                             role, name, userId, complaintId, complaintType, complaintTitle);
@@ -89,6 +112,7 @@ public class FollowUpActivityFetcher {
                 }
             }
         } catch (SQLException e) {
+            // Log the error but return whatever was collected so the UI does not hang.
             e.printStackTrace();
         }
 
@@ -97,6 +121,7 @@ public class FollowUpActivityFetcher {
 
     /**
      * Convenience method to notify any registered listeners after a manual refresh.
+     * Iterates the listener list and invokes each Runnable in sequence.
      */
     public void notifyListeners() {
         for (Runnable listener : dataChangeListeners) {
@@ -104,6 +129,13 @@ public class FollowUpActivityFetcher {
         }
     }
 
+    /**
+     * Sanitizes a database string to prevent null or blank values in the UI.
+     * 
+     * @param value the raw string from the ResultSet
+     * @return the original value if non-null and non-blank; otherwise an em-dash
+     *         placeholder
+     */
     private String safe(String value) {
         return (value != null && !value.isBlank()) ? value : "—";
     }

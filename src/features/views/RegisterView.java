@@ -18,25 +18,50 @@ import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Two-step registration view: Personal Information then Account Credentials.
+ * Uses CardLayout to swap between the personal info form and the credentials
+ * form.
+ * Performs field-level validation on both pages and live password strength
+ * feedback.
+ */
 public class RegisterView extends JPanel {
+    /** Reference to the main application frame for navigation access. */
     private E_Report app;
+    /** CardLayout that switches between personal info and credentials panels. */
     private CardLayout cardLayout;
+    /** Container holding both form panels managed by cardLayout. */
     private JPanel formContainer;
+    /**
+     * Cached personal info fields passed from page 1 to page 2 during registration.
+     */
     private String fName, mName, lName, sex, contact, email, houseNum, purok, username, password;
+    /** Input field for first name. */
     private UIInput txtFName, txtMName, txtLName, txtContact, txtEmail, txtHouseNum, txtUsername;
+    /** Password input fields with confirmation matching. */
     private UIPasswordInput txtPassword, txtConfirmPassword;
+    /** Radio button group for sex selection. */
     private UIRadioButtonGroup rbgSex;
+    /** Dropdown for purok selection. */
     private UIComboBox<String> cbPurok;
-
+    /** Live status label showing password strength or validation errors. */
     private JLabel lblCredentialStatus;
 
+    /**
+     * Constructs the registration view with a two-page card layout.
+     * Sets up the background, header branding, and both form panels.
+     * 
+     * @param app the main E_Report application frame
+     */
     public RegisterView(E_Report app) {
         this.app = app;
         setLayout(new BorderLayout());
 
+        // Build the background panel with the configured background image.
         BackgroundPanel bgPanel = new BackgroundPanel(UIConfig.BACKGROUND_PATH);
         bgPanel.setLayout(new BorderLayout());
 
+        // Create the top header with the application logo and title.
         JPanel headerPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 20, 20));
         headerPanel.setOpaque(false);
 
@@ -50,6 +75,7 @@ public class RegisterView extends JPanel {
 
         bgPanel.add(headerPanel, BorderLayout.NORTH);
 
+        // Center the registration card using GridBagLayout for precise positioning.
         JPanel centerWrapper = new JPanel(new GridBagLayout());
         centerWrapper.setOpaque(false);
 
@@ -57,10 +83,12 @@ public class RegisterView extends JPanel {
         UICard regCard = new UICard(30, Color.WHITE);
         regCard.setPreferredSize(new Dimension(750, 920));
 
+        // Initialize CardLayout to hold both registration steps.
         cardLayout = new CardLayout();
         formContainer = new JPanel(cardLayout);
         formContainer.setOpaque(false);
 
+        // Add the two form pages to the card container.
         formContainer.add(createPersonalInfoPanel(), "personal");
         formContainer.add(createCredentialPanel(), "credentials");
 
@@ -72,6 +100,13 @@ public class RegisterView extends JPanel {
         add(bgPanel, BorderLayout.CENTER);
     }
 
+    /**
+     * Builds the first registration page: Personal Information.
+     * Collects name, sex, contact, email, house number, and purok.
+     * Validates all fields before allowing navigation to the credentials page.
+     * 
+     * @return the fully assembled personal info panel
+     */
     private JPanel createPersonalInfoPanel() {
         JPanel panel = new JPanel(new GridBagLayout());
         panel.setOpaque(false);
@@ -80,6 +115,7 @@ public class RegisterView extends JPanel {
         gbc.fill = GridBagConstraints.HORIZONTAL;
         gbc.weightx = 1.0;
 
+        // Title label spanning both columns.
         JLabel lblTitle = new JLabel("Personal Information", SwingConstants.CENTER);
         lblTitle.setFont(UIConfig.H2);
         gbc.gridx = 0;
@@ -90,14 +126,17 @@ public class RegisterView extends JPanel {
 
         gbc.gridwidth = 1;
 
+        // Initialize the purok dropdown from application config options.
         String[] puroks = AppConfig.REPORT_PUROK_OPTIONS;
         cbPurok = new UIComboBox<>(puroks);
         UIComboBox.applyPreset(cbPurok, UIConfig.COMBOBOX_WIDTH_STANDARD);
         cbPurok.setFont(new Font("Arial", Font.PLAIN, 16));
         cbPurok.applySizePreset(UIComboBox.SizePreset.LARGE);
 
+        // Initialize the sex radio button group.
         rbgSex = new UIRadioButtonGroup(new String[] { "Male", "Female" });
 
+        // Initialize all personal info text input fields.
         txtFName = new UIInput(15);
         txtMName = new UIInput(15);
         txtLName = new UIInput(15);
@@ -114,6 +153,7 @@ public class RegisterView extends JPanel {
         txtHouseNum.setPlaceholder("123");
         txtHouseNum.setLimit(5, true);
 
+        // Initialize credential fields early so they exist when switching cards.
         txtUsername = new UIInput(10);
         txtUsername.setPlaceholder("Provide a username");
         txtPassword = new UIPasswordInput(10);
@@ -122,6 +162,7 @@ public class RegisterView extends JPanel {
         txtConfirmPassword.setPlaceholder("Re-enter your password");
         txtConfirmPassword.setMatchTarget(txtPassword);
 
+        // Add all input groups to the form grid.
         addInputGroup(panel, "First Name", txtFName, gbc, 0, 1);
         addInputGroup(panel, "Middle Name", txtMName, gbc, 1, 1);
         addInputGroup(panel, "Last Name", txtLName, gbc, 0, 3);
@@ -134,9 +175,11 @@ public class RegisterView extends JPanel {
 
         addInputGroup(panel, "House Number", txtHouseNum, gbc, 0, 7);
 
+        // Purok spans both columns.
         gbc.gridwidth = 2;
         addInputGroup(panel, "Purok", cbPurok, gbc, 1, 7);
 
+        // Continue button validates all fields before switching to credentials card.
         UIButton btnNext = new UIButton("Continue to Credentials", UIConfig.SUCCESS,
                 new Dimension(540, 50), UIConfig.BTN_SECONDARY_FONT, 25, UIButton.ButtonType.PRIMARY);
 
@@ -148,6 +191,7 @@ public class RegisterView extends JPanel {
         btnNext.addActionListener(e -> {
             boolean hasError = false;
 
+            // Validate first name: required field.
             if (txtFName.getValue().isEmpty()) {
                 txtFName.setError();
                 hasError = true;
@@ -155,6 +199,7 @@ public class RegisterView extends JPanel {
                 txtFName.clearError();
             }
 
+            // Validate middle name: required field.
             if (txtMName.getValue().isEmpty()) {
                 txtMName.setError();
                 hasError = true;
@@ -162,6 +207,7 @@ public class RegisterView extends JPanel {
                 txtMName.clearError();
             }
 
+            // Validate last name: required field.
             if (txtLName.getValue().isEmpty()) {
                 txtLName.setError();
                 hasError = true;
@@ -169,6 +215,7 @@ public class RegisterView extends JPanel {
                 txtLName.clearError();
             }
 
+            // Validate contact: required and must pass phone format check.
             if (txtContact.getValue().isEmpty()
                     || !UIValidator.isValidField(UIValidator.FieldType.PHONE, txtContact.getValue())) {
                 txtContact.setError();
@@ -177,6 +224,7 @@ public class RegisterView extends JPanel {
                 txtContact.clearError();
             }
 
+            // Validate email: required and must pass email format check.
             if (txtEmail.getValue().isEmpty()
                     || !UIValidator.isValidField(UIValidator.FieldType.EMAIL, txtEmail.getValue())) {
                 txtEmail.setError();
@@ -185,6 +233,7 @@ public class RegisterView extends JPanel {
                 txtEmail.clearError();
             }
 
+            // Validate house number: required field.
             if (txtHouseNum.getValue().isEmpty()) {
                 txtHouseNum.setError();
                 hasError = true;
@@ -192,6 +241,7 @@ public class RegisterView extends JPanel {
                 txtHouseNum.clearError();
             }
 
+            // Validate purok: must not be the default placeholder selection.
             if (cbPurok.isInvalidSelection()) {
                 cbPurok.setError();
                 hasError = true;
@@ -199,14 +249,17 @@ public class RegisterView extends JPanel {
                 cbPurok.clearError();
             }
 
+            // Validate sex: must select one option.
             if (rbgSex.getSelectedValue() == null) {
                 JOptionPane.showMessageDialog(this, "Please select Sex");
                 hasError = true;
             }
 
+            // Block navigation if any validation failed.
             if (hasError)
                 return;
 
+            // Cache all personal info values for use on the credentials page.
             fName = txtFName.getValue();
             mName = txtMName.getValue();
             lName = txtLName.getValue();
@@ -216,11 +269,13 @@ public class RegisterView extends JPanel {
             sex = rbgSex.getSelectedValue();
             purok = String.valueOf(cbPurok.getSelectedItem());
 
+            // Switch to the credentials card.
             cardLayout.show(formContainer, "credentials");
         });
 
         panel.add(btnNext, gbc);
 
+        // Footer link to navigate back to login for existing users.
         JPanel footer = FormLayoutUtils.createFooterLink(
                 "Already have an account? ",
                 "Login here",
@@ -235,6 +290,13 @@ public class RegisterView extends JPanel {
         return panel;
     }
 
+    /**
+     * Builds the second registration page: Account Credentials.
+     * Collects username, password, and password confirmation.
+     * Provides live password strength feedback and validates before submission.
+     * 
+     * @return the fully assembled credentials panel
+     */
     private JPanel createCredentialPanel() {
         JPanel panel = new JPanel(new GridBagLayout());
         panel.setOpaque(false);
@@ -243,6 +305,7 @@ public class RegisterView extends JPanel {
         gbc.fill = GridBagConstraints.HORIZONTAL;
         gbc.weightx = 1.0;
 
+        // Title label spanning both columns.
         JLabel lblTitle = new JLabel("Account Credentials", SwingConstants.CENTER);
         lblTitle.setFont(UIConfig.H2);
 
@@ -255,6 +318,7 @@ public class RegisterView extends JPanel {
         gbc.gridwidth = 2;
         gbc.insets = new Insets(10, 0, 10, 0);
 
+        // Add credential input groups.
         addInputGroup(panel, "Username", txtUsername, gbc, 0, 1);
         addInputGroup(panel, "Password", txtPassword, gbc, 0, 3);
         addInputGroup(panel, "Confirm Password", txtConfirmPassword, gbc, 0, 5);
@@ -274,7 +338,7 @@ public class RegisterView extends JPanel {
         gbc.fill = GridBagConstraints.HORIZONTAL;
         panel.add(lblCredentialStatus, gbc);
 
-        // --- Button: Complete Registration ---
+        // Complete registration button.
         UIButton btnFinish = new UIButton("Complete Registration", UIConfig.SUCCESS,
                 new Dimension(540, 50), UIConfig.BTN_SECONDARY_FONT, 25, UIButton.ButtonType.PRIMARY);
 
@@ -283,7 +347,7 @@ public class RegisterView extends JPanel {
         gbc.insets = new Insets(20, 40, 10, 40);
         panel.add(btnFinish, gbc);
 
-        // --- Button: Back ---
+        // Back button returns to the personal info card.
         JButton btnBack = new JButton("← Back to Personal Info");
         btnBack.setFont(UIConfig.SMALL);
         btnBack.setContentAreaFilled(false);
@@ -297,6 +361,7 @@ public class RegisterView extends JPanel {
         panel.add(btnBack, gbc);
 
         /* ===== LIVE VALIDATION LISTENERS ===== */
+        // Attach document listeners to both password fields for real-time feedback.
         DocumentListener passwordListener = new DocumentListener() {
             @Override
             public void insertUpdate(DocumentEvent e) {
@@ -317,9 +382,11 @@ public class RegisterView extends JPanel {
         txtPassword.getDocument().addDocumentListener(passwordListener);
         txtConfirmPassword.getDocument().addDocumentListener(passwordListener);
 
+        // Final validation and submission handler.
         btnFinish.addActionListener(e -> {
             List<String> errors = new ArrayList<>();
 
+            // Validate username: required field.
             if (txtUsername.getValue().isEmpty()) {
                 txtUsername.setError();
                 errors.add("Username is required.");
@@ -330,6 +397,7 @@ public class RegisterView extends JPanel {
             String newPass = txtPassword.getValue();
             String confirmPass = txtConfirmPassword.getValue();
 
+            // Validate password: required and minimum length.
             if (newPass.isEmpty()) {
                 txtPassword.setError();
                 errors.add("Password is required.");
@@ -340,6 +408,7 @@ public class RegisterView extends JPanel {
                 txtPassword.clearError();
             }
 
+            // Validate confirmation: required and must match the password.
             if (confirmPass.isEmpty()) {
                 txtConfirmPassword.setError();
                 errors.add("Confirm password is required.");
@@ -350,20 +419,24 @@ public class RegisterView extends JPanel {
                 txtConfirmPassword.clearError();
             }
 
+            // Display all errors in the live status label if validation failed.
             if (!errors.isEmpty()) {
                 lblCredentialStatus.setText("<html><center>" + String.join("<br>", errors) + "</center></html>");
                 lblCredentialStatus.setForeground(Color.RED);
                 return;
             }
 
+            // Clear status and cache final credential values.
             lblCredentialStatus.setText(" ");
             password = newPass;
             username = txtUsername.getValue();
 
+            // Build the domain objects and attempt registration.
             UserInfo ui = new UserInfo(fName, mName, lName, sex, contact, email, houseNum, purok);
             Credential cred = new Credential(username, password);
             String result = new UserServiceController().registerUser(ui, cred);
 
+            // Show success or error feedback and navigate accordingly.
             if ("SUCCESS".equals(result)) {
                 JOptionPane.showMessageDialog(this, "Registration Successful!", "Success",
                         JOptionPane.INFORMATION_MESSAGE);
@@ -376,10 +449,15 @@ public class RegisterView extends JPanel {
         return panel;
     }
 
+    /**
+     * Live password validation that updates the status label and field borders
+     * as the user types. Checks match state first, then falls back to strength.
+     */
     private void validatePasswordLive() {
         String pass = txtPassword.getValue();
         String confirm = txtConfirmPassword.getValue();
 
+        // Reset state when both fields are empty.
         if (pass.isEmpty() && confirm.isEmpty()) {
             lblCredentialStatus.setText(" ");
             txtPassword.clearError();
@@ -387,6 +465,7 @@ public class RegisterView extends JPanel {
             return;
         }
 
+        // Priority check: confirmation field has input — verify match.
         if (!confirm.isEmpty()) {
             if (!pass.equals(confirm)) {
                 lblCredentialStatus.setText("Passwords do not match.");
@@ -403,6 +482,7 @@ public class RegisterView extends JPanel {
             }
         }
 
+        // No confirmation yet — evaluate password strength on the main field.
         txtConfirmPassword.clearError();
         if (pass.length() < 6) {
             lblCredentialStatus.setText("Password is too weak (min 6 characters).");
@@ -419,6 +499,17 @@ public class RegisterView extends JPanel {
         }
     }
 
+    /**
+     * Helper that adds a labeled input group to a GridBagLayout panel.
+     * Places the label at (x, y) and the input component at (x, y+1).
+     * 
+     * @param panel the target panel
+     * @param title the label text
+     * @param input the input component (text field, combo box, radio group, etc.)
+     * @param gbc   the shared GridBagConstraints instance
+     * @param x     the grid column
+     * @param y     the grid row for the label (input goes at y+1)
+     */
     private void addInputGroup(JPanel panel, String title, JComponent input,
             GridBagConstraints gbc, int x, int y) {
 

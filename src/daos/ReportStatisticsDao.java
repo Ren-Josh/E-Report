@@ -63,7 +63,7 @@ public class ReportStatisticsDao {
     }
 
     // ═══════════════════════════════════════════════════════════════
-    // Filtered counts — DYNAMIC SQL BUILDER eliminates duplication
+    // Filtered counts — eliminates duplication
     // ═══════════════════════════════════════════════════════════════
 
     public int countTotalReportWithFilters(Connection con, String start, String end,

@@ -64,7 +64,6 @@ public class UIConfig {
                         "src/assets/icons/reports_icon.png",
                         "src/assets/icons/all_reports_icon.png",
                         "src/assets/icons/submit_icon.png",
-                        "src/assets/icons/users_icon.png",
         };
 
         public static String[] NAV_SECRETARY_TARGET = {
@@ -72,7 +71,6 @@ public class UIConfig {
                         "myreport",
                         "reports",
                         "submitreport",
-                        "usermanagement"
         };
 
         public static String[] NAV_CAPTAIN_ICON_PATHS = {
@@ -94,8 +92,7 @@ public class UIConfig {
         };
 
         public static String[] NAV_SECRETARY_ICON_LABELS = {
-                        "Dashboard", "My Reports", "Reports", "Submit Report",
-                        "Users"
+                        "Dashboard", "My Reports", "Reports", "Submit Report"
         };
 
         public static String[] NAV_CAPTAIN_ICON_LABELS = {

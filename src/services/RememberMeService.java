@@ -24,7 +24,7 @@ public class RememberMeService {
         this.storageFile = new File(dir, "remember_me.properties");
     }
 
-    // Save credentials (you can choose to hash password later)
+    // Save credentials
     public void saveCredentials(String username, String password) {
         Properties props = new Properties();
         props.setProperty("username", username);
