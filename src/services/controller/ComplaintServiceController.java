@@ -12,6 +12,7 @@ import daos.GetComplaintDao;
 import daos.UpdateComplaintStatusDao;
 import config.database.DBConnection;
 import models.ComplaintDetail;
+import models.ReportSubmissionException;
 import models.UserSession;
 
 /**
@@ -35,7 +36,7 @@ public class ComplaintServiceController {
 	 * @param cd          The ComplaintDetail object containing complaint data
 	 * @param droppedFile Optional file to attach (e.g., an image); can be null
 	 */
-	public void addComplaint(int UI_ID, ComplaintDetail cd, File droppedFile) {
+	public void addComplaint(int UI_ID, ComplaintDetail cd, File droppedFile) throws ReportSubmissionException {
 		Connection con = null;
 
 		try {
@@ -64,8 +65,7 @@ public class ComplaintServiceController {
 					rollbackEx.printStackTrace();
 				}
 			}
-			System.err.println("Database Error: " + e.getMessage());
-			e.printStackTrace();
+			throw new ReportSubmissionException("System Error: " + e.getMessage());
 		} finally {
 			if (con != null) {
 				try {
