@@ -78,7 +78,7 @@ public class ReportFormPanel extends JPanel {
         formStatusLabel = new JLabel(" ");
         formStatusLabel.setFont(new Font("Segoe UI", Font.ITALIC, 12));
 
-        locationField.setEditable(false);
+        locationField.setEditable(true);
         locationField.setFont(new Font("Arial", Font.PLAIN, 12));
         latitudeField.setEditable(false);
         latitudeField.setFont(new Font("Arial", Font.PLAIN, 12));
@@ -113,7 +113,7 @@ public class ReportFormPanel extends JPanel {
                 createStyledLabeledField("Purok *", purokCombo, true)), gbc);
 
         gbc.gridy = 2;
-        add(createStyledLabeledField("Location / Street *", locationField, false), gbc);
+        add(createStyledLabeledField("Location / Purok *", locationField, false), gbc);
 
         gbc.gridy = 3;
         add(createCoordinatesRow(), gbc);

@@ -163,21 +163,21 @@ public class RegisterView extends JPanel {
         txtConfirmPassword.setMatchTarget(txtPassword);
 
         // Add all input groups to the form grid.
-        addInputGroup(panel, "First Name", txtFName, gbc, 0, 1);
-        addInputGroup(panel, "Middle Name", txtMName, gbc, 1, 1);
-        addInputGroup(panel, "Last Name", txtLName, gbc, 0, 3);
+        addInputGroup(panel, "First Name *", txtFName, gbc, 0, 1);
+        addInputGroup(panel, "Middle Name *", txtMName, gbc, 1, 1);
+        addInputGroup(panel, "Last Name *", txtLName, gbc, 0, 3);
 
         rbgSex.setPreferredSize(new Dimension(200, 40));
-        addInputGroup(panel, "Sex", rbgSex, gbc, 1, 3);
+        addInputGroup(panel, "Sex *", rbgSex, gbc, 1, 3);
 
-        addInputGroup(panel, "Phone Number", txtContact, gbc, 0, 5);
-        addInputGroup(panel, "Email Address", txtEmail, gbc, 1, 5);
+        addInputGroup(panel, "Phone Number *", txtContact, gbc, 0, 5);
+        addInputGroup(panel, "Email Address *", txtEmail, gbc, 1, 5);
 
-        addInputGroup(panel, "House Number", txtHouseNum, gbc, 0, 7);
+        addInputGroup(panel, "House Number *", txtHouseNum, gbc, 0, 7);
 
         // Purok spans both columns.
         gbc.gridwidth = 2;
-        addInputGroup(panel, "Purok", cbPurok, gbc, 1, 7);
+        addInputGroup(panel, "Purok *", cbPurok, gbc, 1, 7);
 
         // Continue button validates all fields before switching to credentials card.
         UIButton btnNext = new UIButton("Continue to Credentials", UIConfig.SUCCESS,
@@ -319,9 +319,9 @@ public class RegisterView extends JPanel {
         gbc.insets = new Insets(10, 0, 10, 0);
 
         // Add credential input groups.
-        addInputGroup(panel, "Username", txtUsername, gbc, 0, 1);
-        addInputGroup(panel, "Password", txtPassword, gbc, 0, 3);
-        addInputGroup(panel, "Confirm Password", txtConfirmPassword, gbc, 0, 5);
+        addInputGroup(panel, "Username *", txtUsername, gbc, 0, 1);
+        addInputGroup(panel, "Password *", txtPassword, gbc, 0, 3);
+        addInputGroup(panel, "Confirm Password *", txtConfirmPassword, gbc, 0, 5);
 
         /* ===== LIVE STATUS LABEL — MOVED CLOSER WITH BETTER CONSTRAINTS ===== */
         /* ===== LIVE STATUS LABEL ===== */

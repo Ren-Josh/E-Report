@@ -358,7 +358,31 @@ public class E_Report extends JFrame {
         this.credential = null;
         this.currentComplaint = null;
         this.complaintList.clear();
+        this.residentDashboardStats = new int[4];
+        this.residentDashboardReports = new ArrayList<>();
+        this.captainDashboardStats = new int[4];
+        this.captainLineValues = new double[0];
+        this.captainLineLabels = new String[0];
+        this.captainLineDetails = new String[0];
+        this.captainLineGraphTitle = "";
+        this.captainCategoryLabels = new String[0];
+        this.captainCategoryValues = new int[0];
+        this.captainStatusLabels = new String[0];
+        this.captainStatusBackgroundTotals = new int[0];
+        this.captainStatusValues = new int[0];
+        this.captainStatusTotal = 0;
+        this.captainSourceLabels = new String[0];
+        this.captainSourceValues = new int[0];
+        this.captainSourceTotal = 0;
+        this.secretaryDashboardStats = new int[4];
+        this.secretaryReportDataList = new ArrayList<>();
+        this.totalReportByUser = 0;
+        this.totalReport = 0;
+        this.totalReportByDate = 0;
+        this.totalReportByStatus = 0;
+        this.totalReportByRole = 0;
         clearDashboardData();
+
     }
 
     /**
