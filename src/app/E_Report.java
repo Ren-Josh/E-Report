@@ -2,11 +2,18 @@ package app;
 
 import java.awt.CardLayout;
 import java.awt.Component;
+import java.awt.event.InputEvent;
+import java.awt.event.KeyEvent;
 import java.util.ArrayList;
 import java.util.List;
 import javax.swing.ImageIcon;
 import javax.swing.JFrame;
+import javax.swing.JMenu;
+import javax.swing.JMenuBar;
+import javax.swing.JMenuItem;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.KeyStroke;
 import javax.swing.SwingUtilities;
 
 import models.ComplaintDetail;
@@ -127,6 +134,13 @@ public class E_Report extends JFrame {
      */
     private String returnRoute = "dashboard";
 
+    /**
+     * Menu bar for easy navigation of frequently used panels
+     */
+    private JMenuBar jmbMenu;
+    private JMenu jmNav;
+    private JMenuItem jmiDashboard, jmiView, jmiSubmit, jmiProfile, jmiLogout, jmiExit;
+
     // ==================== Reusable Panels ====================
     /**
      * Single shared instance of the security password change panel.
@@ -164,9 +178,83 @@ public class E_Report extends JFrame {
 
         add(container);
 
+        // Menu bar
+        jmbMenu = new JMenuBar();
+
+        // Navigation menu
+        jmNav = new JMenu("Navigation");
+        jmNav.setMnemonic('N'); // Alt+N shortcut
+
+        // Menu items
+        jmiDashboard = new JMenuItem("Dashboard");
+        jmiView = new JMenuItem("View Complaints");
+        jmiSubmit = new JMenuItem("Submit Complaint");
+        jmiProfile = new JMenuItem("Profile");
+        jmiLogout = new JMenuItem("Logout");
+        jmiExit = new JMenuItem("Exit");
+
+        // Add separator before logout/exit
+        jmNav.add(jmiDashboard);
+        jmNav.add(jmiProfile);
+        jmNav.add(jmiView);
+        jmNav.add(jmiSubmit);
+        jmNav.addSeparator();
+        jmNav.add(jmiLogout);
+        jmNav.add(jmiExit);
+
+        jmiDashboard.setAccelerator(KeyStroke.getKeyStroke('D', InputEvent.CTRL_DOWN_MASK));
+        jmiProfile.setAccelerator(KeyStroke.getKeyStroke('P', InputEvent.CTRL_DOWN_MASK));
+        jmiView.setAccelerator(KeyStroke.getKeyStroke('V', InputEvent.CTRL_DOWN_MASK));
+        jmiSubmit.setAccelerator(KeyStroke.getKeyStroke('S', InputEvent.CTRL_DOWN_MASK));
+        jmiLogout.setAccelerator(KeyStroke.getKeyStroke('L', InputEvent.CTRL_DOWN_MASK));
+        jmiExit.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_F4, InputEvent.ALT_DOWN_MASK));
+
+        // Attach to menu bar and frame
+        jmbMenu.add(jmNav);
+
         // Start the application at the homepage.
         cardLayout.show(container, "home");
         setVisible(true);
+
+        jmiDashboard.addActionListener(e -> {
+            navigate("Dashboard");
+        });
+
+        jmiProfile.addActionListener(e -> {
+            navigate("Profile");
+        });
+
+        jmiView.addActionListener(e -> {
+            navigate("MyReport");
+        });
+
+        jmiSubmit.addActionListener(e -> {
+            navigate("SubmitReport");
+        });
+
+        jmiLogout.addActionListener(e -> {
+            int confirm = JOptionPane.showConfirmDialog(
+                    this,
+                    "Are you sure you want to logout?",
+                    "Confirm Logout",
+                    JOptionPane.YES_NO_OPTION,
+                    JOptionPane.QUESTION_MESSAGE);
+            if (confirm == JOptionPane.YES_OPTION) {
+                logout();
+            }
+        });
+
+        jmiExit.addActionListener(e -> {
+            int confirm = JOptionPane.showConfirmDialog(
+                    this,
+                    "Are you sure you want to exit?",
+                    "Confirm Exit",
+                    JOptionPane.YES_NO_OPTION,
+                    JOptionPane.QUESTION_MESSAGE);
+            if (confirm == JOptionPane.YES_OPTION) {
+                System.exit(0);
+            }
+        });
     }
 
     /**
@@ -218,6 +306,13 @@ public class E_Report extends JFrame {
     }
 
     /**
+     * Will add menu
+     */
+    public void addMenu() {
+        setJMenuBar(jmbMenu);
+    }
+
+    /**
      * Attempts to extract the {@link NavPanel} from a view component.
      * <p>
      * Because each view encapsulates its own layout, this method uses
@@ -249,6 +344,7 @@ public class E_Report extends JFrame {
      */
     public void logout() {
         clearSessionData();
+        setJMenuBar(null);
         navigate("home");
     }
 

@@ -159,6 +159,7 @@ public class LoginView extends JPanel {
                             "Login Failed", JOptionPane.WARNING_MESSAGE);
                 }
 
+                app.addMenu();
                 app.navigate("dashboard");
             } else {
                 JOptionPane.showMessageDialog(this,

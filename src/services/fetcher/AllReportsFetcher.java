@@ -123,9 +123,9 @@ public class AllReportsFetcher extends AbstractDashboardFetcher {
         // Short-circuit: fail as soon as any filter rejects the record.
         if (!matchesDateRange(filterTimestamp))
             return false;
-        if (!matchesStringField(cd.getType(), currentCategory, "All Categories"))
+        if (!matchesStringField(cd.getType(), currentCategory, "All Category"))
             return false;
-        if (!matchesStringField(cd.getPurok(), currentPurok, "All Puroks"))
+        if (!matchesStringField(cd.getPurok(), currentPurok, "All Purok"))
             return false;
         if (!matchesStringField(cd.getCurrentStatus(), currentStatus, "All Statuses"))
             return false;

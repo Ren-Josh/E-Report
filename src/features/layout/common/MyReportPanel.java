@@ -168,7 +168,7 @@ public class MyReportPanel extends JPanel {
             }
 
             // --- Category filter ---
-            if (!"All Categories".equals(category) && matches) {
+            if (!"All Category".equals(category) && matches) {
                 String rowType = cd.getType();
                 if (rowType == null || !rowType.equalsIgnoreCase(category)) {
                     matches = false;
@@ -176,7 +176,7 @@ public class MyReportPanel extends JPanel {
             }
 
             // --- Purok filter ---
-            if (!"All Puroks".equals(purok) && matches) {
+            if (!"All Purok".equals(purok) && matches) {
                 String rowPurok = cd.getPurok();
                 if (rowPurok == null || !rowPurok.equalsIgnoreCase(purok)) {
                     matches = false;

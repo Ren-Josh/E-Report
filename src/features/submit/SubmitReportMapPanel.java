@@ -261,6 +261,7 @@ public class SubmitReportMapPanel extends JPanel {
             if (!address.isBlank()) {
                 SwingUtilities.invokeLater(() -> listener.onAddressResolved(address));
             }
+            System.out.println(address);
         } catch (IOException ignored) {
             // Keep UX responsive even when reverse geocoding is unavailable.
         }

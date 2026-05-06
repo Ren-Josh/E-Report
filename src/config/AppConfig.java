@@ -13,10 +13,10 @@ public class AppConfig {
         public static final String SMTP_HOST = "smtp.gmail.com";
         public static final int SMTP_PORT = 587;
         public static final String SMTP_USERNAME = "renjosh.neust@gmail.com"; // CHANGE THIS
-        public static final String SMTP_PASSWORD = ""; // CHANGE THIS
+        public static final String SMTP_PASSWORD = "fkrk alxl eaqq xbxp"; // CHANGE THIS
         public static final String SMTP_FROM_NAME = "Barangay E-Reporting System";
         public static final boolean SMTP_USE_TLS = true;
-        // fkrk alxl eaqq xbxp
+        //
 
         public static final String[] REPORT_BACKGROUND_CANDIDATES = {
                         "desktop.png",
@@ -33,7 +33,8 @@ public class AppConfig {
 
         // ==================== COMPLAINT TYPES / CATEGORIES ====================
         public static final String[] COMPLAINT_TYPES = {
-                        "All Category", "Garbage", "Theft", "Robbery"
+                        "All Category", "Environment", "Infrastructure", "Health", "Public Safety", "Sanitation",
+                        "Community Relations", "Utilities", "Garbage", "Transportation"
         };
 
         public static final String[] REPORT_PUROK_OPTIONS = {

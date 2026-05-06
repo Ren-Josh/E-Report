@@ -58,7 +58,7 @@ public class AllReportsPanel extends JPanel {
         this.fetcher.addDataChangeListener(this::onDataChanged);
 
         // Initial load – no date filter, all categories/puroks/statuses
-        this.fetcher.applyFilters(null, null, "All Categories", "All Puroks", "All Statuses");
+        this.fetcher.applyFilters(null, null, "All Category", "All Purok", "All Statuses");
     }
 
     private void onDataChanged() {
