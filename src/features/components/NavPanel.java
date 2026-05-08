@@ -8,22 +8,38 @@ import java.awt.image.BufferedImage;
 import javax.imageio.ImageIO;
 import java.io.File;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 
 public class NavPanel extends JPanel {
     private JPanel menuContainer;
-    private int selectedIndex = 0; // ← was static, now instance-level
+    private int selectedIndex = 0;
 
-    // Holds all current navigation items (icon, label, action)
     private List<NavItem> navItems = new ArrayList<>();
-
-    // MODIFY THIS: Icon size
     private int iconSize = 22;
-
-    // Glass settings
     private float glassOpacity = 0.85f;
     private int cornerRadius = 20;
+
+    // ========== ROUTE ALIASES: Sub-routes → Parent nav routes ==========
+    // ADD NEW ALIASES HERE as your app grows
+    private static final Map<String, String> ROUTE_ALIASES = new HashMap<>();
+    static {
+        // AllReportsView sub-views
+        ROUTE_ALIASES.put("complaintdetail", "reports");
+        ROUTE_ALIASES.put("updatestatus", "reports");
+
+        // MyReportsView sub-views
+        ROUTE_ALIASES.put("viewreport", "myreport");
+        ROUTE_ALIASES.put("editreport", "myreport");
+        ROUTE_ALIASES.put("complaintdetail", "myreport");
+
+        // Profile sub-views - map to parent context
+        ROUTE_ALIASES.put("profile", "dashboard"); // fallback
+        ROUTE_ALIASES.put("securitypassword", "dashboard"); // fallback
+    }
+    // =================================================================
 
     public NavPanel() {
         setOpaque(false);
@@ -38,8 +54,6 @@ public class NavPanel extends JPanel {
 
         add(menuContainer, BorderLayout.NORTH);
     }
-
-    // ========== NAV ITEM DATA CLASS ==========
 
     public static class NavItem {
         private final String iconPath;
@@ -80,8 +94,6 @@ public class NavPanel extends JPanel {
         }
     }
 
-    // ========== ROLE-BASED MENU SETTERS ==========
-
     public void setResidentMenus(Consumer<String> navigator) {
         String[] paths = UIConfig.NAV_RESIDENT_ICON_PATHS;
         String[] labels = UIConfig.NAV_RESIDENT_ICON_LABELS;
@@ -118,14 +130,10 @@ public class NavPanel extends JPanel {
         buildMenus(navigator);
     }
 
-    // ========== CUSTOM MENU SETTER (most flexible) ==========
-
     public void setCustomMenus(Consumer<String> navigator, List<NavItem> items) {
         this.navItems = new ArrayList<>(items);
         buildMenus(navigator);
     }
-
-    // ============================================
 
     private Consumer<String> currentNavigator;
 
@@ -135,13 +143,16 @@ public class NavPanel extends JPanel {
     }
 
     public void syncSelectionToRoute(String route) {
+
         if (route == null || navItems.isEmpty()) {
             return;
         }
+
         String target = route.toLowerCase();
         for (int i = 0; i < navItems.size(); i++) {
-            String navRoute = navItems.get(i).getNavigateTo();
-            if (navRoute.equalsIgnoreCase(target)) {
+            String navRoute = navItems.get(i).getNavigateTo().toLowerCase();
+
+            if (navRoute.equals(target)) {
                 if (selectedIndex != i) {
                     selectedIndex = i;
                     refreshMenu();

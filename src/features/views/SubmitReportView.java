@@ -52,6 +52,7 @@ public class SubmitReportView extends JPanel {
      */
     public SubmitReportView(E_Report app) {
         this.app = app;
+        app.setReturnRoute("submitreport");
         setLayout(new BorderLayout());
         initComponents();
     }

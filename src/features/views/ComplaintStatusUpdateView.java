@@ -37,6 +37,7 @@ public class ComplaintStatusUpdateView extends JPanel {
      */
     public ComplaintStatusUpdateView(E_Report app) {
         this.app = app;
+        app.setReturnRoute("updatestatus");
         setLayout(new BorderLayout());
 
         // Create the background panel and configure its layout with gaps.

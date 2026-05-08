@@ -125,10 +125,4 @@ public class EmailService {
                 """;
         return template.replace("%s", otp);
     }
-
-    public static void main(String[] args) {
-        EmailService svc = new EmailService();
-        boolean ok = svc.sendOtpEmail("renjo.barrientos@gmail.com", "123456");
-        System.out.println("Sent: " + ok);
-    }
 }

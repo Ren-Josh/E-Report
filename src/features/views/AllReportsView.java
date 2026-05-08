@@ -37,6 +37,7 @@ public class AllReportsView extends JPanel {
      */
     public AllReportsView(E_Report app) {
         this.app = app;
+        app.setReturnRoute("reports");
         setLayout(new BorderLayout());
 
         // Create the background panel and configure its layout with gaps.

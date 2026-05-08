@@ -133,6 +133,7 @@ public class E_Report extends JFrame {
      * (e.g., after changing password from the security screen).
      */
     private String returnRoute = "dashboard";
+    private String currentRoute = "home";
 
     /**
      * Menu bar for easy navigation of frequently used panels
@@ -258,68 +259,70 @@ public class E_Report extends JFrame {
     }
 
     /**
-     * Navigates to the requested route by replacing the content pane with the
-     * corresponding view. Also synchronizes the navigation side-panel's selected
-     * state so the active menu item matches the current route.
+     * Navigates to the requested route. Optionally preserves a parent nav context
+     * so the sidebar stays highlighted on the correct main menu item.
      *
-     * @param route the named route to navigate to (e.g., "login", "dashboard")
+     * @param route      the named route to navigate to (e.g., "login", "dashboard")
+     * @param navContext the nav route to keep highlighted (null = same as route)
      */
-    public void navigate(String route) {
-        // Clear the current content pane before attaching a new view.
+    public void navigate(String route, String navContext) {
+
+        // Track current route for return context
+        if (!route.equalsIgnoreCase("profile") && !route.equalsIgnoreCase("securitypassword")) {
+            this.currentRoute = route.toLowerCase();
+        }
+
         getContentPane().removeAll();
 
-        // Route to the appropriate view. Each case constructs a fresh panel
-        // (except "securitypassword", which reuses the cached instance).
         switch (route.toLowerCase()) {
             case "login" -> add(new LoginView(this));
             case "home" -> add(new HomepageView(this));
             case "register" -> add(new RegisterView(this));
             case "dashboard" -> add(new DashboardView(this));
-            case "profile" -> add(new MyProfileView(this));
+            case "profile" -> {
+                MyProfileView profileView = new MyProfileView(this);
+                profileView.prepareReturnRoute(getReturnRoute());
+                add(profileView);
+            }
             case "myreport" -> add(new MyReportsView(this));
             case "reports" -> add(new AllReportsView(this));
-            // case "usermanagement" -> add(new UserManagementView(this));
             case "submitreport" -> add(new SubmitReportView(this));
             case "updatestatus" -> add(new ComplaintStatusUpdateView(this));
             case "complaintdetail" -> add(new ComplaintDetailView(this));
             case "forgotpassword" -> add(new ForgotPasswordView(this));
             case "securitypassword" -> {
-                // Reset internal field states before showing.
                 securityPasswordChangePanel.preparePanel();
                 add(securityPasswordChangePanel);
             }
         }
 
-        // After adding the new view, traverse its component tree to find the
-        // embedded NavPanel and highlight the menu item matching this route.
+        // For profile, use the PARENT route as nav context so sidebar stays correct
+        String syncRoute;
+        if (route.equalsIgnoreCase("profile") || route.equalsIgnoreCase("securitypassword")) {
+            // Use currentRoute (where we were before) as the nav context
+            syncRoute = navContext != null ? navContext : currentRoute;
+        } else {
+            syncRoute = navContext != null ? navContext : route;
+        }
+
         Component[] children = getContentPane().getComponents();
         for (Component c : children) {
             NavPanel nav = extractNavPanel(c);
             if (nav != null) {
-                nav.syncSelectionToRoute(route);
+                nav.syncSelectionToRoute(syncRoute);
             }
         }
 
-        // Re-layout and redraw the frame to reflect the new content.
         revalidate();
         repaint();
     }
 
-    /**
-     * Will add menu
-     */
-    public void addMenu() {
-        setJMenuBar(jmbMenu);
+    public void navigate(String route) {
+        navigate(route, null);
     }
 
     /**
-     * Attempts to extract the {@link NavPanel} from a view component.
-     * <p>
-     * Because each view encapsulates its own layout, this method uses
-     * pattern-matching (instanceof) to call the view-specific getter.
-     *
-     * @param c the top-level component of the current view
-     * @return the embedded NavPanel if the view is recognized; otherwise null
+     * Extracts NavPanel from the NEW view. Add ALL your views here!
      */
     private NavPanel extractNavPanel(Component c) {
         if (c instanceof MyProfileView v)
@@ -334,6 +337,13 @@ public class E_Report extends JFrame {
             return v.getNavPanel();
         if (c instanceof AllReportsView v)
             return v.getNavPanel();
+
+        // ADD THIS — ComplaintDetailView was missing!
+        if (c instanceof ComplaintDetailView v)
+            return v.getNavPanel();
+
+        // ADD FUTURE VIEWS HERE:
+        // if (c instanceof YourNewView v) return v.getNavPanel();
 
         return null;
     }
@@ -381,8 +391,8 @@ public class E_Report extends JFrame {
         this.totalReportByDate = 0;
         this.totalReportByStatus = 0;
         this.totalReportByRole = 0;
+        this.currentRoute = "home";
         clearDashboardData();
-
     }
 
     /**

@@ -9,6 +9,7 @@ import models.ComplaintAction;
 import models.ComplaintDetail;
 import models.ComplaintHistoryDetail;
 import models.FollowUpRequest;
+import models.UserInfo;
 import services.controller.ComplaintStatusController;
 import services.controller.FollowUpRequestController;
 
@@ -29,6 +30,7 @@ public class ComplaintContentPanel extends JPanel {
 
     private int currentCdId = -1;
     private ComplaintDetail currentComplaint;
+    private UserInfo currentUserInfo;
     private String returnRoute = "dashboard";
 
     private final TitlePanel titlePanel;
@@ -113,7 +115,7 @@ public class ComplaintContentPanel extends JPanel {
         gbc.weighty = 1.0;
         mainContent.add(actionHistoryPanel, gbc);
 
-        /* ========== Incident Location Map (below action history) ========== */
+        /* ========== Incident Location Map ========== */
         mapSection = new JPanel(new BorderLayout(0, 8));
         mapSection.setOpaque(false);
 
@@ -122,7 +124,6 @@ public class ComplaintContentPanel extends JPanel {
         mapTitle.setForeground(TEXT_DARK);
         mapSection.add(mapTitle, BorderLayout.NORTH);
 
-        // No-op listener: read-only view
         viewMapPanel = new SubmitReportMapPanel(new SubmitReportMapPanel.Listener() {
             @Override
             public void onPinned(double latitude, double longitude) {
@@ -148,7 +149,7 @@ public class ComplaintContentPanel extends JPanel {
         gbc.insets = new Insets(12, 0, 0, 0);
         gbc.weighty = 0;
         mainContent.add(mapSection, gbc);
-        /* ================================================================== */
+        /* ========================================== */
 
         // Detail card
         detailPanel = new ComplaintDetailPanel();
@@ -284,7 +285,6 @@ public class ComplaintContentPanel extends JPanel {
             return;
         }
 
-        // Pending → In Progress (validation required)
         if ("In Progress".equals(newStatus) && "Pending".equals(currentComplaint.getCurrentStatus())) {
             String title = updatePanel.getPendingPanel().getTitle();
             String type = updatePanel.getPendingPanel().getType();
@@ -326,9 +326,7 @@ public class ComplaintContentPanel extends JPanel {
                         JOptionPane.ERROR_MESSAGE);
                 return;
             }
-        }
-        // In Progress → In Progress (same status, just adding history/note)
-        else if ("In Progress".equals(newStatus) && "In Progress".equals(currentComplaint.getCurrentStatus())) {
+        } else if ("In Progress".equals(newStatus) && "In Progress".equals(currentComplaint.getCurrentStatus())) {
             String officer = updatePanel.getInProgressPanel().getOfficer();
             if (officer.isEmpty()) {
                 JOptionPane.showMessageDialog(app, "Officer / Personnel Assigned is required.", "Required",
@@ -347,9 +345,7 @@ public class ComplaintContentPanel extends JPanel {
             }
             sb.append("]");
             note = sb.toString();
-        }
-        // ── Resolved ──
-        else if ("Resolved".equals(newStatus)) {
+        } else if ("Resolved".equals(newStatus)) {
             var action = buildComplaintAction();
             if (action == null)
                 return;
@@ -461,6 +457,12 @@ public class ComplaintContentPanel extends JPanel {
         this.currentComplaint = cd;
         this.currentCdId = cd.getComplaintId();
 
+        // ========== FETCH & LOAD USER INFO WITH ROLE ==========
+        this.currentUserInfo = fetchUserInfoForComplaint(cd.getComplaintId());
+        String role = fetchUserRoleForComplaint(cd.getComplaintId());
+        detailPanel.loadUserInfo(currentUserInfo, role);
+        // ============================================
+
         String status = safe(cd.getCurrentStatus());
 
         titlePanel.setStatus(status);
@@ -475,9 +477,6 @@ public class ComplaintContentPanel extends JPanel {
 
         loadHistory(cd.getComplaintId());
 
-        /*
-         * ========== Load coordinates into map using AppConfig zoom & radius ==========
-         */
         Double lat = parseCoordinate(cd.getLatitude());
         Double lon = parseCoordinate(cd.getLongitude());
 
@@ -494,9 +493,24 @@ public class ComplaintContentPanel extends JPanel {
             viewMapPanel.resetView();
             mapCoordsLabel.setText("No location coordinates available");
         }
-        /*
-         * =============================================================================
-         */
+    }
+
+    private String fetchUserRoleForComplaint(int cdId) {
+        String sql = "SELECT c.role " +
+                "FROM Credential c " +
+                "INNER JOIN Complaint_Detail cd ON c.UI_ID = cd.UI_ID " +
+                "WHERE cd.CD_ID = ?";
+        try (Connection con = DBConnection.connect();
+                PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setInt(1, cdId);
+            ResultSet rs = ps.executeQuery();
+            if (rs.next()) {
+                return rs.getString("role");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return "Resident"; // fallback
     }
 
     private Double parseCoordinate(Object value) {
@@ -537,7 +551,6 @@ public class ComplaintContentPanel extends JPanel {
             return;
 
         FollowUpDialog dialog = new FollowUpDialog(app, currentComplaint.getComplaintId());
-
         dialog.setVisible(true);
 
         if (dialog.isSubmitted()) {
@@ -558,18 +571,12 @@ public class ComplaintContentPanel extends JPanel {
         }
     }
 
-    /**
-     * Determines follow-up visibility.
-     * Badge + button are FORCE-HIDDEN when the complaint is Resolved, Rejected,
-     * or Transferred because no further follow-up is possible.
-     */
     private void refreshFollowUpStatus() {
         if (currentComplaint == null)
             return;
 
         String status = safe(currentComplaint.getCurrentStatus());
 
-        // ── TERMINAL STATUSES: hide everything immediately ──
         if ("Resolved".equalsIgnoreCase(status)
                 || "Rejected".equalsIgnoreCase(status)
                 || "Transferred".equalsIgnoreCase(status)) {
@@ -579,13 +586,11 @@ public class ComplaintContentPanel extends JPanel {
             return;
         }
 
-        // For Pending / In Progress, follow-ups are allowed
         boolean isOpenStatus = "Pending".equalsIgnoreCase(status)
                 || "In Progress".equalsIgnoreCase(status);
 
         FollowUpRequest req = followUpController.getLatestFollowUp(currentComplaint.getComplaintId());
 
-        // No follow-up request at all
         if (req == null) {
             titlePanel.setFollowUpBadgeVisible(false);
             titlePanel.setFollowUpVisible(!canUpdateStatus && isOpenStatus);
@@ -593,21 +598,15 @@ public class ComplaintContentPanel extends JPanel {
             return;
         }
 
-        // Get the most recent status update timestamp from history
         Timestamp lastStatusUpdate = getMostRecentStatusUpdateTime(currentComplaint.getComplaintId());
         Timestamp followUpDate = req.getRequestDate();
 
-        // Use millisecond comparison (>=) so equal timestamps still count as addressed
         boolean statusUpdatedAfterFollowUp = lastStatusUpdate != null && followUpDate != null
                 && lastStatusUpdate.getTime() >= followUpDate.getTime();
 
         boolean isFollowUpStale = statusUpdatedAfterFollowUp;
-
-        // Active = exists, not resolved, and not stale
         boolean hasActive = !"Resolved".equalsIgnoreCase(req.getStatus()) && !isFollowUpStale;
         boolean isResident = !canUpdateStatus;
-
-        // Resident can request a NEW follow-up only on open statuses
         boolean showButton = !hasActive && isResident && isOpenStatus;
 
         titlePanel.setFollowUpBadgeVisible(hasActive);
@@ -620,10 +619,6 @@ public class ComplaintContentPanel extends JPanel {
         }
     }
 
-    /**
-     * Gets the most recent status update timestamp from Complaint_History_Detail.
-     * Returns null if no history exists.
-     */
     private Timestamp getMostRecentStatusUpdateTime(int complaintId) {
         try (Connection con = DBConnection.connect()) {
             List<ComplaintHistoryDetail> history = new GetComplaintDao().getComplaintHistory(con, complaintId);
@@ -643,5 +638,34 @@ public class ComplaintContentPanel extends JPanel {
             e.printStackTrace();
             return null;
         }
+    }
+
+    private UserInfo fetchUserInfoForComplaint(int cdId) {
+        String sql = "SELECT ui.UI_ID, ui.first_name, ui.middle_name, ui.last_name, ui.sex, " +
+                "ui.contact_number, ui.email_address, ui.house_number, ui.purok " +
+                "FROM User_Info ui " +
+                "INNER JOIN Complaint_Detail cd ON ui.UI_ID = cd.UI_ID " +
+                "WHERE cd.CD_ID = ?";
+        try (Connection con = DBConnection.connect();
+                PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setInt(1, cdId);
+            ResultSet rs = ps.executeQuery();
+            if (rs.next()) {
+                UserInfo ui = new UserInfo();
+                ui.setUI_ID(rs.getInt("UI_ID"));
+                ui.setFName(rs.getString("first_name"));
+                ui.setMName(rs.getString("middle_name"));
+                ui.setLName(rs.getString("last_name"));
+                ui.setSex(rs.getString("sex"));
+                ui.setContact(rs.getString("contact_number"));
+                ui.setEmail(rs.getString("email_address"));
+                ui.setHouseNum(rs.getString("house_number"));
+                ui.setPurok(rs.getString("purok"));
+                return ui;
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 }

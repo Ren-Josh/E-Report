@@ -48,6 +48,7 @@ public class DashboardView extends JPanel {
      */
     public DashboardView(E_Report app) {
         this.app = app;
+        app.setReturnRoute("dashboard");
         setLayout(new BorderLayout());
 
         // Create the background panel and configure its layout with gaps.

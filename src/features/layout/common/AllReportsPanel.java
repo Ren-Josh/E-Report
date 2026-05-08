@@ -182,7 +182,7 @@ public class AllReportsPanel extends JPanel {
         if (cd != null) {
             app.setCurrentComplaint(cd);
             app.setReturnRoute("reports");
-            app.navigate("complaintdetail");
+            app.navigate("complaintdetail", "reports");
         }
     }
 

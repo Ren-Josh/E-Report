@@ -69,8 +69,8 @@ public class ResidentDashboardPanel extends JPanel {
             ComplaintDetail cd = recentComplaints.get(row);
             if (cd != null) {
                 app.setCurrentComplaint(cd);
-                app.setReturnRoute("myreport");
-                app.navigate("complaintdetail");
+                app.setReturnRoute("dashboard");
+                app.navigate("complaintdetail", "dashboard");
             }
         });
         // ========================================

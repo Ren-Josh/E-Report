@@ -48,6 +48,8 @@ public class ProfilePanel extends JPanel {
     private JDialog passwordDialog;
     private PasswordVerificationPanel passwordPanel;
 
+    private String backRoute = null;
+
     public ProfilePanel(E_Report app, Runnable onChangePassword) {
         this.app = app;
         this.onChangePassword = onChangePassword;
@@ -55,7 +57,7 @@ public class ProfilePanel extends JPanel {
 
         headerPanel = new ProfileHeaderPanel("Profile Settings", () -> {
             cancelEditOnNavigate();
-            app.navigate("dashboard");
+            app.navigate(backRoute);
         });
 
         profileInfoCard = new ProfileInfoCard();
@@ -133,6 +135,10 @@ public class ProfilePanel extends JPanel {
         g2.setPaint(gp);
         g2.fillRect(0, 0, getWidth(), getHeight());
         g2.dispose();
+    }
+
+    public void setBackRoute(String route) {
+        this.backRoute = (route != null && !route.isEmpty()) ? route : "dashboard";
     }
 
     private void setupEvents() {
